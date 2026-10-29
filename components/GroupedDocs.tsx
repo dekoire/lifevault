@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, ChevronDown, Search, Users } from "lucide-react";
+import { AlertTriangle, Building2, CalendarDays, Check, ChevronDown, Search, Tag, Users, type LucideIcon } from "lucide-react";
 import { DocCarousel } from "@/components/DocCarousel";
 import { DocRow } from "@/components/DocRow";
 import { FilterBar, FilterSelect, FilterToggle } from "@/components/ListControls";
@@ -110,7 +110,8 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
         const isOpen = !closed.includes(s.year) || !!term;
         return (
           <section key={s.year} className={`${CARD} overflow-hidden`}>
-            <button type="button" aria-expanded={isOpen} onClick={() => setClosed((c) => (c.includes(s.year) ? c.filter((x) => x !== s.year) : [...c, s.year]))} className="flex w-full items-center gap-2.5 px-4 py-3.5 text-left hover:bg-surface-2/60">
+            <button type="button" aria-expanded={isOpen} onClick={() => setClosed((c) => (c.includes(s.year) ? c.filter((x) => x !== s.year) : [...c, s.year]))} className="flex w-full items-center gap-2.5 bg-surface-3 px-4 py-3 text-left hover:shadow-[inset_0_0_0_999px_rgba(0,0,0,0.035)]">
+              <Placeholder icon={CalendarDays} size={30} />
               <span className="tnum min-w-0 flex-1 truncate text-[17px] font-semibold">{s.year}</span>
               {s.open > 0 && <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-negative/10 px-2 py-0.5 text-[11.5px] font-semibold text-negative-text"><AlertTriangle size={11} /> {s.open} offen</span>}
               <span className="tnum shrink-0 rounded-full bg-surface-2 px-2 py-px text-[12px] font-semibold text-soft">{s.docs.length}</span>
@@ -120,8 +121,8 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
               <div className="border-t border-line">
                 {sub ? s.groups.map((g) => (
                   <div key={g.key} className="border-b border-line last:border-b-0">
-                    <div className="flex items-center gap-2 bg-surface-2 px-4 py-2 text-[13px] font-semibold text-soft">
-                      {g.partner && <SenderLogo domain={g.partner.domain} sender={g.partner.name} cluster={g.partner.cluster} size={22} />}
+                    <div className="flex items-center gap-2.5 border-y border-line bg-surface-2 px-4 py-2 text-[13.5px] font-semibold text-fg">
+                      {g.partner ? <SenderLogo domain={g.partner.domain} sender={g.partner.name} cluster={g.partner.cluster} size={24} /> : <Placeholder icon={sub === "sender" ? Building2 : Tag} size={24} />}
                       <span className="min-w-0 flex-1 truncate">{g.label}</span>
                       <span className="tnum text-[12px] text-muted">{g.docs.length}</span>
                     </div>
@@ -137,6 +138,11 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   );
 }
 
+/** Platzhalter ohne Logo: schwarzer Kreis, weißes Icon */
+function Placeholder({ icon: Icon, size }: { icon: LucideIcon; size: number }) {
+  return <span className="grid shrink-0 place-items-center rounded-full bg-fg text-canvas" style={{ width: size, height: size }}><Icon size={Math.round(size * 0.5)} /></span>;
+}
+
 /** Absender-Auswahl mit Partner-Logos: zugeklappt die Auswahl, aufgeklappt Liste mit Suche */
 function SenderPick({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: { key: string; name: string; n: number; domain: string | null; cluster: string | null }[] }) {
   const [open, setOpen] = useState(false);
@@ -150,7 +156,7 @@ function SenderPick({ value, onChange, options }: { value: string; onChange: (v:
       <span className="mb-2 block text-[13px] font-semibold text-soft">Absender</span>
       <div className={`overflow-hidden rounded-2xl border ${value ? "border-fg" : "border-card-line"} bg-surface`}>
         <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-3 py-2.5 text-left">
-          {cur ? <SenderLogo domain={cur.domain} sender={cur.name} cluster={cur.cluster} size={32} /> : <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-3 text-soft"><Users size={16} /></span>}
+          {cur ? <SenderLogo domain={cur.domain} sender={cur.name} cluster={cur.cluster} size={32} /> : <Placeholder icon={Users} size={32} />}
           <span className="min-w-0 flex-1 truncate text-[14.5px] font-semibold">{cur?.name ?? "Alle Absender"}</span>
           <ChevronDown size={17} className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
@@ -164,7 +170,7 @@ function SenderPick({ value, onChange, options }: { value: string; onChange: (v:
             )}
             <div className="max-h-72 overflow-y-auto">
               <button type="button" onClick={() => pick("")} className={row(!value)}>
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface-3 text-soft"><Users size={14} /></span>
+                <Placeholder icon={Users} size={28} />
                 <span className="flex-1">Alle Absender</span>{!value && <Check size={16} />}
               </button>
               {list.map((o) => (
