@@ -12,6 +12,7 @@ import { clusterOf } from "@/lib/clusters";
 import { chrono, fmtDate, fmtMoney, isUrgent, useDocs } from "@/lib/docs";
 import { useProjects } from "@/lib/projects";
 import { Clamp } from "@/components/Clamp";
+import { DocLabels } from "@/components/Labels";
 import { explainDoc, groupRank } from "@/lib/doctypes";
 import { partnerKey } from "@/lib/partners";
 import { useHistoryLinks } from "@/lib/history";
@@ -222,6 +223,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
               {show.summary && content?.summary && <Clamp className="text-[15px] leading-6 text-soft">{content.summary}</Clamp>}
             </section>
           )}
+          <section className={`${CARD} p-4`}><DocLabels doc={doc} onChange={setDoc} /></section>
           {glance.length > 0 && (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {glance.map((g, i) => (

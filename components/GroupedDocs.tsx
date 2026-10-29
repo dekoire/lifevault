@@ -10,6 +10,7 @@ import { CARD } from "@/components/ui";
 import { todos } from "@/lib/actions";
 import { chrono, useDocs } from "@/lib/docs";
 import { startExport } from "@/lib/jobs";
+import { groupOf, LABEL_GROUPS } from "@/lib/labels";
 import { useMe } from "@/lib/me";
 import { buildPartners, partnerKey } from "@/lib/partners";
 import { guessPurpose, PURPOSES } from "@/lib/topics";
@@ -25,8 +26,8 @@ type Sub = "" | "sender" | "topic";
 const SUBS: { value: Sub; label: string }[] = [{ value: "", label: "Nicht unterteilen" }, { value: "sender", label: "Absender" }, { value: "topic", label: "Thema" }];
 const dateOf = (d: Doc) => d.doc_date ?? d.received_at.slice(0, 10);
 type Range = "all" | "year" | "12m";
-type Filter = { purpose: string; topic: string; sender: string; range: Range; encOnly: boolean };
-const NONE: Filter = { purpose: "", topic: "", sender: "", range: "all", encOnly: false };
+type Filter = { purpose: string; topic: string; label: string; sender: string; range: Range; encOnly: boolean };
+const NONE: Filter = { purpose: "", topic: "", label: "", sender: "", range: "all", encOnly: false };
 
 export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" | "list" }) {
   const { docs: visible } = useDocs();
@@ -63,10 +64,11 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   const match = (d: Doc, skip?: keyof Filter) =>
     (skip === "purpose" || !f.purpose || purposeOf(d) === f.purpose) &&
     (skip === "topic" || !f.topic || topicOf(d) === f.topic) &&
+    (skip === "label" || !f.label || (d.labels ?? []).includes(f.label)) &&
     (skip === "sender" || !f.sender || senderOf(d) === f.sender) &&
     (skip === "range" || !from || dateOf(d) >= from) &&
     (!f.encOnly || d.encrypted) &&
-    (!term || `${d.title ?? ""} ${d.file_name} ${d.sender ?? ""} ${d.doc_type ?? ""} ${d.topic ?? ""} ${(d.tags ?? []).join(" ")}`.toLowerCase().includes(term));
+    (!term || `${d.title ?? ""} ${d.file_name} ${d.sender ?? ""} ${d.doc_type ?? ""} ${d.topic ?? ""} ${(d.tags ?? []).join(" ")} ${(d.labels ?? []).join(" ")}`.toLowerCase().includes(term));
   const list = docs.filter((d) => match(d));
   const countBy = (skip: keyof Filter, val: (d: Doc) => string) => {
     const m = new Map<string, number>();
@@ -96,7 +98,9 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   const purposeOpts = PURPOSES.filter((p) => purposeN.get(p.id) || f.purpose === p.id).map((p) => ({ value: p.id, label: `${p.label} (${purposeN.get(p.id) ?? 0})` }));
   const topicOpts = [...topicN.keys()].sort((a, b) => (topicN.get(b) ?? 0) - (topicN.get(a) ?? 0) || a.localeCompare(b, "de")).map((t) => ({ value: t, label: `${t} (${topicN.get(t)})` }));
   const senders = [...senderN.entries()].filter(([k]) => k).map(([k, n]) => { const p = partners.get(k); return { key: k, name: p?.name ?? k, n, domain: p?.domain ?? null, cluster: p?.cluster ?? cluster }; }).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name, "de"));
-  const active = Number(!!f.purpose) + Number(!!f.topic) + Number(!!f.sender) + Number(f.range !== "all") + Number(f.encOnly);
+  const labelN = new Map<string, number>();
+  for (const d of docs) if (match(d, "label")) for (const t of d.labels ?? []) labelN.set(t, (labelN.get(t) ?? 0) + 1);
+  const active = Number(!!f.label) + Number(!!f.purpose) + Number(!!f.topic) + Number(!!f.sender) + Number(f.range !== "all") + Number(f.encOnly);
   const lockedN = unlocked ? 0 : docs.filter((d) => picked.has(d.id) && d.encrypted).length;
   const rows = (ds: Doc[]) => picking
     ? <div className="divide-y divide-line">{ds.map((d) => (
@@ -117,6 +121,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
         <FilterSelect label="Je Jahr unterteilen nach" value={sub} onChange={(v) => pickSub(v as Sub)} options={SUBS.slice(1)} empty="Nicht unterteilen" />
         {senders.length > 1 && <SenderPick value={f.sender} onChange={(v) => set({ sender: v })} options={senders} />}
         {topicOpts.length > 1 && <FilterSelect label="Thema" value={f.topic} onChange={(v) => set({ topic: v })} options={topicOpts} />}
+        {labelN.size > 0 && <LabelPick value={f.label} onChange={(v) => set({ label: v })} counts={labelN} />}
         {purposeOpts.length > 1 && <FilterSelect label="Status" value={f.purpose} onChange={(v) => set({ purpose: v })} options={purposeOpts} />}
         <FilterSelect label="Zeitraum" value={f.range === "all" ? "" : f.range} onChange={(v) => set({ range: (v || "all") as Range })} options={[{ value: "year", label: "Dieses Jahr" }, { value: "12m", label: "Letzte 12 Monate" }]} />
         {docs.some((d) => d.encrypted) && <FilterToggle label="Nur verschlüsselte" on={f.encOnly} onChange={(v) => set({ encOnly: v })} />}
@@ -170,6 +175,24 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
         </div>
       )}
     </div>
+  );
+}
+
+/** Tag-Auswahl: nach Typ gruppiert, mit Farbe und Anzahl (nur Tags mit Treffern) */
+function LabelPick({ value, onChange, counts }: { value: string; onChange: (v: string) => void; counts: Map<string, number> }) {
+  const color = value ? groupOf(value)?.color : undefined;
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[13px] font-semibold text-soft">Tag</span>
+      <span className="relative block">
+        {color && <span className="pointer-events-none absolute top-1/2 left-3.5 h-2.5 w-2.5 -translate-y-1/2 rounded-full" style={{ background: color }} />}
+        <select value={value} onChange={(e) => onChange(e.target.value)} className={`h-11 w-full appearance-none rounded-xl border bg-surface pr-9 text-[14.5px] ${value ? "border-fg pl-8 font-semibold" : "border-card-line pl-3.5"}`}>
+          <option value="">Alle</option>
+          {LABEL_GROUPS.map((g) => { const tags = g.tags.filter((t) => counts.get(t) || t === value); return tags.length ? <optgroup key={g.id} label={g.label}>{tags.map((t) => <option key={t} value={t}>{t} ({counts.get(t) ?? 0})</option>)}</optgroup> : null; })}
+        </select>
+        <ChevronDown size={16} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted" />
+      </span>
+    </label>
   );
 }
 

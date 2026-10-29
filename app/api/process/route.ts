@@ -104,7 +104,7 @@ export async function POST(req: Request) {
     const { meta, content } = toColumns(o);
     // von Hand gesetzte Einordnung beim erneuten Auslesen nicht überschreiben
     const { data: cur } = await sb.from("documents").select("topic_manual").eq("id", id).maybeSingle();
-    if (cur?.topic_manual) { delete (meta as Partial<typeof meta>).topic; delete (meta as Partial<typeof meta>).purpose; }
+    if (cur?.topic_manual) { delete (meta as Partial<typeof meta>).topic; delete (meta as Partial<typeof meta>).purpose; delete (meta as Partial<typeof meta>).labels; }
     if (inline) {
       // nur Metadaten speichern, Inhalt verschlüsselt der Browser
       await sb.from("documents").update({ ...meta, status: "ready", error: null }).eq("id", id);

@@ -1,4 +1,5 @@
 "use client";
+import { DocLabels } from "@/components/Labels";
 import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarClock, Download, ExternalLink, Lock, Maximize2, X } from "lucide-react";
@@ -96,6 +97,7 @@ function DocDetail({ id, open, close, back = false }: { id: string; open: (d: De
         </div>
       </div>
       <Classify doc={doc} onChange={(d) => setDoc(d)} />
+      <DocLabels doc={doc} onChange={(d) => setDoc(d)} />
       {!doc.encrypted && <DocActions doc={doc} url={url} fullText={doc.full_text} related={related} />}
       <div className="flex gap-2">
         <Link href={`/d/${doc.id}`} onClick={close} className={`${BTN} bg-brand-500 text-white hover:bg-brand-600`}><Maximize2 size={15} /> Groß öffnen</Link>

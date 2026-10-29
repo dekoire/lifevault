@@ -38,6 +38,7 @@ export interface Doc {
   topic?: string | null;
   purpose?: "zu_erledigen" | "wichtig" | "info" | null;
   topic_manual?: boolean;
+  labels?: string[] | null;
 }
 
 /** Inhalt, der bei verschlüsselten Dokumenten im Tresor liegt */
@@ -45,4 +46,4 @@ export type SecretPart = Pick<Doc, "summary" | "key_facts" | "deadlines" | "amou
 
 /** Spalten für Listen (ohne Volltext) */
 export type WebSource = { query: string; url?: string; title?: string; imported_at: string; checked_at: string };
-export const LIST_COLS = "id,file_path,file_name,mime_type,size_bytes,status,error,cluster,title,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,tags,sender_domain,archived,archived_reason,encrypted,secret,project_id,split_from,web_source,merged_into,topic,purpose,topic_manual";
+export const LIST_COLS = "id,file_path,file_name,mime_type,size_bytes,status,error,cluster,title,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,tags,sender_domain,archived,archived_reason,encrypted,secret,project_id,split_from,web_source,merged_into,topic,purpose,topic_manual,labels";

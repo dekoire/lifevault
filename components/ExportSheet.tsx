@@ -4,7 +4,9 @@ import { createPortal } from "react-dom";
 import { ArrowUp, Check, ChevronDown, Download, Loader2, Lock, Minus, Search, Sparkles, X } from "lucide-react";
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { SenderLogo } from "@/components/SenderLogo";
+import { LabelChip } from "@/components/Labels";
 import { VaultUnlock } from "@/components/VaultUnlock";
+import { groupOf, LABEL_GROUPS } from "@/lib/labels";
 import { CLUSTERS, clusterOf } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
 import { useMe } from "@/lib/me";
@@ -104,6 +106,9 @@ function Areas({ docs, sel, setMany }: { docs: Doc[] } & SelProps) {
     for (const d of ds) topics.set(topicOf(d), [...(topics.get(topicOf(d)) ?? []), d.id]);
     return { c, ids: ds.map((d) => d.id), topics: [...topics.entries()].sort((a, b) => b[1].length - a[1].length) };
   }).filter((g) => g.ids.length);
+  const byTag = new Map<string, string[]>();
+  for (const d of docs) for (const t of d.labels ?? []) byTag.set(t, [...(byTag.get(t) ?? []), d.id]);
+  const tagged = [...byTag.entries()];
   return (
     <div className="divide-y divide-line">
       {groups.map(({ c, ids, topics }) => {
@@ -133,6 +138,17 @@ function Areas({ docs, sel, setMany }: { docs: Doc[] } & SelProps) {
           </div>
         );
       })}
+      {tagged.length > 0 && (
+        <div className="px-6 pt-5 pb-4">
+          <span className="mb-2 block text-[13px] font-semibold text-soft">Nach Tags</span>
+          {LABEL_GROUPS.map((g) => { const tags = tagged.filter(([t]) => groupOf(t)?.id === g.id); return tags.length ? (
+            <div key={g.id} className="mb-2 flex flex-wrap items-center gap-1.5">
+              <span className="mr-0.5 inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-muted"><span className="h-2 w-2 rounded-full" style={{ background: g.color }} />{g.label}</span>
+              {tags.map(([t, ids]) => <LabelChip key={t} tag={`${t}`} on={stateOf(ids, sel) === "on"} onClick={() => setMany(ids, stateOf(ids, sel) !== "on")} />)}
+            </div>
+          ) : null; })}
+        </div>
+      )}
     </div>
   );
 }

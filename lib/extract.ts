@@ -4,6 +4,7 @@ import { extractText, getDocumentProxy } from "unpdf";
 import { z } from "zod";
 import { aiFor } from "@/lib/ai";
 import { CLUSTER_IDS, CLUSTERS } from "@/lib/clusters";
+import { cleanLabels, LABEL_PROMPT } from "@/lib/labels";
 import { cleanPurpose, cleanTopic, TOPIC_PROMPT } from "@/lib/topics";
 import { OFFICE_TYPES, officeAsText, readOffice } from "@/lib/office";
 
@@ -14,6 +15,7 @@ const Schema = z.object({
   cluster: z.enum(CLUSTER_IDS).describe("Überkategorie"),
   title: z.string().describe("kurzer, sprechender Titel, z. B. „Arbeitsvertrag Bosch“, „Gehaltsabrechnung März 2026“, „Rechnung Telekom Oktober 2026“"),
   topic: z.string().describe("Thema/Unterkategorie – genau ein Wert aus der Liste des gewählten Bereichs (siehe Systemtext)"),
+  labels: z.array(z.string()).describe("2–8 Tags exakt aus dem Tag-Katalog im Systemtext"),
   purpose: z.enum(["zu_erledigen", "wichtig", "info"]).describe("zu_erledigen: Zahlung, Frist, Formular ausfüllen, Antwort nötig; wichtig: aufbewahren (Befund, Vertrag, Bescheid, Nachweis, Ausweis, Abrechnung); info: reine Information (Broschüre, Infoblatt, Datenschutzhinweis, Werbung)"),
   docType: z.string().describe("Art, z. B. Vertrag, Gehaltsabrechnung, Rechnung, Mahnung, Kassenbon, Arztbrief, Befund, Angebot, Bescheid, Police"),
   sender: z.string().nullable().describe("Absender bzw. Vertragspartner, Arbeitgeber, Händler, Praxis (Firmenname ohne Rechtsform-Zusätze, wenn eindeutig)"),
@@ -42,7 +44,8 @@ Alle Kennungen gegenüber dem Absender (Kundennummer, Vertragsnummer, Versicheru
 Schreibe alle wichtigen Fakten heraus und sortiere sie in Gruppen (personenbezogene Daten getrennt von Beträgen und von Metadaten wie Zeitraum/Gültigkeit). Markiere personenbezogene Fakten mit personal = true.
 Datumsangaben immer als YYYY-MM-DD. Was nicht im Dokument steht, lässt du leer bzw. null.
 Thema (topic) – wähle genau einen Wert aus der Liste des Bereichs (bei Gesundheit das Fachgebiet der Praxis/Klinik, Krankenkasse für Kassenpost):
-${TOPIC_PROMPT}`;
+${TOPIC_PROMPT}
+${LABEL_PROMPT}`;
 
 /** Textebene einer PDF lesen (ohne KI); leer bei gescannten PDFs ohne Text */
 export async function pdfText(data: Uint8Array): Promise<string> {
@@ -108,6 +111,7 @@ export function toColumns(o: Extracted) {
     doc_type: o.docType.slice(0, 80),
     topic: cleanTopic(o.cluster, o.topic),
     purpose: cleanPurpose(o.purpose),
+    labels: cleanLabels(o.labels),
     sender: o.sender?.slice(0, 200) ?? null,
     sender_domain: domain && /^[a-z0-9.-]+\.[a-z]{2,}$/.test(domain) ? domain : null,
     doc_date: isDate(o.docDate),

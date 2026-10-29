@@ -36,7 +36,7 @@ export default function Home() {
   }, [docs]);
   const open = useMemo(() => todos(docs, today), [docs, today]);
   const term = q.trim().toLowerCase();
-  const found = term ? docs.filter((d) => [d.title, d.file_name, d.sender, d.summary, d.doc_type, ...(d.tags ?? []), ...(d.key_facts ?? []).map((f) => `${f.label} ${f.value}`)].some((v) => v?.toLowerCase().includes(term))) : [];
+  const found = term ? docs.filter((d) => [d.title, d.file_name, d.sender, d.summary, d.doc_type, ...(d.tags ?? []), ...(d.labels ?? []), ...(d.key_facts ?? []).map((f) => `${f.label} ${f.value}`)].some((v) => v?.toLowerCase().includes(term))) : [];
   const recent = docs.slice(0, 8);
   const ready = docs.filter((d) => d.status === "ready");
   const month = today.slice(0, 7);

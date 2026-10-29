@@ -1,0 +1,46 @@
+"use client";
+import { useState } from "react";
+import { Check, Pencil, X } from "lucide-react";
+import { useDocs } from "@/lib/docs";
+import { groupOf, LABEL_GROUPS } from "@/lib/labels";
+import { supabase } from "@/lib/supabase";
+import type { Doc } from "@/lib/types";
+
+/** Ein Tag als Pill in der Farbe seines Typs */
+export function LabelChip({ tag, on = true, onClick }: { tag: string; on?: boolean; onClick?: () => void }) {
+  const color = groupOf(tag)?.color ?? "#64748b";
+  const cls = "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[12px] font-semibold transition-colors";
+  const style = on ? { background: `${color}1a`, color, boxShadow: `inset 0 0 0 1px ${color}33` } : { color: "var(--color-soft)", boxShadow: "inset 0 0 0 1px var(--color-card-line)" };
+  return onClick
+    ? <button type="button" onClick={onClick} aria-pressed={on} className={cls} style={style}>{on && <Check size={12} strokeWidth={3} />}{tag}</button>
+    : <span className={cls} style={style}>{tag}</span>;
+}
+
+/** Tags eines Dokuments, nach Typ gruppiert; „Bearbeiten“ zeigt den ganzen Katalog zum An-/Abwählen */
+export function DocLabels({ doc, onChange }: { doc: Doc; onChange?: (d: Doc) => void }) {
+  const { refresh } = useDocs();
+  const [edit, setEdit] = useState(false);
+  const labels = doc.labels ?? [];
+  const toggle = async (t: string) => {
+    const next = labels.includes(t) ? labels.filter((x) => x !== t) : [...labels, t];
+    onChange?.({ ...doc, labels: next, topic_manual: true });
+    await supabase.from("documents").update({ labels: next, topic_manual: true }).eq("id", doc.id);
+    void refresh();
+  };
+  const groups = LABEL_GROUPS.map((g) => ({ g, tags: edit ? g.tags : g.tags.filter((t) => labels.includes(t)) })).filter((x) => x.tags.length);
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[12px] font-semibold text-muted">Tags</span>
+        <button type="button" onClick={() => setEdit(!edit)} className="inline-flex h-7 items-center gap-1 rounded-full px-2 text-[12px] font-semibold text-soft hover:bg-surface-2 hover:text-fg">{edit ? <><X size={13} /> Fertig</> : <><Pencil size={12} /> Bearbeiten</>}</button>
+      </div>
+      {!groups.length && <p className="text-[12.5px] text-muted">{doc.labels ? "Keine Tags." : "Tags werden gerade vergeben …"}</p>}
+      {groups.map(({ g, tags }) => (
+        <div key={g.id} className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-0.5 inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-muted"><span className="h-2 w-2 rounded-full" style={{ background: g.color }} />{g.label}</span>
+          {tags.map((t) => <LabelChip key={t} tag={t} on={labels.includes(t)} onClick={edit ? () => void toggle(t) : undefined} />)}
+        </div>
+      ))}
+    </div>
+  );
+}
