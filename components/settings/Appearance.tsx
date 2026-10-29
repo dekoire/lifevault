@@ -1,42 +1,46 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Monitor, Moon, Sun } from "lucide-react";
 import { CARD } from "@/components/ui";
 
-/** Farbe der App: Lila (Standard) oder Schwarz-Weiß – gilt sofort und bleibt auf diesem Gerät gespeichert */
-const KEY = "lifevault:accent";
-type Accent = "lila" | "mono";
-const OPTIONS: { id: Accent; title: string; text: string; grad: string; dot: string }[] = [
-  { id: "lila", title: "Lila", text: "Standard – Knöpfe, Links und Kennzahlen in Lila", grad: "linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%)", dot: "#6d4aff" },
-  { id: "mono", title: "Schwarz-Weiß", text: "Ruhig und neutral – alles in Schwarz, Weiß und Grau", grad: "linear-gradient(120deg,#18181b 0%,#2e2e33 55%,#44444a 100%)", dot: "#18181b" },
+/** Design: Hell, Dunkel oder wie das Gerät – gilt sofort und bleibt auf diesem Gerät gespeichert */
+const KEY = "lifevault:theme";
+type Theme = "light" | "dark" | "system";
+const OPTIONS: { id: Theme; title: string; icon: typeof Sun; preview: { bg: string; card: string; line: string; text: string } }[] = [
+  { id: "light", title: "Hell", icon: Sun, preview: { bg: "#f3f4f6", card: "#ffffff", line: "#dcdfe5", text: "#111111" } },
+  { id: "dark", title: "Dunkel", icon: Moon, preview: { bg: "#0b0b0e", card: "#17171c", line: "#2a2a32", text: "#f4f4f6" } },
+  { id: "system", title: "Wie das Gerät", icon: Monitor, preview: { bg: "linear-gradient(90deg,#f3f4f6 50%,#0b0b0e 50%)", card: "linear-gradient(90deg,#ffffff 50%,#17171c 50%)", line: "#8a8a94", text: "#777" } },
 ];
 
-export function applyAccent(a: Accent) {
-  if (a === "mono") document.documentElement.dataset.accent = "mono";
-  else delete document.documentElement.dataset.accent;
+export function applyTheme(t: Theme) {
+  const dark = t === "dark" || (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
 }
 
 export function AppearanceSettings() {
-  const [accent, setAccent] = useState<Accent>("lila");
-  useEffect(() => { try { setAccent(localStorage.getItem(KEY) === "mono" ? "mono" : "lila"); } catch { /* egal */ } }, []);
-  const pick = (a: Accent) => { setAccent(a); applyAccent(a); try { localStorage.setItem(KEY, a); } catch { /* egal */ } };
+  const [theme, setTheme] = useState<Theme>("light");
+  useEffect(() => { try { const v = localStorage.getItem(KEY); setTheme(v === "dark" || v === "system" ? v : "light"); } catch { /* egal */ } }, []);
+  const pick = (t: Theme) => { setTheme(t); applyTheme(t); try { localStorage.setItem(KEY, t); } catch { /* egal */ } };
   return (
     <section className={`${CARD} p-5`}>
-      <h2 className="text-[16px] font-semibold">Farbe</h2>
+      <h2 className="text-[16px] font-semibold">Design</h2>
       <p className="mt-0.5 text-[13px] text-muted">Gilt sofort und bleibt auf diesem Gerät gespeichert.</p>
-      <div role="radiogroup" className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div role="radiogroup" className="mt-4 grid gap-3 sm:grid-cols-3">
         {OPTIONS.map((o) => {
-          const on = accent === o.id;
+          const on = theme === o.id;
           return (
             <button key={o.id} type="button" role="radio" aria-checked={on} onClick={() => pick(o.id)} className={`overflow-hidden rounded-2xl border text-left ${on ? "border-fg ring-1 ring-fg" : "border-card-line hover:bg-surface-2"}`}>
-              {/* kleine Vorschau: Kennzahl-Kachel und Knopf */}
-              <span className="block p-3" style={{ background: o.grad }}>
-                <span className="block text-[11px] text-white/70">Dokumente</span>
-                <b className="block text-[20px] leading-6 text-white">128</b>
+              {/* kleine Vorschau: Seite mit Kachel */}
+              <span className="block p-3" style={{ background: o.preview.bg }}>
+                <span className="block rounded-lg border p-2.5" style={{ background: o.preview.card, borderColor: o.preview.line }}>
+                  <span className="block h-2 w-16 rounded-full" style={{ background: o.preview.text, opacity: 0.8 }} />
+                  <span className="mt-1.5 block h-2 w-10 rounded-full" style={{ background: o.preview.text, opacity: 0.35 }} />
+                </span>
               </span>
-              <span className="flex items-center gap-3 p-3.5">
-                <span className="min-w-0 flex-1"><b className="block text-[14px]">{o.title}</b><span className="block text-[12px] text-muted">{o.text}</span></span>
-                <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${on ? "text-white" : "border border-card-line"}`} style={on ? { background: o.dot } : undefined}>{on && <Check size={14} />}</span>
+              <span className="flex items-center gap-2.5 px-3.5 py-3">
+                <o.icon size={16} className="shrink-0" />
+                <b className="min-w-0 flex-1 text-[14px]">{o.title}</b>
+                <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full ${on ? "bg-fg text-canvas" : "border border-card-line"}`}>{on && <Check size={12} />}</span>
               </span>
             </button>
           );

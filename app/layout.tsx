@@ -27,8 +27,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="de" className={inter.variable} suppressHydrationWarning>
       <body>
-        {/* Farbe (Lila/Schwarz-Weiß) vor dem ersten Zeichnen setzen, damit nichts aufblitzt */}
-        <script dangerouslySetInnerHTML={{ __html: `try{if(localStorage.getItem("lifevault:accent")==="mono")document.documentElement.dataset.accent="mono"}catch(e){}` }} />
+        {/* Hell/Dunkel vor dem ersten Zeichnen setzen, damit nichts aufblitzt; „Wie das Gerät“ folgt dem System */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem("lifevault:theme")||"light",m=matchMedia("(prefers-color-scheme: dark)");var a=function(){document.documentElement.dataset.theme=(t==="dark"||(t==="system"&&m.matches))?"dark":"light"};a();m.addEventListener("change",function(){t=localStorage.getItem("lifevault:theme")||"light";a()})}catch(e){}})()` }} />
         {children}
         {/* Safari ignoriert „user-scalable=no“ teils: Pinch-Zoom-Gesten abfangen */}
         <script dangerouslySetInnerHTML={{ __html: `document.addEventListener("gesturestart",function(e){e.preventDefault()},{passive:false});document.addEventListener("touchmove",function(e){if(e.scale&&e.scale!==1)e.preventDefault()},{passive:false});` }} />
