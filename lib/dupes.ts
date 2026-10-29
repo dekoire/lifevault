@@ -14,20 +14,43 @@ function sim(a: string, b: string) {
 const amountsOf = (d: Doc) => new Set([...(d.amounts ?? []).map((a) => a.value.toFixed(2)), ...[...(d.title ?? "").matchAll(/(\d{1,3}(?:\.\d{3})*,\d{2})/g)].map((m) => Number(m[1].replace(/\./g, "").replace(",", ".")).toFixed(2))].filter((v) => Number(v) > 0));
 const days = (a: string, b: string) => Math.abs(Date.parse(a) - Date.parse(b)) / 86_400_000;
 
+/** Fall-Kennungen: was einen Vorgang eindeutig macht (Aktenzeichen, Rechnungsnummer, Kassenzeichen, Kennzeichen …) */
+const CASE = /(akten|kassen|geschäfts|tat|verwarnungs)zeichen|rechnungs-?\s?(nummer|nr)|beleg-?\s?(nummer|nr)|vorgangs|bescheid-?\s?(nummer|nr)|fall-?\s?(nummer|nr)|mahn-?\s?(nummer|nr)|buchungs-?\s?(nummer|nr|code)|bestell-?\s?(nummer|nr)|auftrags-?\s?(nummer|nr)|ticket-?\s?(nummer|nr)|schaden-?\s?(nummer|nr)|kfz-?kennzeichen|amtliches kennzeichen/i;
+const caseKind = (label: string) => label.toLowerCase().match(CASE)?.[0].replace(/[-\s]/g, "").replace(/nr$/, "nummer") ?? "";
+const norm = (v: string) => v.toLowerCase().replace(/[^a-z0-9äöü]/g, "");
+export function caseIds(d: Doc) {
+  const out: { label: string; value: string; kind: string }[] = [];
+  for (const f of d.key_facts ?? []) {
+    const kind = caseKind(f.label);
+    if (kind && norm(f.value).length >= 4 && !out.some((x) => x.kind === kind && norm(x.value) === norm(f.value))) out.push({ label: f.label, value: f.value.trim(), kind });
+  }
+  return out;
+}
+
 function pair(a: Doc, b: Doc): { sure: boolean; why: string } | null {
   if (a.status !== "ready" || b.status !== "ready" || a.encrypted || b.encrypted) return null;
   if (a.split_from && a.split_from === b.split_from) return null; // Teile derselben getrennten PDF
+  // Fall-Kennungen vergleichen: gleiche Art (z. B. Aktenzeichen), anderer Wert → anderer Vorgang, nie doppelt
+  const ia = caseIds(a), ib = caseIds(b);
+  const shared = ia.find((x) => ib.some((y) => norm(y.value) === norm(x.value)));
+  const conflict = !shared && ia.some((x) => ib.some((y) => y.kind === x.kind && norm(y.value) !== norm(x.value)));
+  if (conflict) return null;
   const ta = a.title ?? a.file_name, tb = b.title ?? b.file_name;
-  if (a.size_bytes === b.size_bytes && a.mime_type === b.mime_type && a.size_bytes > 0) return { sure: true, why: "identische Datei zweimal hochgeladen" };
+  const sameDate = !!a.doc_date && a.doc_date === b.doc_date;
+  const bothDated = !!a.doc_date && !!b.doc_date;
+  if (a.size_bytes === b.size_bytes && a.mime_type === b.mime_type && a.size_bytes > 0 && (!bothDated || sameDate)) return { sure: true, why: "identische Datei zweimal hochgeladen" };
   if (!a.sender || !b.sender || partnerKey(a.sender) !== partnerKey(b.sender)) return null;
+  // anderes Briefdatum = anderer Brief (z. B. zwei Bußgeldbescheide, Mahnung nach Rechnung)
+  if (bothDated && !sameDate) return null;
   const s = sim(ta, tb);
   const sameType = (a.doc_type ?? "").toLowerCase() === (b.doc_type ?? "").toLowerCase();
-  // Datum ist das stärkste Zeichen: gleicher Brief = gleiches Briefdatum
-  if (a.doc_date && a.doc_date === b.doc_date && s >= 0.6) return { sure: true, why: "gleiches Briefdatum, gleicher Absender und Titel" };
-  if (a.doc_date && a.doc_date === b.doc_date && (sameType || s >= 0.3)) return { sure: false, why: "gleiches Briefdatum und gleicher Absender" };
-  const shared = [...amountsOf(a)].some((v) => amountsOf(b).has(v));
-  const near = a.doc_date && b.doc_date ? days(a.doc_date, b.doc_date) <= 14 : days(a.received_at, b.received_at) <= 30;
-  if (sameType && shared && near) return { sure: false, why: a.doc_date && b.doc_date ? "gleicher Betrag, Briefdatum liegt nah beieinander" : "gleicher Betrag, bei einem fehlt das Briefdatum" };
+  if (sameDate && shared) return { sure: true, why: `gleiches Briefdatum und gleiche Kennung (${shared.label} ${shared.value})` };
+  if (sameDate && s >= 0.6) return { sure: true, why: "gleiches Briefdatum, gleicher Absender und Titel" };
+  if (sameDate && (sameType || s >= 0.3)) return { sure: false, why: "gleiches Briefdatum und gleicher Absender" };
+  // ein Datum fehlt: nur mit gleicher Kennung oder gleichem Betrag kurz nacheinander eingegangen
+  if (!bothDated && shared) return { sure: false, why: `gleiche Kennung (${shared.label} ${shared.value}), bei einem fehlt das Briefdatum` };
+  const sharedAmount = [...amountsOf(a)].some((v) => amountsOf(b).has(v));
+  if (!bothDated && sameType && sharedAmount && days(a.received_at, b.received_at) <= 30) return { sure: false, why: "gleicher Betrag, bei einem fehlt das Briefdatum" };
   return null;
 }
 

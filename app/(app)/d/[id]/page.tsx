@@ -44,6 +44,13 @@ function exportMarkdown(d: Doc, c: SecretPart) {
 }
 
 /** Ein Dokument: links Tabelle und Fakten in Gruppen, rechts Original und Chat dazu */
+/** Kam das Dokument aus einer E-Mail? Absender, Betreff, Datum der Mail */
+function useMailOrigin(id: string) {
+  const [m, setM] = useState<{ subject: string | null; sender: string | null; mail_date: string | null } | null>(null);
+  useEffect(() => { void supabase.from("mail_seen").select("subject,sender,mail_date").contains("doc_ids", [id]).limit(1).maybeSingle().then(({ data }) => setM(data)); }, [id]);
+  return m;
+}
+
 export default function DocPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -93,6 +100,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
   const sortedGroups = useMemo(() => [...groups].sort((a, b) => groupRank(a[0]) - groupRank(b[0])), [groups]);
   const [more, setMore] = useState<Record<string, boolean>>({});
   const detail = useDetail();
+  const mail = useMailOrigin(id);
   const chat = useChat({ docId: id, docText: doc?.encrypted && content ? `${content.summary ?? ""}\n${JSON.stringify(content.key_facts)}\n${content.full_text ?? ""}` : undefined });
 
   if (!doc) return <p className="py-20 text-center text-muted">Lädt …</p>;
@@ -208,6 +216,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
                     {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 ) }] : []),
+                ...(mail ? [{ label: "Aus E-Mail", value: <>{mail.subject || "(ohne Betreff)"}<span className="block text-[12px] font-normal text-muted">{(mail.sender ?? "").replace(/<.*>/, "").trim() || mail.sender} · {fmtDate(mail.mail_date)}</span></> }] : []),
                 { label: "Datei", value: `${doc.file_name} · ${doc.size_bytes < 1048576 ? `${Math.max(1, Math.round(doc.size_bytes / 1024))} KB` : `${(doc.size_bytes / 1048576).toLocaleString("de-DE", { maximumFractionDigits: 1 })} MB`}` },
                 ...(doc.tags?.length && show.tags ? [{ label: "Schlagworte", value: doc.tags.join(", ") }] : []),
               ]} />

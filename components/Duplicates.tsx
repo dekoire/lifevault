@@ -6,7 +6,7 @@ import { useDetail } from "@/components/DetailPanel";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD } from "@/components/ui";
 import { usePartnerDuplicates } from "@/components/PartnerDupes";
-import { explain, findDuplicates, pairKeys, type DupGroup } from "@/lib/dupes";
+import { caseIds, explain, findDuplicates, pairKeys, type DupGroup } from "@/lib/dupes";
 import { clusterOf } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
 import type { Doc } from "@/lib/types";
@@ -103,6 +103,7 @@ function Group({ g, onMerge, onDismiss }: { g: DupGroup; onMerge: (keep: string)
                   {d.mime_type.startsWith("image/") ? <FileImage size={12} /> : <FileText size={12} />}
                   {d.mime_type.startsWith("image/") ? "Foto" : "PDF"} · {size(d.size_bytes)} · {fmtDate(d.doc_date ?? d.received_at)} · {d.key_facts?.length ?? 0} Angaben
                 </span>
+                {caseIds(d).length > 0 && <span className="mt-1 flex flex-wrap gap-1">{caseIds(d).slice(0, 3).map((c) => <span key={c.kind + c.value} className="rounded-full border border-card-line px-2 py-px text-[11px] text-soft">{c.label}: <b className="font-semibold text-fg">{c.value}</b></span>)}</span>}
               </button>
               {on && <span className="shrink-0 text-[11.5px] font-semibold text-positive-text">behalten</span>}
             </li>
