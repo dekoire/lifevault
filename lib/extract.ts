@@ -4,6 +4,7 @@ import { extractText, getDocumentProxy } from "unpdf";
 import { z } from "zod";
 import { aiFor } from "@/lib/ai";
 import { CLUSTER_IDS, CLUSTERS } from "@/lib/clusters";
+import { cleanPurpose, cleanTopic, TOPIC_PROMPT } from "@/lib/topics";
 import { OFFICE_TYPES, officeAsText, readOffice } from "@/lib/office";
 
 export const FILE_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
@@ -12,6 +13,8 @@ export const TEXT_TYPES = ["text/plain", "text/markdown"];
 const Schema = z.object({
   cluster: z.enum(CLUSTER_IDS).describe("Überkategorie"),
   title: z.string().describe("kurzer, sprechender Titel, z. B. „Arbeitsvertrag Bosch“, „Gehaltsabrechnung März 2026“, „Rechnung Telekom Oktober 2026“"),
+  topic: z.string().describe("Thema/Unterkategorie – genau ein Wert aus der Liste des gewählten Bereichs (siehe Systemtext)"),
+  purpose: z.enum(["zu_erledigen", "wichtig", "info"]).describe("zu_erledigen: Zahlung, Frist, Formular ausfüllen, Antwort nötig; wichtig: aufbewahren (Befund, Vertrag, Bescheid, Nachweis, Ausweis, Abrechnung); info: reine Information (Broschüre, Infoblatt, Datenschutzhinweis, Werbung)"),
   docType: z.string().describe("Art, z. B. Vertrag, Gehaltsabrechnung, Rechnung, Mahnung, Kassenbon, Arztbrief, Befund, Angebot, Bescheid, Police"),
   sender: z.string().nullable().describe("Absender bzw. Vertragspartner, Arbeitgeber, Händler, Praxis (Firmenname ohne Rechtsform-Zusätze, wenn eindeutig)"),
   senderDomain: z.string().nullable().describe("Hauptwebadresse des Absenders ohne https, z. B. vodafone.de, o2online.de, telekom.de, huk.de, mercedes-benz.de, dm.de – bei bekannten Firmen immer angeben (auch wenn sie nicht im Dokument steht), bei unbekannten nur, wenn sie im Dokument steht, sonst null"),
@@ -37,7 +40,9 @@ ${CLUSTERS.map((c) => `- ${c.id}: ${c.label} (${c.hint})`).join("\n")}
 Gehaltsabrechnungen, Arbeitsverträge, Zeugnisse → arbeit. Arztbriefe, Befunde, Rezepte, Krankenkasse → gesundheit.
 Alle Kennungen gegenüber dem Absender (Kundennummer, Vertragsnummer, Versicherungsschein-/Policennummer, Rufnummer, Zählernummer, Mitgliedsnummer, Personalnummer, Benutzername/Login, Rechnungsnummer, Aktenzeichen, Kassenzeichen, Geschäftszeichen, Beleg-/Vorgangs-/Bestell-/Buchungsnummer, Ticket-/Schadennummer, IBAN, Kfz-Kennzeichen) einzeln in die Gruppe „Kennungen & Nummern“ – mit klarem Label.
 Schreibe alle wichtigen Fakten heraus und sortiere sie in Gruppen (personenbezogene Daten getrennt von Beträgen und von Metadaten wie Zeitraum/Gültigkeit). Markiere personenbezogene Fakten mit personal = true.
-Datumsangaben immer als YYYY-MM-DD. Was nicht im Dokument steht, lässt du leer bzw. null.`;
+Datumsangaben immer als YYYY-MM-DD. Was nicht im Dokument steht, lässt du leer bzw. null.
+Thema (topic) – wähle genau einen Wert aus der Liste des Bereichs (bei Gesundheit das Fachgebiet der Praxis/Klinik, Krankenkasse für Kassenpost):
+${TOPIC_PROMPT}`;
 
 /** Textebene einer PDF lesen (ohne KI); leer bei gescannten PDFs ohne Text */
 export async function pdfText(data: Uint8Array): Promise<string> {
@@ -101,6 +106,8 @@ export function toColumns(o: Extracted) {
     cluster: o.cluster,
     title: o.title.slice(0, 200),
     doc_type: o.docType.slice(0, 80),
+    topic: cleanTopic(o.cluster, o.topic),
+    purpose: cleanPurpose(o.purpose),
     sender: o.sender?.slice(0, 200) ?? null,
     sender_domain: domain && /^[a-z0-9.-]+\.[a-z]{2,}$/.test(domain) ? domain : null,
     doc_date: isDate(o.docDate),

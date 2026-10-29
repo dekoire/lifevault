@@ -1,13 +1,12 @@
 "use client";
 import { use, useState } from "react";
 import { Archive, GalleryHorizontal, List } from "lucide-react";
-import { DocCarousel } from "@/components/DocCarousel";
+import { GroupedDocs } from "@/components/GroupedDocs";
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
-import { DocTable } from "@/components/DocTable";
 import { BackLink, PageHeader } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
-import { chrono, useDocs } from "@/lib/docs";
+import { useDocs } from "@/lib/docs";
 
 /** Ein Bereich: aktuelle Dokumente nach Jahr, neueste zuerst (Dokumentdatum, sonst Eingang); Archiv darunter */
 export default function ClusterPage({ params }: { params: Promise<{ cluster: string }> }) {
@@ -15,7 +14,7 @@ export default function ClusterPage({ params }: { params: Promise<{ cluster: str
   const c = clusterOf(cluster);
   const { docs } = useDocs();
   const [showArchive, setShowArchive] = useState(false);
-  const [view, setView] = useState<"cards" | "list">("cards");
+  const [view, setView] = useState<"cards" | "list">("list");
   const all = docs.filter((d) => d.cluster === c.id).sort((a, b) => (b.doc_date ?? b.received_at).localeCompare(a.doc_date ?? a.received_at));
   const list = all.filter((d) => !d.archived);
   const archived = all.filter((d) => d.archived);
@@ -28,9 +27,8 @@ export default function ClusterPage({ params }: { params: Promise<{ cluster: str
             {([["cards", "Karten", GalleryHorizontal], ["list", "Liste", List]] as const).map(([k, l, Icon]) => <button key={k} type="button" onClick={() => setView(k)} aria-pressed={view === k} className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold ${view === k ? "bg-surface text-fg shadow-card" : "text-soft"}`}><Icon size={15} /> {l}</button>)}
           </span>
         )} />
-      {view === "cards" && <DocCarousel docs={chrono(list)} />}
-      {view === "list" && <DocTable docs={all} cluster={false} empty="Noch keine Dokumente in diesem Bereich." />}
-      {view === "cards" && archived.length > 0 && (
+      <GroupedDocs cluster={c.id} view={view} />
+      {archived.length > 0 && (
         <section className={CARD}>
           <button type="button" onClick={() => setShowArchive(!showArchive)} aria-expanded={showArchive} className="flex w-full items-center gap-2 px-4 py-3.5 text-left text-[14px] font-semibold text-soft"><Archive size={16} /> Archiv · {archived.length} nicht mehr aktuell <span className="ml-auto text-[13px] text-selected">{showArchive ? "ausblenden" : "anzeigen"}</span></button>
           {showArchive && <div className="divide-y divide-line border-t border-line">{archived.map((d) => <DocRow key={d.id} d={d} />)}</div>}

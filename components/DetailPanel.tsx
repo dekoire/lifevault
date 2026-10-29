@@ -9,6 +9,7 @@ import { DocActions } from "@/components/DocActions";
 import { PartnerFacts } from "@/components/PartnerInfo";
 import { OfficePreview } from "@/components/OfficePreview";
 import { relatedPayDocs } from "@/lib/related";
+import { guessPurpose, PURPOSES, topicsFor } from "@/lib/topics";
 import { isCardDoc, PdfPages } from "@/components/PdfPages";
 import { officeKind } from "@/lib/office";
 import { DocRow } from "@/components/DocRow";
@@ -94,6 +95,7 @@ function DocDetail({ id, open, close, back = false }: { id: string; open: (d: De
           </p>
         </div>
       </div>
+      <Classify doc={doc} onChange={(d) => setDoc(d)} />
       {!doc.encrypted && <DocActions doc={doc} url={url} fullText={doc.full_text} related={related} />}
       <div className="flex gap-2">
         <Link href={`/d/${doc.id}`} onClick={close} className={`${BTN} bg-brand-500 text-white hover:bg-brand-600`}><Maximize2 size={15} /> Groß öffnen</Link>
@@ -163,6 +165,30 @@ function PartnerDetail({ pkey, open, close, back = false }: { pkey: string; open
         <p className="px-3 pt-2.5 text-[13px] font-semibold">Dokumente</p>
         <div className="divide-y divide-line">{p.docs.map((d) => <div key={d.id} onClickCapture={(e) => { e.preventDefault(); e.stopPropagation(); open({ kind: "doc", id: d.id }); }}><DocRow d={d} /></div>)}</div>
       </div>
+    </div>
+  );
+}
+
+/** Einordnung von Hand korrigieren: Thema und Zweck – bleibt beim erneuten Auslesen erhalten */
+function Classify({ doc, onChange }: { doc: Doc; onChange: (d: Doc) => void }) {
+  const { refresh } = useDocs();
+  const save = async (patch: Partial<Doc>) => {
+    const next = { ...doc, ...patch, topic_manual: true };
+    onChange(next);
+    await supabase.from("documents").update({ ...patch, topic_manual: true }).eq("id", doc.id);
+    void refresh();
+  };
+  const sel = "h-8 min-w-0 rounded-full border border-card-line bg-surface px-2.5 text-[12.5px] font-semibold";
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted">
+      <span>Einordnung</span>
+      <select aria-label="Thema" value={doc.topic ?? ""} onChange={(e) => void save({ topic: e.target.value })} className={`${sel} max-w-[12rem]`}>
+        {!doc.topic && <option value="">Thema wählen</option>}
+        {topicsFor(doc.cluster).map((t) => <option key={t} value={t}>{t}</option>)}
+      </select>
+      <select aria-label="Zweck" value={doc.purpose ?? guessPurpose(doc)} onChange={(e) => void save({ purpose: e.target.value as Doc["purpose"] })} className={sel}>
+        {PURPOSES.filter((p) => p.id !== "erledigt").map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+      </select>
     </div>
   );
 }

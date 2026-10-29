@@ -1,4 +1,5 @@
 "use client";
+import { TopicBackfill } from "@/components/TopicBackfill";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -144,6 +145,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
         </div>
       </nav>
 
+      <TopicBackfill />
       {sheet && (
         <div className="sheet-backdrop fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center" onClick={() => setSheet(false)}>
           <div className="sheet-rise w-full max-w-md rounded-t-3xl bg-surface px-6 pt-6 pb-[max(1.75rem,env(safe-area-inset-bottom))] sm:rounded-3xl sm:p-7" onClick={(e) => e.stopPropagation()}>
