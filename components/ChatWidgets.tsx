@@ -14,6 +14,7 @@ import { CLUSTERS } from "@/lib/clusters";
 import { fmtDate, fmtMoney, useDocs } from "@/lib/docs";
 import { caseIds } from "@/lib/dupes";
 import { buildPartners } from "@/lib/partners";
+import { PayImageButton } from "@/lib/payimage";
 import { supabase, useSession } from "@/lib/supabase";
 import type { Doc } from "@/lib/types";
 
@@ -138,6 +139,7 @@ function PaymentWidget({ body }: { body: string }) {
                   {x.p && <span className="block">GiroCode: mit der Banking-App scannen.</span>}
                   {x.links.slice(0, 1).map((l) => <a key={l} href={l} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-semibold text-selected"><Globe size={13} /> Online bezahlen <ExternalLink size={11} /></a>)}
                   <button type="button" onClick={() => void navigator.clipboard.writeText(all)} className="flex h-8 items-center gap-1.5 rounded-full border border-card-line px-3 font-semibold text-fg hover:bg-surface-2"><Copy size={13} /> Alles kopieren</button>
+                  {x.p && <PayImageButton data={{ p: { ...x.p, amount: x.total, reference: x.purpose.text }, sender: x.d.sender, domain: x.d.sender_domain, title: x.d.title, due: x.todo?.date }} />}
                 </span>
               </div>
             </article>

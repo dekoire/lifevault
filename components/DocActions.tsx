@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { CalendarClock, Check, ChevronDown, Copy, Euro, ExternalLink, Globe, Landmark, Mail, MapPin, Phone, QrCode } from "lucide-react";
 import { contactOf, dueLabel, epcPayload, fmtIban, openTotal, paymentOf, todos, type Payment } from "@/lib/actions";
 import { fmtDate, fmtMoney } from "@/lib/docs";
+import { PayImageButton } from "@/lib/payimage";
 import type { Doc } from "@/lib/types";
 
 function CopyRow({ label, value, shown }: { label: string; value: string; shown?: string }) {
@@ -24,7 +25,7 @@ export function Qr({ text, size = 148 }: { text: string; size?: number }) {
 }
 
 /** Überweisung: Betrag, Fälligkeit, alle Felder zum Kopieren, GiroCode zum Scannen */
-function PaymentCard({ p, due, label = "Überweisung" }: { p: Payment; due?: { date: string; days: number }; label?: string }) {
+function PaymentCard({ p, due, label = "Überweisung", doc }: { p: Payment; due?: { date: string; days: number }; label?: string; doc?: Doc }) {
   const [done, setDone] = useState(false);
   const all = [p.recipient && `Empfänger: ${p.recipient}`, `IBAN: ${fmtIban(p.iban)}`, p.bic && `BIC: ${p.bic}`, p.amount && `Betrag: ${fmtMoney(p.amount, p.currency)}`, p.reference && `Verwendungszweck: ${p.reference}`].filter(Boolean).join("\n");
   const late = due && due.days < 0;
@@ -50,6 +51,7 @@ function PaymentCard({ p, due, label = "Überweisung" }: { p: Payment; due?: { d
           <b className="mb-1 flex items-center gap-1.5 text-[13px] text-fg"><QrCode size={14} /> GiroCode</b>
           Mit der Banking-App scannen – Empfänger, IBAN, Betrag und Verwendungszweck sind dann schon ausgefüllt.
           <button type="button" onClick={() => { void navigator.clipboard.writeText(all); setDone(true); setTimeout(() => setDone(false), 1400); }} className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-full border border-card-line px-3 text-[12.5px] font-semibold text-fg hover:bg-surface-2">{done ? <Check size={13} /> : <Copy size={13} />} Alles kopieren</button>
+          <PayImageButton data={{ p, sender: doc?.sender, domain: doc?.sender_domain, title: doc?.title, due: due?.date }} className="mt-2 ml-1.5" />
         </span>
       </div>
     </section>
@@ -137,8 +139,8 @@ function PaymentSection({ doc, codes, links, related }: { doc: Doc; codes: strin
       )}
       {/* Wege zu zahlen – jeweils klar benannt */}
       <div className="space-y-2.5 border-t border-line p-3">
-        {payment && <PaymentCard p={{ ...payment, amount: total ?? payment.amount }} />}
-        {!payment && epc && <PaymentCard p={{ iban: epc.iban, recipient: epc.recipient, amount: epc.amount ?? total, reference: epc.reference, currency: "EUR" }} label="GiroCode aus dem Schreiben" />}
+        {payment && <PaymentCard p={{ ...payment, amount: total ?? payment.amount }} doc={doc} />}
+        {!payment && epc && <PaymentCard p={{ iban: epc.iban, recipient: epc.recipient, amount: epc.amount ?? total, reference: epc.reference, currency: "EUR" }} label="GiroCode aus dem Schreiben" doc={doc} />}
         {payLinks.map((l) => (
           <a key={l} href={l} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-card-line px-3.5 py-3 hover:bg-surface-2">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2"><Globe size={16} /></span>
