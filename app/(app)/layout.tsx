@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Building2, Camera, PanelLeftClose, PanelLeftOpen, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
 import { Logo, LogoMark } from "@/components/Logo";
 import { MfaChallenge, MfaEnroll } from "@/components/Mfa";
-import { useUploadPickers } from "@/components/UploadButtons";
+import { useCaptureTray } from "@/components/CaptureTray";
 import { DocsProvider } from "@/lib/docs";
 import { MeProvider, useMe } from "@/lib/me";
 import { ProjectsProvider } from "@/lib/projects";
@@ -59,7 +59,8 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
   const { isAdmin } = useMe();
   const chat = path.startsWith("/chat");
   const [sheet, setSheet] = useState(false);
-  const { inputs, openCamera, openFiles } = useUploadPickers();
+  // Fotos und Dateien landen erst in der Sammelmappe; abgeschickt wird gesammelt
+  const { ui: inputs, openCamera, openFiles } = useCaptureTray();
   // Desktop-Menü links ein-/ausklappen (wie bei Finastry), gemerkt; Breite als CSS-Variable --side für alle Seiten
   const [mini, setMini] = useState(false);
   useEffect(() => { try { setMini(localStorage.getItem("lifevault:side-mini") === "1"); } catch { /* egal */ } }, []);
@@ -142,10 +143,10 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
             </div>
             <UploadTarget />
             <div className="grid gap-2">
-              <button type="button" onClick={() => { setSheet(false); openCamera(); }} className="flex h-12 items-center gap-3 rounded-full bg-surface-2 px-5 text-left text-[15px] font-semibold hover:bg-surface-3"><Camera size={19} className="text-brand-500" /> Fotografieren</button>
+              <button type="button" onClick={() => { setSheet(false); openCamera(); }} className="flex h-12 items-center gap-3 rounded-full bg-surface-2 px-5 text-left text-[15px] font-semibold hover:bg-surface-3"><Camera size={19} className="text-brand-500" /> Fotografieren <span className="ml-auto text-[12px] font-medium text-muted">auch mehrere Seiten</span></button>
               <button type="button" onClick={() => { setSheet(false); openFiles(); }} className="flex h-12 items-center gap-3 rounded-full bg-surface-2 px-5 text-left text-[15px] font-semibold hover:bg-surface-3"><FileUp size={19} className="text-brand-500" /> Fotos oder PDFs auswählen</button>
             </div>
-            <p className="mt-3 text-center text-xs text-muted">Mehrere Dateien auf einmal gehen auch. Sortiert wird automatisch.</p>
+            <p className="mt-3 text-center text-xs text-muted">Mehrere Seiten nacheinander fotografieren, dann einmal absenden – als ein Dokument oder einzeln.</p>
           </div>
         </div>
       )}

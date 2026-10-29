@@ -1,5 +1,6 @@
 import { generateText, Output, type ModelMessage } from "ai";
 import { PDFDocument } from "pdf-lib";
+import { extractText, getDocumentProxy } from "unpdf";
 import { z } from "zod";
 import { aiFor } from "@/lib/ai";
 import { CLUSTER_IDS, CLUSTERS } from "@/lib/clusters";
@@ -38,8 +39,42 @@ Alle Kennungen gegenüber dem Absender (Kundennummer, Vertragsnummer, Versicheru
 Schreibe alle wichtigen Fakten heraus und sortiere sie in Gruppen (personenbezogene Daten getrennt von Beträgen und von Metadaten wie Zeitraum/Gültigkeit). Markiere personenbezogene Fakten mit personal = true.
 Datumsangaben immer als YYYY-MM-DD. Was nicht im Dokument steht, lässt du leer bzw. null.`;
 
+/** Textebene einer PDF lesen (ohne KI); leer bei gescannten PDFs ohne Text */
+export async function pdfText(data: Uint8Array): Promise<string> {
+  try {
+    const pdf = await getDocumentProxy(new Uint8Array(data));
+    const { text } = await extractText(pdf, { mergePages: false });
+    return (text as string[]).map((t, i) => `--- Seite ${i + 1} ---\n${t.trim()}`).join("\n\n").trim();
+  } catch {
+    return "";
+  }
+}
+
+// ohne Volltext: die KI liefert nur die Struktur, den Text nehmen wir direkt aus der PDF
+const MetaSchema = Schema.omit({ fullText: true });
+
 /** Dokument (Datei oder Text) mit der KI auslesen */
 export async function extract(input: { data: Uint8Array; mediaType: string }): Promise<Extracted | undefined> {
+  // PDFs mit Textebene: Volltext direkt lesen – die KI muss ihn nicht abschreiben (lange Dokumente sprengten sonst das Ausgabelimit)
+  if (input.mediaType === "application/pdf") {
+    const raw = await pdfText(input.data);
+    const letters = raw.replace(/--- Seite \d+ ---/g, "").replace(/\s+/g, "").length;
+    if (letters > 400) {
+      const pages = await PDFDocument.load(input.data, { ignoreEncryption: true }).then((p) => p.getPageCount()).catch(() => 0);
+      // bis 100 Seiten sieht die KI die PDF selbst (Tabellen, Layout); darüber nur den Text
+      const content: ModelMessage["content"] = pages > 0 && pages <= 100
+        ? [{ type: "file", data: input.data, mediaType: "application/pdf" }, { type: "text", text: "Lies dieses Dokument aus und strukturiere es. Den Volltext brauchst du nicht zurückzugeben." }]
+        : [{ type: "text", text: `Lies dieses Dokument aus und strukturiere es. Den Volltext brauchst du nicht zurückzugeben.\n\n---\n${raw.slice(0, 300_000)}` }];
+      const r = await generateText({
+        ...aiFor("read"),
+        system: SYSTEM.replace("Gib den gesamten Text wortgetreu zurück – nichts weglassen, nichts erfinden.", "Nichts erfinden."),
+        maxOutputTokens: 16000,
+        messages: [{ role: "user", content } as ModelMessage],
+        output: Output.object({ schema: MetaSchema, name: "document" }),
+      });
+      return r.output ? { ...r.output, fullText: raw } : undefined;
+    }
+  }
   // PowerPoint, Word, Excel: Text herauslesen und als Text auswerten
   const office = OFFICE_TYPES[input.mediaType];
   if (office) input = { data: new TextEncoder().encode(officeAsText(readOffice(input.data, office))), mediaType: "text/plain" };
