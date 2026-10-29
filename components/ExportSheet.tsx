@@ -10,7 +10,7 @@ import { groupOf, LABEL_GROUPS } from "@/lib/labels";
 import { CLUSTERS, clusterOf } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
 import { useMe } from "@/lib/me";
-import { newPassword, startExport } from "@/lib/jobs";
+import { EXPORT_FORMATS, newPassword, startExport, type ExportFormat } from "@/lib/jobs";
 import { authFetch } from "@/lib/supabase";
 import type { Doc } from "@/lib/types";
 
@@ -44,12 +44,13 @@ export function ExportSheet({ onClose }: { onClose: () => void }) {
   // Passwort: Pflicht, sobald Tresor-Dokumente dabei sind, sonst wahlweise
   const withVault = chosen.some((d) => d.encrypted && unlocked);
   const [protect, setProtect] = useState(false);
+  const [format, setFormat] = useState<ExportFormat>("files");
   const [pw, setPw] = useState(newPassword);
   const locked = protect || withVault;
   const run = () => {
     const list = chosen.filter((d) => !d.encrypted || unlocked);
     if (!list.length) return;
-    startExport(list, { password: locked ? pw : undefined });
+    startExport(list, { password: locked ? pw : undefined, format });
     onClose();
   };
 
@@ -58,7 +59,7 @@ export function ExportSheet({ onClose }: { onClose: () => void }) {
     <div className="sheet-backdrop fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-6" onClick={onClose}>
       <div role="dialog" aria-label="Exportieren" onClick={(e) => e.stopPropagation()} className="sheet-rise flex h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-surface shadow-[0_24px_64px_rgba(16,24,40,.25)] sm:h-[min(52rem,90dvh)] sm:rounded-3xl">
         <div className="flex items-center justify-between px-6 pt-5 pb-3">
-          <span><b className="block text-[19px] font-semibold">Exportieren</b><span className="text-[13px] text-muted">Wähle aus, was in die ZIP-Datei soll</span></span>
+          <span><b className="block text-[19px] font-semibold">Exportieren</b><span className="text-[13px] text-muted">Wähle aus, was du exportieren möchtest</span></span>
           <button type="button" onClick={onClose} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3 disabled:opacity-40"><X size={18} /></button>
         </div>
         <div className="px-6 pb-3">
@@ -73,6 +74,19 @@ export function ExportSheet({ onClose }: { onClose: () => void }) {
         </div>
         <div className="pb-safe border-t border-line px-6 pt-3 pb-4">
           {lockedN > 0 && <div className="mb-3"><VaultUnlock compact title={`${lockedN} verschlüsselte ${lockedN === 1 ? "Datei" : "Dateien"} dabei`} text="Zum Mitexportieren Tresor entsperren – sie werden nur im Browser entschlüsselt." /></div>}
+          {sel.size > 0 && (
+            <div className="mb-2">
+              <span className="mb-1.5 block text-[12.5px] font-semibold text-soft">Wie sollen die Dateien raus?</span>
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                {EXPORT_FORMATS.map((f) => (
+                  <button key={f.id} type="button" onClick={() => setFormat(f.id)} aria-pressed={format === f.id} title={f.hint} className={`rounded-xl border px-2.5 py-2 text-left transition-colors ${format === f.id ? "border-brand-500 bg-brand-500/[0.07]" : "border-card-line hover:bg-surface-2"}`}>
+                    <b className="block text-[12.5px] leading-4">{f.label}</b>
+                    <span className="mt-0.5 block text-[11px] leading-[14px] text-muted">{f.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {sel.size > 0 && (
             <div className="mb-3 rounded-2xl bg-surface-2 px-3.5 py-2.5">
               <div className="flex items-center gap-3">
@@ -94,7 +108,7 @@ export function ExportSheet({ onClose }: { onClose: () => void }) {
           <div className="flex items-center gap-3">
             <span className="min-w-0 flex-1 text-[14px]"><b className="tnum">{sel.size}</b> {sel.size === 1 ? "Dokument" : "Dokumente"} ausgewählt{sel.size > 0 && <> · <button type="button" onClick={() => setSel(new Set())} className="font-semibold text-selected">leeren</button></>}</span>
             <button type="button" onClick={run} disabled={sel.size - lockedN <= 0} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-fg px-5 text-[14px] font-semibold text-canvas disabled:opacity-40">
-              <Download size={16} /> Fertig – ZIP erstellen
+              <Download size={16} /> Fertig – {format === "pdf-one" && !locked ? "PDF erstellen" : "Export erstellen"}
             </button>
           </div>
         </div>

@@ -65,8 +65,17 @@ const topicOf = (d: Doc) => d.topic ?? "Ohne Thema";
 const clean = (s: string) => s.replace(/[\\/:*?"<>|\n\r]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 90);
 
 /** Startet den Export im Hintergrund; Fenster darf sofort zu */
-export function startExport(list: Doc[], opts: { password?: string } = {}) {
-  const name = `Lifevault-Export ${new Date().toISOString().slice(0, 10)}.zip`;
+export type ExportFormat = "files" | "pdf-one" | "pdf-area" | "pdf-topic";
+export const EXPORT_FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
+  { id: "files", label: "Einzelne Dateien", hint: "Originale in Ordnern nach Bereich und Thema" },
+  { id: "pdf-one", label: "Ein PDF", hint: "alles in einer Datei, neueste zuerst" },
+  { id: "pdf-area", label: "Ein PDF je Bereich", hint: "z. B. Gesundheit.pdf, Arbeit & Gehalt.pdf" },
+  { id: "pdf-topic", label: "Ein PDF je Thema", hint: "z. B. Gesundheit – Urologie.pdf" },
+];
+
+export function startExport(list: Doc[], opts: { password?: string; format?: ExportFormat } = {}) {
+  const format = opts.format ?? "files";
+  let name = `Lifevault-Export ${new Date().toISOString().slice(0, 10)}.zip`;
   const id = startJob({ kind: "export", title: "Export wird erstellt", detail: `${list.length} ${list.length === 1 ? "Dokument" : "Dokumente"}`, total: list.length });
   void (async () => {
     const files: Record<string, [Uint8Array, { level: 0 }]> = {};
@@ -97,7 +106,27 @@ export function startExport(list: Doc[], opts: { password?: string } = {}) {
       const csv = ["Datei;Bereich;Thema;Titel;Absender;Datum", ...index.sort((x, y) => x[0].localeCompare(y[0])).map(([p, d]) =>
         [p, clusterOf(d.cluster).label, topicOf(d), d.title ?? "", d.sender ?? "", dateOf(d)].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"))].join("\r\n");
       files["Übersicht.csv"] = [new TextEncoder().encode(`﻿${csv}`), { level: 0 }];
-      const blob = opts.password ? await encryptedZip(files, opts.password) : new Blob([zipSync(files) as BlobPart], { type: "application/zip" });
+      let blob: Blob | undefined;
+      if (format !== "files") {
+        // zu PDFs zusammenfassen: PDFs und Bilder; alles andere (Word, Excel …) bleibt als Datei dabei
+        const key = (d: Doc) => format === "pdf-one" ? "Lifevault-Export" : format === "pdf-area" ? clean(clusterOf(d.cluster).label) : `${clean(clusterOf(d.cluster).label)} – ${clean(topicOf(d))}`;
+        const groups = new Map<string, [string, Doc][]>();
+        const rest: [string, Doc][] = [];
+        for (const e of index) (/pdf|image\/(jpe?g|png)/.test(e[1].mime_type) ? groups.set(key(e[1]), [...(groups.get(key(e[1])) ?? []), e]) : rest.push(e));
+        const out: Record<string, [Uint8Array, { level: 0 }]> = {};
+        updateJob(id, { title: "PDF wird erstellt" });
+        for (const [k, items] of groups) out[`${k}.pdf`] = [await mergePdf(items.sort((a, b) => dateOf(b[1]).localeCompare(dateOf(a[1]))).map(([p, d]) => ({ bytes: files[p][0], mime: d.mime_type }))), { level: 0 }];
+        for (const [p] of rest) out[`Weitere Dateien/${p.split("/").pop()}`] = files[p];
+        if (format === "pdf-one" && !rest.length && !opts.password) {
+          name = name.replace(/\.zip$/, ".pdf");
+          blob = new Blob([out["Lifevault-Export.pdf"][0] as BlobPart], { type: "application/pdf" });
+        } else {
+          out["Übersicht.csv"] = files["Übersicht.csv"];
+          for (const k of Object.keys(files)) delete files[k];
+          Object.assign(files, out);
+        }
+      }
+      blob ??= opts.password ? await encryptedZip(files, opts.password) : new Blob([zipSync(files) as BlobPart], { type: "application/zip" });
       const saved: SavedDownload = { id: crypto.randomUUID(), name, created: new Date().toISOString(), count: index.length, size: blob.size, blob, password: opts.password };
       await saveDownload(saved);
       saveFile(blob, name);
@@ -141,4 +170,25 @@ export async function shareExport(d: { blob: Blob; name: string; password?: stri
   }
   saveFile(d.blob, d.name);
   location.href = `mailto:?subject=${encodeURIComponent("Unterlagen")}&body=${encodeURIComponent(`${text}\n\n(Bitte die heruntergeladene Datei „${d.name}“ an diese Mail anhängen.)`)}`;
+}
+
+/** PDFs und Bilder zu einem PDF zusammenfügen (Bilder auf A4, eingepasst) */
+async function mergePdf(items: { bytes: Uint8Array; mime: string }[]) {
+  const { PDFDocument } = await import("pdf-lib");
+  const out = await PDFDocument.create();
+  for (const it of items) {
+    try {
+      if (it.mime === "application/pdf") {
+        const src = await PDFDocument.load(it.bytes, { ignoreEncryption: true });
+        for (const pg of await out.copyPages(src, src.getPageIndices())) out.addPage(pg);
+      } else {
+        const img = it.mime === "image/png" ? await out.embedPng(it.bytes) : await out.embedJpg(it.bytes);
+        const [W, H] = [595.28, 841.89], m = 24;
+        const s = Math.min((W - 2 * m) / img.width, (H - 2 * m) / img.height, 1);
+        const page = out.addPage([W, H]);
+        page.drawImage(img, { x: (W - img.width * s) / 2, y: (H - img.height * s) / 2, width: img.width * s, height: img.height * s });
+      }
+    } catch { /* beschädigte Datei überspringen */ }
+  }
+  return out.save();
 }
