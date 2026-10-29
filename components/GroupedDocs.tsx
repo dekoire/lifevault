@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Building2, Download, CalendarDays, Check, ChevronDown, Search, Tag, Users, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Building2, Download, X, CalendarDays, Check, ChevronDown, Search, Tag, Users, type LucideIcon } from "lucide-react";
 import { DocCarousel } from "@/components/DocCarousel";
 import { DocRow } from "@/components/DocRow";
 import { Box, stateOf } from "@/components/ExportSheet";
@@ -26,8 +26,10 @@ type Sub = "" | "sender" | "topic";
 const SUBS: { value: Sub; label: string }[] = [{ value: "", label: "Nicht unterteilen" }, { value: "sender", label: "Absender" }, { value: "topic", label: "Thema" }];
 const dateOf = (d: Doc) => d.doc_date ?? d.received_at.slice(0, 10);
 type Range = "all" | "year" | "12m";
-type Filter = { purpose: string; topic: string; label: string; sender: string; range: Range; encOnly: boolean };
-const NONE: Filter = { purpose: "", topic: "", label: "", sender: "", range: "all", encOnly: false };
+type Filter = { purpose: string; topic: string; label: string; sender: string; range: Range; year: string; encOnly: boolean };
+const NONE: Filter = { purpose: "", topic: "", label: "", sender: "", range: "all", year: "", encOnly: false };
+type SortBy = "new" | "old" | "sender" | "title";
+const SORTS: { value: SortBy; label: string }[] = [{ value: "old", label: "Älteste zuerst" }, { value: "sender", label: "Absender A–Z" }, { value: "title", label: "Titel A–Z" }];
 
 export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" | "list" }) {
   const { docs: visible } = useDocs();
@@ -41,6 +43,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   const [f, setF] = useState<Filter>(NONE);
   const set = (p: Partial<Filter>) => setF((x) => ({ ...x, ...p }));
   const [closed, setClosed] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<SortBy>("new");
   // Auswahl zum Export: Kästchen links vor dem Logo, unten eine Leiste
   const [picking, setPicking] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -68,6 +71,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
     (skip === "label" || !f.label || (d.labels ?? []).includes(f.label)) &&
     (skip === "sender" || !f.sender || senderOf(d) === f.sender) &&
     (skip === "range" || !from || dateOf(d) >= from) &&
+    (skip === "year" || !f.year || dateOf(d).startsWith(f.year)) &&
     (!f.encOnly || d.encrypted) &&
     (!term || `${d.title ?? ""} ${d.file_name} ${d.sender ?? ""} ${d.doc_type ?? ""} ${d.topic ?? ""} ${(d.tags ?? []).join(" ")} ${(d.labels ?? []).join(" ")}`.toLowerCase().includes(term));
   const list = docs.filter((d) => match(d));
@@ -81,8 +85,9 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   const sections = useMemo(() => {
     const years = new Map<string, Doc[]>();
     for (const d of list) years.set(dateOf(d).slice(0, 4), [...(years.get(dateOf(d).slice(0, 4)) ?? []), d]);
-    return [...years.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([year, ds]) => {
-      ds.sort((a, b) => dateOf(b).localeCompare(dateOf(a)));
+    const cmp = (a: Doc, b: Doc) => sortBy === "old" ? dateOf(a).localeCompare(dateOf(b)) : sortBy === "sender" ? (a.sender ?? "￿").localeCompare(b.sender ?? "￿", "de") || dateOf(b).localeCompare(dateOf(a)) : sortBy === "title" ? (a.title ?? a.file_name).localeCompare(b.title ?? b.file_name, "de") : dateOf(b).localeCompare(dateOf(a));
+    return [...years.entries()].sort((a, b) => (sortBy === "old" ? a[0].localeCompare(b[0]) : b[0].localeCompare(a[0]))).map(([year, ds]) => {
+      ds.sort(cmp);
       const groups = new Map<string, Doc[]>();
       if (sub) for (const d of ds) { const k = sub === "sender" ? senderOf(d) : topicOf(d); groups.set(k, [...(groups.get(k) ?? []), d]); }
       return {
@@ -90,7 +95,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
         groups: [...groups.entries()].sort((a, b) => b[1].length - a[1].length).map(([k, gd]) => ({ key: k, label: sub === "sender" ? senderName(k) : k, partner: sub === "sender" ? partners.get(k) : undefined, docs: gd })),
       };
     });
-  }, [list, sub]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [list, sub, sortBy]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // nur Auswahl mit Treffern anzeigen (z. B. kein leeres „Betriebsrat“)
   const purposeN = countBy("purpose", purposeOf);
@@ -101,7 +106,8 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   const senders = [...senderN.entries()].filter(([k]) => k).map(([k, n]) => { const p = partners.get(k); return { key: k, name: p?.name ?? k, n, domain: p?.domain ?? null, cluster: p?.cluster ?? cluster }; }).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name, "de"));
   const labelN = new Map<string, number>();
   for (const d of docs) if (match(d, "label")) for (const t of d.labels ?? []) labelN.set(t, (labelN.get(t) ?? 0) + 1);
-  const active = Number(!!f.label) + Number(!!f.purpose) + Number(!!f.topic) + Number(!!f.sender) + Number(f.range !== "all") + Number(f.encOnly);
+  const yearN = countBy("year", (d) => dateOf(d).slice(0, 4));
+  const active = Number(!!f.year) + Number(!!f.label) + Number(!!f.purpose) + Number(!!f.topic) + Number(!!f.sender) + Number(f.range !== "all") + Number(f.encOnly);
   const lockedN = unlocked ? 0 : docs.filter((d) => picked.has(d.id) && d.encrypted).length;
   const rows = (ds: Doc[]) => picking
     ? <div className="divide-y divide-line">{ds.map((d) => (
@@ -121,6 +127,8 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
     <div className="space-y-6">
       {/* Steuerung schlicht: Suche + „Filter“; alles Weitere als Auswahlfelder im Seitenpanel rechts */}
       <FilterBar q={q} onQ={setQ} placeholder="In diesem Bereich suchen" actions={<button type="button" onClick={() => (picking ? stopPicking() : setPicking(true))} aria-pressed={picking} className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-[14px] font-semibold ${picking ? "border-brand-500 bg-brand-500 text-white" : "border-card-line bg-surface text-fg hover:bg-surface-2"}`}><Download size={16} /> Export</button>} activeCount={active} onReset={() => setF(NONE)} count={`${list.length} von ${docs.length} Dokumenten`}>
+        <FilterSelect label="Sortieren" value={sortBy === "new" ? "" : sortBy} onChange={(v) => setSortBy((v || "new") as SortBy)} options={SORTS} empty="Neueste zuerst" />
+        {yearN.size > 1 && <FilterSelect label="Jahr" value={f.year} onChange={(v) => set({ year: v })} options={[...yearN.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([y, n]) => ({ value: y, label: `${y} (${n})` }))} />}
         <FilterSelect label="Je Jahr unterteilen nach" value={sub} onChange={(v) => pickSub(v as Sub)} options={SUBS.slice(1)} empty="Nicht unterteilen" />
         {senders.length > 1 && <SenderPick value={f.sender} onChange={(v) => set({ sender: v })} options={senders} />}
         {topicOpts.length > 1 && <FilterSelect label="Thema" value={f.topic} onChange={(v) => set({ topic: v })} options={topicOpts} />}
@@ -129,6 +137,24 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
         <FilterSelect label="Zeitraum" value={f.range === "all" ? "" : f.range} onChange={(v) => set({ range: (v || "all") as Range })} options={[{ value: "year", label: "Dieses Jahr" }, { value: "12m", label: "Letzte 12 Monate" }]} />
         {docs.some((d) => d.encrypted) && <FilterToggle label="Nur verschlüsselte" on={f.encOnly} onChange={(v) => set({ encOnly: v })} />}
       </FilterBar>
+      {active > 0 && (
+        <div className="-mt-3 flex flex-wrap items-center gap-1.5">
+          {[
+            f.year && { k: "year", text: f.year },
+            f.sender && { k: "sender", text: senders.find((x) => x.key === f.sender)?.name ?? f.sender },
+            f.topic && { k: "topic", text: f.topic },
+            f.label && { k: "label", text: f.label, color: groupOf(f.label)?.color },
+            f.purpose && { k: "purpose", text: PURPOSES.find((p) => p.id === f.purpose)?.label ?? f.purpose },
+            f.range !== "all" && { k: "range", text: f.range === "year" ? "Dieses Jahr" : "Letzte 12 Monate" },
+            f.encOnly && { k: "encOnly", text: "Nur verschlüsselte" },
+          ].filter((c): c is { k: keyof Filter; text: string; color?: string } => !!c).map((c) => (
+            <button key={c.k} type="button" onClick={() => set({ [c.k]: NONE[c.k] } as Partial<Filter>)} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-card-line bg-surface pr-2 pl-3 text-[12.5px] font-semibold hover:bg-surface-2" style={c.color ? { color: c.color, borderColor: `${c.color}55`, background: `${c.color}12` } : undefined}>
+              {c.text}<X size={13} className="opacity-60" />
+            </button>
+          ))}
+          <button type="button" onClick={() => setF(NONE)} className="h-8 px-2 text-[12.5px] font-semibold text-selected">Alle zurücksetzen</button>
+        </div>
+      )}
       {picking && (
         <div className="flex items-center gap-3 rounded-2xl bg-brand-500/[0.08] px-4 py-2.5 text-[14px]">
           <button type="button" onClick={() => pickMany(list.map((d) => d.id), stateOf(list.map((d) => d.id), picked) !== "on")} className="inline-flex items-center gap-2.5 font-semibold">
@@ -147,10 +173,10 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
             <div className="flex items-center gap-3">
               {picking && <button type="button" onClick={() => pickMany(s.docs.map((d) => d.id), stateOf(s.docs.map((d) => d.id), picked) !== "on")} aria-label={`${s.year} auswählen`}><Box state={stateOf(s.docs.map((d) => d.id), picked)} /></button>}
               <button type="button" aria-expanded={isOpen} onClick={() => setClosed((c) => (c.includes(s.year) ? c.filter((x) => x !== s.year) : [...c, s.year]))} className="group flex min-w-0 flex-1 items-center gap-3 text-left">
-                <span className="tnum text-[16px] font-semibold">{s.year}</span>
+                <span className="tnum text-[22px] leading-7 font-bold tracking-tight">{s.year}</span>
                 {s.open > 0 && <span className="text-[12px] font-semibold text-negative-text">{s.open} offen</span>}
                 <span className="h-px flex-1 bg-line" />
-                <span className="tnum text-[12px] text-muted">{s.docs.length}</span>
+                <span className="tnum rounded-full border border-card-line bg-surface px-2.5 py-0.5 text-[12px] font-semibold text-fg">{s.docs.length} {s.docs.length === 1 ? "Dokument" : "Dokumente"}</span>
                 <ChevronDown size={15} className={`shrink-0 text-muted transition-transform group-hover:text-fg ${isOpen ? "rotate-180" : ""}`} />
               </button>
             </div>
@@ -159,10 +185,10 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
                 {s.groups.map((g) => (
                   <div key={g.key} className="space-y-2">
                     <div className="flex items-center gap-2 pl-0.5">
-                      {g.partner && <SenderLogo domain={g.partner.domain} sender={g.partner.name} cluster={g.partner.cluster} size={18} />}
-                      <span className="truncate text-[13px] font-semibold text-soft">{g.label}</span>
+                      {g.partner && <SenderLogo domain={g.partner.domain} sender={g.partner.name} cluster={g.partner.cluster} size={24} />}
+                      <span className="truncate text-[14px] font-semibold text-fg">{g.label}</span>
                       <span className="h-px flex-1 bg-line/70" />
-                      <span className="tnum text-[11.5px] text-muted">{g.docs.length}</span>
+                      <span className="tnum rounded-full border border-card-line bg-surface px-2 py-px text-[11.5px] font-semibold text-soft">{g.docs.length}</span>
                     </div>
                     {block(g.docs)}
                   </div>

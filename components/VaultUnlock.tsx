@@ -37,20 +37,20 @@ export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib de
 
   // kompakt: eine Zeile (Symbol, Text, Feld, Knopf) – für Chat, Export usw.
   if (compact) return (
-    <div className="w-full rounded-2xl border border-card-line bg-surface px-3.5 py-3">
+    <div className="w-full rounded-2xl px-3.5 py-3 text-white shadow-card" style={{ background: "var(--accent-grad, linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%))" }}>
       <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-500 text-white"><LockKeyhole size={16} /></span>
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 text-white"><LockKeyhole size={16} /></span>
         <span className="min-w-0 flex-1 pt-0.5">
           <b className="block text-[13.5px] leading-5">{vault ? title : "Noch kein Tresor"}</b>
-          <span className="block text-[12px] leading-4 text-muted">{vault ? text : "Lege einen Tresor an, um Dokumente zu verschlüsseln."}</span>
+          <span className="block text-[12px] leading-4 text-white/75">{vault ? text : "Lege einen Tresor an, um Dokumente zu verschlüsseln."}</span>
         </span>
       </div>
       {vault ? (
         <form onSubmit={submit} className="mt-2.5">
-          <div className="flex gap-2">{field("flex-1")}{button}</div>
-          <div className="mt-1.5 flex items-center justify-between gap-2 pl-1">{keepBox}{error && <span className="text-[12px] text-negative-text" role="alert">{error}</span>}</div>
+          <div className="flex gap-2 [&_input]:border-transparent [&_input]:text-fg">{field("flex-1")}<button type="submit" disabled={busy || !pw} className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-white px-4 text-[13.5px] font-semibold text-brand-600 disabled:opacity-60">{busy && <Loader2 size={14} className="animate-spin" />} Entsperren</button></div>
+          <div className="mt-1.5 flex items-center justify-between gap-2 pl-1 [&_label]:text-white/80">{keepBox}{error && <span className="rounded-full bg-white px-2 py-0.5 text-[12px] text-negative-text" role="alert">{error}</span>}</div>
         </form>
-      ) : <Link href="/einstellungen/tresor" className="mt-2.5 inline-flex h-9 items-center rounded-full bg-brand-500 px-4 text-[13px] font-semibold text-white">Tresor einrichten</Link>}
+      ) : <Link href="/einstellungen/tresor" className="mt-2.5 inline-flex h-9 items-center rounded-full bg-white px-4 text-[13px] font-semibold text-brand-600">Tresor einrichten</Link>}
     </div>
   );
 

@@ -17,7 +17,7 @@ export function SenderLogo({ domain: given, sender, cluster, size = 40, urgent =
   );
   return (
     <span className="grid shrink-0 place-items-center overflow-hidden rounded-full border border-card-line bg-white" style={{ width: size, height: size }}>
-      <img src={`/api/logo?d=${encodeURIComponent(domain)}`} alt="" width={Math.round(size * 0.6)} height={Math.round(size * 0.6)} onError={() => setFailed(true)} onLoad={(e) => { if (e.currentTarget.naturalWidth <= 16) setFailed(true); }} className="object-contain" />
+      <img src={`/api/logo?d=${encodeURIComponent(domain)}`} alt="" width={Math.round(size * 0.74)} height={Math.round(size * 0.74)} onError={() => setFailed(true)} onLoad={(e) => { if (e.currentTarget.naturalWidth <= 16) setFailed(true); }} className="object-contain" />
     </span>
   );
 }
