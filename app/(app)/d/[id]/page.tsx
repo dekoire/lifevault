@@ -207,7 +207,8 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
       )}
       {doc.encrypted && !unlocked && <div className="mb-4"><VaultUnlock /></div>}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] lg:items-start">
+      {/* gesperrt: nur die Entsperren-Box – Überblick, Original und Chat erst nach dem Entsperren */}
+      <div className={`grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] lg:items-start ${doc.encrypted && !unlocked ? "hidden" : ""}`}>
         {/* links: Daten */}
         <div className="space-y-3">
           {(explain || (show.summary && content?.summary)) && (
