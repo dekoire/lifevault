@@ -43,12 +43,13 @@ export function DetailHost({ children }: { children: React.ReactNode }) {
       {top && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={() => setStack([])}>
           <aside role="dialog" aria-modal="true" className="panel-in pt-safe pb-safe flex h-full w-full max-w-[440px] flex-col bg-surface shadow-[-12px_0_40px_rgba(16,24,40,.18)]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
-              {stack.length > 1 ? <button type="button" onClick={() => setStack((s) => s.slice(0, -1))} className="inline-flex h-9 items-center gap-1 rounded-full pr-3 pl-2 text-[14px] font-semibold hover:bg-surface-2"><ArrowLeft size={16} /> Zurück</button> : <span />}
-              <button type="button" onClick={() => setStack([])} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3"><X size={17} /></button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {top.kind === "doc" ? <DocDetail id={top.id} open={open} close={() => setStack([])} /> : <PartnerDetail pkey={top.key} open={open} close={() => setStack([])} />}
+            {/* kein eigener Kopfbalken: Schließen schwebt oben rechts, der Inhalt beginnt ganz oben */}
+            <div className="relative flex-1 overflow-y-auto">
+              <div className="sticky top-0 z-10 flex h-0 items-start justify-between gap-2 px-3 pt-3">
+                {stack.length > 1 ? <button type="button" onClick={() => setStack((s) => s.slice(0, -1))} className="inline-flex h-9 items-center gap-1 rounded-full bg-surface-3 pr-3 pl-2 text-[14px] font-semibold hover:bg-line"><ArrowLeft size={16} /> Zurück</button> : <span />}
+                <button type="button" onClick={() => setStack([])} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3 hover:bg-line"><X size={17} /></button>
+              </div>
+              {top.kind === "doc" ? <DocDetail id={top.id} open={open} close={() => setStack([])} back={stack.length > 1} /> : <PartnerDetail pkey={top.key} open={open} close={() => setStack([])} back={stack.length > 1} />}
             </div>
           </aside>
         </div>
@@ -59,7 +60,7 @@ export function DetailHost({ children }: { children: React.ReactNode }) {
 
 const BTN = "inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-[14px] font-semibold";
 
-function DocDetail({ id, open, close }: { id: string; open: (d: Detail) => void; close: () => void }) {
+function DocDetail({ id, open, close, back = false }: { id: string; open: (d: Detail) => void; close: () => void; back?: boolean }) {
   const { allDocs } = useDocs();
   const [doc, setDoc] = useState<Doc | undefined>(allDocs.find((d) => d.id === id));
   const [url, setUrl] = useState<string>();
@@ -88,7 +89,7 @@ function DocDetail({ id, open, close }: { id: string; open: (d: Detail) => void;
   };
   return (
     <div className="space-y-4 p-4">
-      <div className="flex items-start gap-3">
+      <div className={`flex items-start gap-3 pr-11 ${back ? "pt-11" : ""}`}>
         <SenderLogo domain={doc.sender_domain} sender={doc.sender} cluster={doc.cluster} urgent={isUrgent(doc)} size={48} />
         <div className="min-w-0">
           <h2 className="text-[18px] leading-6 font-semibold">{doc.title ?? doc.file_name}</h2>
@@ -132,7 +133,7 @@ function DocDetail({ id, open, close }: { id: string; open: (d: Detail) => void;
   );
 }
 
-function PartnerDetail({ pkey, open, close }: { pkey: string; open: (d: Detail) => void; close: () => void }) {
+function PartnerDetail({ pkey, open, close, back = false }: { pkey: string; open: (d: Detail) => void; close: () => void; back?: boolean }) {
   const { allDocs } = useDocs();
   const p = useMemo(() => buildPartners(allDocs).find((x) => x.key === pkey), [allDocs, pkey]);
   if (!p) return <p className="p-6 text-[14px] text-muted">Partner nicht gefunden.</p>;
@@ -140,7 +141,7 @@ function PartnerDetail({ pkey, open, close }: { pkey: string; open: (d: Detail) 
   const deadlines = p.docs.flatMap((d) => (d.deadlines ?? []).filter((x) => x.date >= today).map((x) => ({ ...x, d }))).sort((a, b) => a.date.localeCompare(b.date));
   return (
     <div className="space-y-4 p-4">
-      <div className="flex items-center gap-3">
+      <div className={`flex items-center gap-3 pr-11 ${back ? "pt-11" : ""}`}>
         <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={52} />
         <div className="min-w-0">
           <h2 className="text-[18px] leading-6 font-semibold">{p.name}</h2>

@@ -152,11 +152,18 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
               <button type="button" onClick={() => setSheet(false)} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3"><X size={18} /></button>
             </div>
             <UploadTarget />
-            <div className="grid gap-2">
-              <button type="button" onClick={() => { setSheet(false); openCamera(); }} className="flex h-12 items-center gap-3 rounded-full bg-surface-2 px-5 text-left text-[15px] font-semibold hover:bg-surface-3"><Camera size={19} className="text-brand-500" /> Fotografieren <span className="ml-auto text-[12px] font-medium text-muted">auch mehrere Seiten</span></button>
-              <button type="button" onClick={() => { setSheet(false); openFiles(); }} className="flex h-12 items-center gap-3 rounded-full bg-surface-2 px-5 text-left text-[15px] font-semibold hover:bg-surface-3"><FileUp size={19} className="text-brand-500" /> Fotos oder PDFs auswählen</button>
+            {/* zwei große Kacheln: Kamera oder Dateien */}
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { icon: Camera, title: "Fotografieren", text: "auch mehrere Seiten", go: openCamera },
+                { icon: FileUp, title: "Datei wählen", text: "Fotos oder PDFs", go: openFiles },
+              ] as const).map(({ icon: Icon, title, text, go }) => (
+                <button key={title} type="button" onClick={() => { setSheet(false); go(); }} className="flex flex-col items-center gap-3 rounded-2xl bg-surface-2 px-3 py-6 text-center transition-colors hover:bg-surface-3 active:scale-[.98]">
+                  <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-500 text-white"><Icon size={24} /></span>
+                  <span><b className="block text-[15px]">{title}</b><span className="block text-[12.5px] text-muted">{text}</span></span>
+                </button>
+              ))}
             </div>
-            <p className="mt-3 text-center text-xs text-muted">Mehrere Seiten nacheinander fotografieren, dann einmal absenden – als ein Dokument oder einzeln.</p>
           </div>
         </div>
       )}
