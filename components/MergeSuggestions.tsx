@@ -79,7 +79,7 @@ export function MergeSuggestions() {
               </button>
               <span className="min-w-0 flex-1">
                 <b className="block truncate text-[14px]">{g.title}</b>
-                <span className="block text-[12px] text-muted">{g.docs.length} Teile · {g.reason}</span>
+                <span className="line-clamp-2 block text-[12px] text-muted">{g.docs.length} Teile · {g.reason}</span>
               </span>
               <span className="flex shrink-0 gap-2">
                 <button type="button" onClick={() => dismiss(g)} className="inline-flex h-9 items-center gap-1 rounded-full border border-card-line px-3 text-[12.5px] font-semibold hover:bg-surface-2"><X size={13} /> Nein</button>

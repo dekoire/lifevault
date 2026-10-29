@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronRight, Copy, ExternalLink, FileText, Globe, Landmark, Lock, Mail, MapPin, Phone } from "lucide-react";
 import { nameFromEmail } from "@/components/AvatarMenu";
 import { ClusterTag } from "@/components/ClusterIcon";
@@ -17,7 +17,8 @@ import { caseIds } from "@/lib/dupes";
 import { buildPartners } from "@/lib/partners";
 import { PayImageButton } from "@/lib/payimage";
 import { lastPayment } from "@/lib/lastpay";
-import { supabase, useSession } from "@/lib/supabase";
+import { useSession } from "@/lib/supabase";
+import { SMALL, thumbUrl } from "@/lib/thumbs";
 import type { Doc } from "@/lib/types";
 
 /**
@@ -199,13 +200,23 @@ function PartnerWidget({ body }: { body: string }) {
 // ---------- Dokumente als Vorschau-Kacheln (antippen öffnet rechts) ----------
 export function Thumb({ d }: { d: Doc }) {
   const [url, setUrl] = useState<string>();
+  const ref = useRef<HTMLSpanElement>(null);
+  // erst laden, wenn sichtbar – dann das kleine Vorschaubild (nicht das Original)
   useEffect(() => {
-    if (d.encrypted || !d.mime_type.startsWith("image/") || d.file_path.startsWith("inbox/")) return;
-    void supabase.storage.from("documents").createSignedUrl(d.file_path, 600).then(({ data }) => setUrl(data?.signedUrl));
+    const el = ref.current;
+    if (!el) return;
+    let off = false;
+    const io = new IntersectionObserver((e) => {
+      if (!e.some((x) => x.isIntersecting)) return;
+      io.disconnect();
+      void thumbUrl(d, SMALL).then((u) => !off && setUrl(u));
+    }, { rootMargin: "200px" });
+    io.observe(el);
+    return () => { off = true; io.disconnect(); };
   }, [d]);
   if (url) return <img src={url} alt="" className="pointer-events-none h-full w-full object-cover object-top select-none" draggable={false} />;
   return (
-    <span className="grid h-full w-full place-items-center bg-surface-2 text-muted">
+    <span ref={ref} className="grid h-full w-full place-items-center bg-surface-2 text-muted">
       {d.encrypted ? <Lock size={22} /> : <span className="flex flex-col items-center gap-1"><FileText size={24} /><span className="text-[10px] font-semibold uppercase">{d.mime_type.includes("pdf") ? "PDF" : "Datei"}</span></span>}
     </span>
   );

@@ -1,37 +1,28 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeftRight, Check, ChevronLeft, ChevronRight, Combine, FileText, Loader2, X } from "lucide-react";
+import { AlertTriangle, ArrowLeftRight, Check, ChevronLeft, ChevronRight, Combine, FileText, Loader2, X } from "lucide-react";
 import { toPdf } from "@/lib/pdfmerge";
 import { cardKind } from "@/lib/cards";
 import { fmtDate, useDocs } from "@/lib/docs";
-import { supabase } from "@/lib/supabase";
+import { authFetch, supabase } from "@/lib/supabase";
+import { MEDIUM, thumbUrl } from "@/lib/thumbs";
 import type { Doc } from "@/lib/types";
+
+type OrderCheck = { order: string[]; pages: { id: string; label: string }[]; missing: string[]; notBelonging: { id: string; reason: string }[]; summary: string };
+// Ergebnisse merken, damit Öffnen/Schließen nicht jedes Mal neu prüft
+const checks = new Map<string, Promise<OrderCheck>>();
 
 /** Große Vorschau: Foto direkt, PDF als gerenderte erste Seite */
 export function PagePreview({ d, className = "" }: { d: Doc; className?: string }) {
   const [src, setSrc] = useState<string>();
   const [failed, setFailed] = useState(false);
+  // mittelgroßes Vorschaubild (einmal erzeugt, danach schnell) statt Original
   useEffect(() => {
-    let url: string | undefined, off = false;
-    if (d.encrypted) { setFailed(true); return; }
-    (async () => {
-      const { data } = await supabase.storage.from("documents").download(d.file_path);
-      if (!data) throw new Error("nicht geladen");
-      if (d.mime_type.startsWith("image/")) { url = URL.createObjectURL(data); if (!off) setSrc(url); return; }
-      if (d.mime_type === "application/pdf") {
-        const { getDocumentProxy } = await import("unpdf");
-        const pdf = await getDocumentProxy(new Uint8Array(await data.arrayBuffer()));
-        const page = await pdf.getPage(1);
-        const vp = page.getViewport({ scale: 1.4 });
-        const c = document.createElement("canvas"); c.width = vp.width; c.height = vp.height;
-        await page.render({ canvasContext: c.getContext("2d")!, viewport: vp, canvas: c } as Parameters<typeof page.render>[0]).promise;
-        if (!off) setSrc(c.toDataURL("image/jpeg", 0.85));
-        return;
-      }
-      throw new Error("keine Vorschau");
-    })().catch(() => !off && setFailed(true));
-    return () => { off = true; if (url) URL.revokeObjectURL(url); };
+    let off = false;
+    setSrc(undefined); setFailed(false);
+    void thumbUrl(d, MEDIUM).then((u) => { if (off) return; if (u) setSrc(u); else setFailed(true); }).catch(() => !off && setFailed(true));
+    return () => { off = true; };
   }, [d]);
   if (src) return <img src={src} alt={d.title ?? d.file_name} draggable={false} className={`h-full w-full object-contain select-none ${className}`} />;
   return <span className={`grid h-full w-full place-items-center text-muted ${className}`}>{failed ? <span className="flex flex-col items-center gap-1 text-[12px]"><FileText size={26} /> keine Vorschau</span> : <Loader2 size={20} className="animate-spin" />}</span>;
@@ -50,6 +41,26 @@ export function MergeReview({ docs, title, reason, skip: preSkip = [], onDone, o
   const [error, setError] = useState<string>();
   const [at, setAt] = useState(0);
   const strip = useRef<HTMLDivElement>(null);
+  // KI prüft Seite für Seite: Reihenfolge, fehlende Seiten, unpassende Teile
+  const [check, setCheck] = useState<OrderCheck | "loading" | "error">("loading");
+  const [reordered, setReordered] = useState(false);
+  useEffect(() => {
+    let off = false;
+    const key = [...docs.map((d) => d.id)].sort().join(",");
+    const cached = checks.get(key);
+    const p = cached ?? authFetch("/api/order", { method: "POST", body: JSON.stringify({ ids: docs.map((d) => d.id) }) }).then(async (r) => { const j = await r.json(); if (!r.ok || j.error) throw new Error(j.error); return j as OrderCheck; });
+    checks.set(key, p);
+    p.then((c) => {
+      if (off) return;
+      setCheck(c);
+      if (c.order.join() !== docs.map((d) => d.id).join()) { setOrder(c.order); setReordered(true); }
+      if (c.notBelonging.length) setSkip((s) => [...new Set([...s, ...c.notBelonging.map((n) => n.id)])]);
+    }).catch(() => { checks.delete(key); if (!off) setCheck("error"); });
+    return () => { off = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const label = (id: string) => (typeof check === "object" ? check.pages.find((p) => p.id === id)?.label : undefined);
+  const odd = (id: string) => (typeof check === "object" ? check.notBelonging.find((n) => n.id === id)?.reason : undefined);
   const byId = new Map(docs.map((d) => [d.id, d]));
   const list = order.map((id) => byId.get(id)!).filter(Boolean);
   const used = list.filter((d) => !skip.includes(d.id));
@@ -87,6 +98,19 @@ export function MergeReview({ docs, title, reason, skip: preSkip = [], onDone, o
         <b className="block text-[15px] leading-5">{title}</b>
         <span className="text-[12.5px] text-muted">{reason ? `${reason} · ` : ""}{list.length} Teile – wischen zum Vergleichen</span>
       </div>
+      {/* Ergebnis der Seitenprüfung */}
+      {check === "loading" ? (
+        <p className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-[12.5px] text-soft"><Loader2 size={14} className="animate-spin" /> KI prüft Seite für Seite: Reihenfolge, fehlende Seiten, passt alles zusammen?</p>
+      ) : check === "error" ? (
+        <p className="rounded-xl bg-surface-2 px-3 py-2.5 text-[12.5px] text-muted">Automatische Prüfung gerade nicht möglich – bitte selbst durchwischen.</p>
+      ) : (
+        <div className="space-y-1.5">
+          <p className="flex items-start gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-[12.5px]"><Check size={14} className="mt-0.5 shrink-0 text-positive-text" /><span><b className="font-semibold">{check.summary}</b>{reordered && <span className="block text-muted">Reihenfolge angepasst – bitte kurz durchwischen.</span>}</span></p>
+          {check.missing.map((m) => <p key={m} className="flex items-start gap-2 rounded-xl bg-[#fff7e6] px-3 py-2 text-[12.5px] font-semibold text-[#7a4a00] dark:bg-[#3a2a0a] dark:text-[#f5c46b]"><AlertTriangle size={14} className="mt-0.5 shrink-0" /> {m}</p>)}
+          {check.notBelonging.map((n) => <p key={n.id} className="flex items-start gap-2 rounded-xl bg-negative/10 px-3 py-2 text-[12.5px] text-negative-text"><AlertTriangle size={14} className="mt-0.5 shrink-0" /><span><b>Passt wohl nicht dazu:</b> {byId.get(n.id)?.title ?? "ein Teil"} – {n.reason} (abgewählt)</span></p>)}
+        </div>
+      )}
+
       {/* große Seiten zum Wischen */}
       <div className="relative">
         <div ref={strip} onScroll={(e) => setAt(Math.round(e.currentTarget.scrollLeft / Math.max(1, e.currentTarget.clientWidth)))} className="flex snap-x snap-mandatory overflow-x-auto rounded-2xl bg-surface-2 [scrollbar-width:none]">
@@ -96,11 +120,12 @@ export function MergeReview({ docs, title, reason, skip: preSkip = [], onDone, o
               <figure key={d.id} className="relative w-full shrink-0 snap-center">
                 <div className={`h-72 p-3 sm:h-96 ${off ? "opacity-35" : ""}`}><PagePreview d={d} className="rounded-lg" /></div>
                 <span className={`absolute top-3 left-3 rounded-full px-2.5 py-1 text-[12px] font-semibold shadow-card ${off ? "bg-surface text-muted line-through" : "bg-fg text-canvas"}`}>{role(d)}</span>
+                {odd(d.id) && <span className="absolute bottom-3 left-3 inline-flex max-w-[85%] items-center gap-1 rounded-full bg-negative px-2.5 py-1 text-[11.5px] font-semibold text-white shadow-card"><AlertTriangle size={12} /> passt wohl nicht dazu</span>}
                 <button type="button" onClick={() => setSkip((s) => (s.includes(d.id) ? s.filter((x) => x !== d.id) : [...s, d.id]))} className={`absolute top-3 right-3 inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold shadow-card ${off ? "bg-surface text-fg" : "bg-surface/95 text-fg"}`}>
                   {off ? <><Check size={13} /> doch übernehmen</> : <><X size={13} /> nicht übernehmen</>}
                 </button>
                 <figcaption className="flex items-center gap-2 border-t border-line bg-surface px-3 py-2 text-[12px]">
-                  <span className="min-w-0 flex-1 truncate"><b className="font-semibold">{d.title ?? d.file_name}</b><span className="text-muted"> · {fmtDate(d.doc_date ?? d.received_at)}</span></span>
+                  <span className="min-w-0 flex-1"><b className="block truncate font-semibold">{label(d.id) ?? d.title ?? d.file_name}</b><span className="block truncate text-muted">{label(d.id) ? `${d.title ?? d.file_name} · ` : ""}hochgeladen {fmtDate(d.received_at)}</span></span>
                   <button type="button" aria-label="Nach vorne" onClick={() => move(d.id, -1)} className="grid h-7 w-7 place-items-center rounded-full border border-card-line hover:bg-surface-2"><ChevronLeft size={14} /></button>
                   <button type="button" aria-label="Nach hinten" onClick={() => move(d.id, 1)} className="grid h-7 w-7 place-items-center rounded-full border border-card-line hover:bg-surface-2"><ChevronRight size={14} /></button>
                 </figcaption>

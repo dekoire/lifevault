@@ -7,6 +7,7 @@ import { downloadFile, processEncrypted, protectDoc } from "@/lib/protect";
 import { authFetch, supabase } from "@/lib/supabase";
 import { openBytes, sealBytes, vaultKey } from "@/lib/vault";
 import { isBack } from "@/lib/cards";
+import { removeThumbs } from "@/lib/thumbs";
 import { LIST_COLS, type Doc } from "@/lib/types";
 
 export type BatchItem = { key: string; name: string; id?: string; state: "uploading" | "saved" | "failed"; error?: string };
@@ -202,6 +203,7 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
 
   const remove = useCallback(async (d: Doc) => {
     await supabase.storage.from("documents").remove([d.file_path]);
+    await removeThumbs(d);
     await supabase.from("documents").delete().eq("id", d.id);
     await refresh();
   }, [refresh]);
