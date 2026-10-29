@@ -1,89 +1,124 @@
 "use client";
 import Link from "next/link";
 import { useMemo } from "react";
-import { GitFork } from "lucide-react";
+import { AlertCircle, Archive, FileSignature, Info, PenLine, Receipt, Star } from "lucide-react";
+import { ImportanceDots } from "@/components/Importance";
 import { CARD } from "@/components/ui";
 import { fmtDate, useDocs } from "@/lib/docs";
-import { importanceLabel, importanceOf, roleLabel } from "@/lib/importance";
+import { importanceOf } from "@/lib/importance";
 import { partnerKey } from "@/lib/partners";
-import { relatedPayDocs } from "@/lib/related";
 import type { Doc } from "@/lib/types";
 
-type Link_ = { d: Doc; why: string };
-
 const dateOf = (d: Doc) => d.doc_date ?? d.received_at.slice(0, 10);
-const cut = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+const INVOICE = /rechnung|mahnung|zahlungserinnerung|zahlungsaufforderung|abrechnung|forderung|lastschrift|beitragsrechnung/i;
+const TERMS = /bedingung|avb|agb|police|versicherungsschein|vertrag|tarif|leistungsbeschreibung/i;
+
+type Group = "vertrag" | "aenderung" | "zahlung" | "info";
+const GROUPS: { id: Group; title: string; means: string; icon: React.ReactNode }[] = [
+  { id: "vertrag", title: "Vertrag & Bedingungen", means: "Was gilt: Leistungen, Laufzeit, Kündigung. Hier schaust du nach, wenn etwas ist.", icon: <FileSignature size={15} /> },
+  { id: "aenderung", title: "Änderungen", means: "Beitrag oder Bedingungen geändert. Die neueste gilt, ältere sind überholt.", icon: <PenLine size={15} /> },
+  { id: "zahlung", title: "Rechnungen & Mahnungen", means: "Nur wichtig, solange etwas offen ist – dann mit Frist.", icon: <Receipt size={15} /> },
+  { id: "info", title: "Hinweise & Infos", means: "Pflicht-Infos, Belehrungen, Werbung – gut zu haben, selten gebraucht.", icon: <Info size={15} /> },
+];
+
+function groupOf(d: Doc): Group {
+  const t = `${d.doc_type ?? ""} ${d.title ?? ""}`;
+  if (d.partner_role === "aenderung" || /anpassung|änderung|nachtrag|kündigung/i.test(t)) return "aenderung";
+  if (INVOICE.test(t) || d.partner_role === "laufend") return "zahlung";
+  if (d.partner_role === "grundlage" || TERMS.test(t)) return "vertrag";
+  return "info";
+}
 
 /**
- * Wie das Dokument mit anderen zusammenhängt – und warum: links die Grundlage (Vertrag, Police), in der Mitte dieses
- * Dokument, rechts was dazugehört (Rechnungen, Änderungen, gleicher Vorgang, gleiche Grundlage, gleicher Partner).
+ * Mindmap zum Vertrag: in der Mitte das Hauptdokument (Vertrag/Police) des Partners, darum die Dokumente nach Bedeutung
+ * gruppiert – Vertrag & Bedingungen, Änderungen, Rechnungen & Mahnungen, Hinweise. Je Gruppe ein Satz, was sie bedeutet;
+ * je Dokument Wichtigkeit (★ ab „sehr wichtig“), offene Fristen rot. Rechnungen zählen nur, solange sie offen sind.
  */
 export function RelationGraph({ doc }: { doc: Doc }) {
   const { docs } = useDocs();
-  const { left, right } = useMemo(() => {
-    const seen = new Set([doc.id]);
-    const take = (list: Doc[], why: string, n: number): Link_[] => list.filter((d) => !seen.has(d.id)).sort((a, b) => dateOf(b).localeCompare(dateOf(a))).slice(0, n).map((d) => (seen.add(d.id), { d, why }));
-    const basis = doc.basis_id ? docs.filter((d) => d.id === doc.basis_id) : [];
-    const left = take(basis, "Grundlage – daraus folgt dieses Dokument", 1);
-    const right = [
-      ...take(docs.filter((d) => d.basis_id === doc.id), "gehört dazu – folgt aus diesem Dokument", 6),
-      ...take(relatedPayDocs(doc, docs), "gleicher Vorgang (Rechnung, Mahnung …)", 4),
-      ...(doc.basis_id ? take(docs.filter((d) => d.basis_id === doc.basis_id), "gleiche Grundlage", 4) : []),
-    ];
-    // gleicher Partner: die wichtigsten übrigen
-    if (doc.sender && right.length < 8) {
-      const k = partnerKey(doc.sender);
-      const same = docs.filter((d) => d.sender && partnerKey(d.sender) === k && !seen.has(d.id)).sort((a, b) => importanceOf(b) - importanceOf(a) || dateOf(b).localeCompare(dateOf(a)));
-      right.push(...take(same, "gleicher Partner", 8 - right.length));
-    }
-    return { left, right };
+  const today = new Date().toISOString().slice(0, 10);
+  const data = useMemo(() => {
+    if (!doc.sender) return null;
+    const k = partnerKey(doc.sender);
+    const all = docs.filter((d) => d.sender && partnerKey(d.sender) === k);
+    if (all.length < 2) return null;
+    const active = all.filter((d) => !d.archived);
+    // Mitte: die gültige Grundlage, an der am meisten hängt (sonst die wichtigste)
+    const hang = (d: Doc) => all.filter((x) => x.basis_id === d.id).length;
+    const center = [...active].filter((d) => d.partner_role === "grundlage").sort((a, b) => hang(b) - hang(a) || importanceOf(b) - importanceOf(a) || dateOf(b).localeCompare(dateOf(a)))[0]
+      ?? [...active].sort((a, b) => importanceOf(b) - importanceOf(a))[0] ?? doc;
+    const groups = new Map<Group, Doc[]>();
+    for (const d of active) if (d.id !== center.id) groups.set(groupOf(d), [...(groups.get(groupOf(d)) ?? []), d]);
+    return { center, groups, archived: all.filter((d) => d.archived).length, partner: k };
   }, [doc, docs]);
-  if (!left.length && !right.length) return null;
+  if (!data) return null;
+  const open = (d: Doc) => (d.deadlines ?? []).find((x) => x.date >= today);
+  // wirksame Wichtigkeit: Rechnungen ohne offene Frist zählen wenig
+  const weight = (d: Doc) => (groupOf(d) === "zahlung" && !open(d) ? Math.min(2, importanceOf(d)) : importanceOf(d));
+  const shown = GROUPS.filter((g) => data.groups.get(g.id)?.length);
+  // Partnername aus Titeln streichen („AVB Rechtsschutzversicherung Adam Riese L 2023“ → „AVB Rechtsschutzversicherung L 2023“)
+  const names = [...new Set([doc.sender ?? "", data.center.sender ?? ""].filter((n) => n.length >= 3))];
+  const short = (t: string) => names.reduce((x, n) => x.replace(new RegExp(`\\s*${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*`, "gi"), " "), t).replace(/\s+/g, " ").replace(/^[\s–-]+|[\s–-]+$/g, "").trim() || t;
 
-  // Graph (ab sm): feste Spalten, Kanten als Kurven
-  const W = 960, NW = 290, NH = 58, GAP = 14;
-  const rows = Math.max(1, left.length, right.length);
-  const H = Math.max(NH + 20, rows * (NH + GAP) + 10);
-  const xs = { l: 10, c: (W - NW) / 2, r: W - NW - 10 };
-  const yOf = (i: number, n: number) => (H - n * (NH + GAP) + GAP) / 2 + i * (NH + GAP);
-  const cy = H / 2;
-  const node = (d: Doc, x: number, y: number, why: string | null, main = false) => (
-    <a key={d.id} href={`/d/${d.id}`} aria-label={d.title ?? d.file_name}>
-      <rect x={x} y={y} width={NW} height={NH} rx={14} className={main ? "fill-brand-500" : "fill-surface stroke-card-line hover:fill-surface-2"} strokeWidth={main ? 0 : 1.2} />
-      <text x={x + 14} y={y + 23} className={`text-[13px] font-semibold ${main ? "fill-white" : "fill-fg"}`}>{cut(d.title ?? d.file_name, 36)}</text>
-      <text x={x + 14} y={y + 42} className={`text-[11px] ${main ? "fill-white/80" : "fill-muted"}`}>{cut([roleLabel(d.partner_role), importanceLabel(importanceOf(d)), fmtDate(dateOf(d))].filter(Boolean).join(" · "), 46)}</text>
-      {why && <title>{why}</title>}
-    </a>
-  );
-  const edge = (x1: number, y1: number, x2: number, y2: number, key: string) => <path key={key} d={`M${x1},${y1} C${(x1 + x2) / 2},${y1} ${(x1 + x2) / 2},${y2} ${x2},${y2}`} className="fill-none stroke-line-strong" strokeWidth={1.5} />;
+  const Leaf = ({ d }: { d: Doc }) => {
+    const due = open(d);
+    const w = weight(d);
+    const here = d.id === doc.id;
+    return (
+      <li>
+        <Link href={`/d/${d.id}`} className={`flex items-start gap-2 rounded-lg px-2 py-1.5 text-[13px] hover:bg-surface-2 ${here ? "bg-brand-500/10 ring-1 ring-brand-500/40" : ""}`}>
+          {w >= 4 ? <Star size={13} className="mt-[3px] shrink-0 fill-brand-500 text-brand-500" /> : <span className="w-[13px] shrink-0" />}
+          <span className="min-w-0 flex-1">
+            {/* Titel ohne den Partnernamen (steht schon in der Mitte), höchstens zwei Zeilen */}
+            <span className="line-clamp-2 leading-[18px]">{short(d.title ?? d.file_name)}</span>
+            {due ? <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-negative/10 px-1.5 py-px text-[11px] font-semibold text-negative-text"><AlertCircle size={11} /> {d.doc_type ?? "Frist"} bis {fmtDate(due.date)}</span> : <span className="tnum block text-[11.5px] text-muted">{fmtDate(dateOf(d))}{here ? " · du bist hier" : ""}</span>}
+          </span>
+          <span className="mt-[6px] shrink-0"><ImportanceDots value={w} size={4} /></span>
+        </Link>
+      </li>
+    );
+  };
 
   return (
     <section className={`${CARD} mt-4 p-4`}>
-      <h2 className="flex items-center gap-2 text-[15px] font-semibold"><GitFork size={16} /> Zusammenhang</h2>
-      <p className="mt-0.5 text-[12.5px] text-muted">Welche Dokumente dazugehören und warum. Antippen öffnet sie.</p>
-      <div className="mt-3 hidden sm:block">
-        <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Zusammenhang der Dokumente">
-          {left.map((l, i) => edge(xs.l + NW, yOf(i, left.length) + NH / 2, xs.c, cy, `el${i}`))}
-          {right.map((r, i) => edge(xs.c + NW, cy, xs.r, yOf(i, right.length) + NH / 2, `er${i}`))}
-          {right.map((r, i) => <text key={`w${i}`} x={xs.r - 8} y={yOf(i, right.length) + NH / 2 - 6} textAnchor="end" className="fill-muted text-[10.5px]">{cut(r.why.split(" – ")[0], 28)}</text>)}
-          {left.map((l, i) => <text key={`lw${i}`} x={xs.l + NW + 8} y={yOf(i, left.length) + NH / 2 - 6} className="fill-muted text-[10.5px]">Grundlage</text>)}
-          {left.map((l, i) => node(l.d, xs.l, yOf(i, left.length), l.why))}
-          {node(doc, xs.c, cy - NH / 2, null, true)}
-          {right.map((r, i) => node(r.d, xs.r, yOf(i, right.length), r.why))}
-        </svg>
+      <h2 className="text-[15px] font-semibold">So hängt alles zusammen</h2>
+      <p className="mt-0.5 text-[12.5px] text-muted">In der Mitte der Vertrag, darum alles, was dazugehört – nach Bedeutung sortiert. ★ = wichtig, rot = da musst du etwas tun.</p>
+
+      {/* Mitte */}
+      <div className="mt-4 flex justify-center">
+        <Link href={`/d/${data.center.id}`} className={`relative max-w-md rounded-2xl bg-brand-500 px-4 py-3 text-center text-white shadow-card hover:brightness-105 ${data.center.id === doc.id ? "ring-4 ring-brand-500/25" : ""}`}>
+          <span className="block text-[11px] font-semibold tracking-wide text-white/80 uppercase">Vertrag{data.center.id === doc.id ? " · du bist hier" : ""}</span>
+          <b className="block truncate text-[15px] leading-6">{data.center.title ?? data.center.file_name}</b>
+          <span className="block text-[12px] text-white/80">{data.center.doc_type ?? ""}{data.center.doc_type ? " · " : ""}seit {fmtDate(dateOf(data.center))}</span>
+        </Link>
       </div>
-      {/* Handy: als Liste, gruppiert nach Grund */}
-      <ul className="mt-3 space-y-1.5 sm:hidden">
-        {[...left, ...right].map(({ d, why }) => (
-          <li key={d.id}>
-            <Link href={`/d/${d.id}`} className="block rounded-xl border border-card-line px-3 py-2.5 hover:bg-surface-2">
-              <span className="block text-[11.5px] font-semibold text-brand-500">{why.split(" – ")[0]}</span>
-              <span className="block truncate text-[14px] font-semibold">{d.title ?? d.file_name}</span>
-              <span className="block text-[12px] text-muted">{[roleLabel(d.partner_role), importanceLabel(importanceOf(d)), fmtDate(dateOf(d))].filter(Boolean).join(" · ")}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+
+      {/* Äste: Verbindungslinie oben, Gruppen darunter verteilt */}
+      {shown.length > 0 && (
+        <div className="relative mt-3">
+          <div className="mx-auto h-4 w-px bg-line-strong" aria-hidden />
+          <div className={`grid gap-3 border-t border-line-strong pt-4 ${shown.length >= 4 ? "sm:grid-cols-2 xl:grid-cols-4" : shown.length === 3 ? "sm:grid-cols-3" : shown.length === 2 ? "sm:grid-cols-2" : ""}`}>
+            {shown.map((g) => {
+              const list = [...(data.groups.get(g.id) ?? [])].sort((a, b) => Number(!!open(b)) - Number(!!open(a)) || weight(b) - weight(a) || dateOf(b).localeCompare(dateOf(a)));
+              const due = list.filter(open).length;
+              return (
+                <div key={g.id} className="relative rounded-xl border border-card-line bg-surface p-2.5">
+                  <span className="absolute -top-4 left-1/2 h-4 w-px bg-line-strong" aria-hidden />
+                  <div className="px-1">
+                    <span className="flex items-center gap-1.5 text-[13.5px] font-semibold">{g.icon}{g.title}<span className="tnum ml-auto rounded-full border border-card-line px-1.5 text-[11px] font-semibold text-soft">{list.length}</span></span>
+                    <span className="mt-0.5 block text-[12px] leading-[17px] text-muted">{due ? <b className="font-semibold text-negative-text">{due} offen · </b> : null}{g.means}</span>
+                  </div>
+                  <ul className="mt-1.5 space-y-0.5">{list.slice(0, 4).map((d) => <Leaf key={d.id} d={d} />)}</ul>
+                  {list.length > 4 && <Link href={`/partner/${data.partner}`} className="mt-1 block px-2 text-[12px] font-semibold text-selected hover:underline">+ {list.length - 4} weitere</Link>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {data.archived > 0 && (
+        <Link href={`/partner/${data.partner}`} className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] text-muted hover:text-fg"><Archive size={13} /> {data.archived} erledigt oder veraltet – im Archiv</Link>
+      )}
     </section>
   );
 }
