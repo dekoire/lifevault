@@ -8,7 +8,7 @@ import { DraftHost } from "@/components/DraftSheet";
 import { ForwardConfirm } from "@/components/ForwardConfirm";
 import { DownloadsMenu } from "@/components/settings/Downloads";
 import { useCallback, useEffect, useState } from "react";
-import { Building2, Camera, FolderOutput, PanelLeftClose, PanelLeftOpen, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
+import { Building2, Camera, Download, FolderOutput, Search, PanelLeftClose, PanelLeftOpen, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
 import { Logo, LogoMark } from "@/components/Logo";
 import { MfaChallenge, MfaEnroll } from "@/components/Mfa";
 import { useCaptureTray } from "@/components/CaptureTray";
@@ -120,14 +120,16 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       {/* Handy: Kopf mit Logo */}
       {!chat && (
         <header className="pt-safe relative z-20 bg-page lg:hidden">
-          <div className="flex h-14 items-center justify-between px-4">
-            <Link href="/" aria-label="Start"><Logo size={28} /></Link>
-            <span className="flex items-center gap-2">
-              <GlobalSearch compact />
-              {path === "/" && <button type="button" onClick={() => setExporting(true)} aria-label="Exportieren" className="grid h-10 w-10 place-items-center rounded-full bg-surface-3 text-soft"><FolderOutput size={18} /></button>}
-              <ProjectSwitcher compact />
-              <Link href="/einstellungen" aria-label="Einstellungen" className="grid h-10 w-10 place-items-center rounded-full bg-surface-3 text-soft"><Settings size={18} /></Link>
-            </span>
+          {/* kompakt: Logo, Projekt, Avatar – Suchen, Export, Downloads, Einstellungen stecken im Avatar-Menü */}
+          <div className="flex h-14 items-center gap-2.5 px-4">
+            <Link href="/" aria-label="Start" className="shrink-0"><LogoMark size={30} /></Link>
+            <span className="min-w-0 flex-1"><ProjectSwitcher compact /></span>
+            <GlobalSearch compact button={false} />
+            <AvatarMenu email={email} size={38} extra={[
+              { icon: Search, label: "Suchen", onClick: () => window.dispatchEvent(new Event("lifevault:search")) },
+              { icon: FolderOutput, label: "Exportieren", onClick: () => setExporting(true) },
+              { icon: Download, label: "Downloads", href: "/downloads" },
+            ]} />
           </div>
         </header>
       )}

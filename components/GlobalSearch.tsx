@@ -12,7 +12,8 @@ import { buildPartners } from "@/lib/partners";
 type Hit = { key: string; icon: React.ReactNode; title: string; sub: string; go: () => void };
 
 /** Suche oben (Strg/⌘+K): Dokumente, Partner, Bereiche – und „im Chat fragen“ */
-export function GlobalSearch({ compact = false }: { compact?: boolean }) {
+/** button=false: ohne eigenen Knopf, öffnet sich über das Ereignis „lifevault:search“ (z. B. aus dem Avatar-Menü) */
+export function GlobalSearch({ compact = false, button = true }: { compact?: boolean; button?: boolean }) {
   const router = useRouter();
   const detail = useDetail();
   const { docs } = useDocs();
@@ -26,8 +27,10 @@ export function GlobalSearch({ compact = false }: { compact?: boolean }) {
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setOpen(true); setTimeout(() => input.current?.focus(), 0); }
     };
+    const ext = () => { setOpen(true); setTimeout(() => input.current?.focus(), 50); };
     window.addEventListener("keydown", key);
-    return () => window.removeEventListener("keydown", key);
+    window.addEventListener("lifevault:search", ext);
+    return () => { window.removeEventListener("keydown", key); window.removeEventListener("lifevault:search", ext); };
   }, []);
   useEffect(() => {
     if (!open || compact) return;
@@ -81,7 +84,7 @@ export function GlobalSearch({ compact = false }: { compact?: boolean }) {
 
   if (compact) return (
     <>
-      <button type="button" onClick={() => { setOpen(true); setTimeout(() => input.current?.focus(), 50); }} aria-label="Suchen" className="grid h-10 w-10 place-items-center rounded-full bg-surface-3 text-soft"><Search size={18} /></button>
+      {button && <button type="button" onClick={() => { setOpen(true); setTimeout(() => input.current?.focus(), 50); }} aria-label="Suchen" className="grid h-10 w-10 place-items-center rounded-full bg-surface-3 text-soft"><Search size={18} /></button>}
       {open && (
         <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setOpen(false)}>
           <div className="sheet-up pt-safe bg-page px-3 pb-3" onClick={(e) => e.stopPropagation()}>

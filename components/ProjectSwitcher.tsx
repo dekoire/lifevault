@@ -30,7 +30,7 @@ export function ProjectSwitcher({ compact = false }: { compact?: boolean }) {
         <ChevronsUpDown size={14} className="shrink-0 text-muted" />
       </button>
       {open && (
-        <div role="listbox" className={`pop-in absolute z-50 mt-1.5 w-64 rounded-2xl border border-card-line bg-surface p-1.5 shadow-[0_12px_32px_rgba(16,24,40,.14)] ${compact ? "right-0" : "left-0"}`}>
+        <div role="listbox" className={`pop-in absolute z-50 mt-1.5 w-64 rounded-2xl border border-card-line bg-surface p-1.5 shadow-[0_12px_32px_rgba(16,24,40,.14)] left-0`}>
           {[{ id: "all", name: "Alle Projekte", color: "" }, ...projects].map((p) => (
             <button key={p.id} type="button" role="option" aria-selected={current === p.id} onClick={() => { setCurrent(p.id); setOpen(false); }}
               className="flex h-9 w-full items-center gap-2.5 rounded-xl px-2.5 text-left text-[13.5px] hover:bg-surface-2">

@@ -1,11 +1,15 @@
 /** Logo: lila Kachel mit Tresor, daneben der Name */
+import { useId } from "react";
+
 export function LogoMark({ size = 32 }: { size?: number }) {
+  // eigene ID je Logo: sonst greift ein ausgeblendetes Logo (z. B. Seitenleiste am Handy) den Verlauf ab und das sichtbare bleibt blass
+  const id = `lv-g-${useId().replace(/:/g, "")}`;
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
       <defs>
-        <linearGradient id="lv-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#8b6cff" /><stop offset="1" stopColor="#5b3be8" /></linearGradient>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#8b6cff" /><stop offset="1" stopColor="#5b3be8" /></linearGradient>
       </defs>
-      <rect width="64" height="64" rx="15" fill="url(#lv-g)" />
+      <rect width="64" height="64" rx="15" fill={`url(#${id})`} />
       <rect x="14" y="15" width="36" height="32" rx="6" fill="none" stroke="#fff" strokeWidth="3.5" />
       <circle cx="32" cy="31" r="7.5" fill="none" stroke="#fff" strokeWidth="3.5" />
       <path d="M32 23.5v3M32 35.5v3M24.5 31h3M36.5 31h3" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
