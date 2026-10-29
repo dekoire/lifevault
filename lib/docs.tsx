@@ -69,6 +69,8 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
   const refresh = useCallback(async () => {
     const load = (cols: string) => supabase.from("documents").select(cols).order("received_at", { ascending: false }).limit(1000);
     let { data, error } = await load(LIST_COLS);
+    // Datenbank noch ohne Wichtigkeit (Migration 0013 fehlt): ohne diese Spalten laden
+    if (error) ({ data, error } = await load(LIST_COLS.replace(",importance,importance_reason,importance_manual,partner_role,basis_id", "")));
     // Datenbank noch ohne Projekte (Migration 0003 fehlt): ohne die neuen Spalten laden
     if (error) ({ data, error } = await load(LIST_COLS.replace(",project_id,split_from", "")));
     const list = (data as unknown as Doc[]) ?? [];

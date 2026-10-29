@@ -4,6 +4,7 @@ import { aiFor, loadAiSettings } from "@/lib/ai";
 import { extract, FILE_TYPES, PdfLocked, slicePdf, splitPlan, TEXT_TYPES, toColumns, type Extracted } from "@/lib/extract";
 import { unauthorized, userClient } from "@/lib/server";
 import { OFFICE_TYPES } from "@/lib/office";
+import { rankAfterUpload } from "@/lib/rank";
 
 export const maxDuration = 300;
 
@@ -113,10 +114,13 @@ export async function POST(req: Request) {
     if (inline) {
       // nur Metadaten speichern, Inhalt verschlüsselt der Browser
       await sb.from("documents").update({ ...meta, status: "ready", error: null }).eq("id", id);
+      await rankAfterUpload(sb, id).catch((e) => console.error("rank", (e as Error).message));
       return Response.json({ ok: true, meta, content });
     }
     await sb.from("documents").update({ ...meta, ...content, status: "ready", error: null }).eq("id", id);
     await archiveCheck(sb, id, o).catch((e) => console.error("archive", (e as Error).message));
+    // Wichtigkeit und Bezug zur Grundlage beim Partner (nach dem Archivieren – Überholtes zählt weniger)
+    await rankAfterUpload(sb, id).catch((e) => console.error("rank", (e as Error).message));
     return Response.json({ ok: true });
   } catch (e) {
     if (e instanceof PdfLocked) return fail(`${e.message} Gib das Passwort ein, dann wird sie ausgelesen.`);

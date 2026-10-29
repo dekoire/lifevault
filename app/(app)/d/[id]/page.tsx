@@ -13,6 +13,7 @@ import { chrono, fmtDate, fmtMoney, isUrgent, useDocs } from "@/lib/docs";
 import { useProjects } from "@/lib/projects";
 import { Clamp } from "@/components/Clamp";
 import { DocLabels } from "@/components/Labels";
+import { DocImportance } from "@/components/Importance";
 import { DocPayment } from "@/components/DocActions";
 import { relatedPayDocs } from "@/lib/related";
 import { explainDoc, groupRank } from "@/lib/doctypes";
@@ -206,6 +207,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
               {doc.encrypted && <span className="inline-flex h-7 items-center gap-1 rounded-full border border-card-line px-2.5 text-[12px] font-semibold text-fg"><Lock size={12} /> Verschlüsselt</span>}
             </div>
             <div className="mt-1.5"><DocLabels inline doc={doc} onChange={setDoc} /></div>
+            {doc.status === "ready" && <div className="mt-2"><DocImportance doc={doc} onChange={setDoc} /></div>}
           </div>
         </div>
         <div className="flex shrink-0 gap-1.5">

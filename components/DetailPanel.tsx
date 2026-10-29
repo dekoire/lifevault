@@ -1,5 +1,6 @@
 "use client";
 import { DocLabels } from "@/components/Labels";
+import { DocImportance } from "@/components/Importance";
 import { DocAdvice } from "@/components/Advice";
 import { openDraft } from "@/components/DraftSheet";
 import { DRAFT_PURPOSES, suggestedPurposes } from "@/lib/drafts";
@@ -101,6 +102,7 @@ function DocDetail({ id, open, close, back = false }: { id: string; open: (d: De
       </div>
       <Classify doc={doc} onChange={(d) => setDoc(d)} />
       <DocLabels doc={doc} onChange={(d) => setDoc(d)} />
+      <DocImportance doc={doc} onChange={(d) => setDoc(d)} />
       <DocAdvice id={doc.id} />
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="mr-1 text-[12px] font-semibold text-muted">Schreiben</span>
