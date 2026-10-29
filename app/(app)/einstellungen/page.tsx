@@ -1,5 +1,5 @@
 "use client";
-import { AtSign, Download, BellRing, Timer, Building2, Cable, FolderKanban, KeyRound, LockKeyhole, LogOut, Palette, ShieldCheck, UserRound } from "lucide-react";
+import { AtSign, Download, BellRing, Gauge, Timer, Building2, Cable, FolderKanban, KeyRound, LockKeyhole, LogOut, Palette, ShieldCheck, UserRound } from "lucide-react";
 import { PageHeader, TileMenu } from "@/components/ui";
 import { useMe } from "@/lib/me";
 import { supabase, useSession } from "@/lib/supabase";
@@ -15,6 +15,7 @@ export default function SettingsPage() {
         { href: "/partner", title: "Partner", text: "Vertragspartner, Händler und alle Kunden- und Vertragsnummern", icon: <Building2 size={22} strokeWidth={1.75} /> },
         { href: "/einstellungen/mitteilungen", title: "Mitteilungen", text: "Erinnerungen an Fristen aufs Handy – wann und wofür", icon: <BellRing size={22} strokeWidth={1.75} /> },
         { href: "/mail", title: "E-Mail-Import", text: "Rechnungen & Co. aus Gmail oder Proton Mail holen", icon: <AtSign size={22} strokeWidth={1.75} /> },
+        { href: "/einstellungen/bewertung", title: "Wichtigkeit & Zusammenhang", text: "Vorhandene Dokumente rückwirkend bewerten, Fehlgeschlagene erneut auslesen", icon: <Gauge size={22} strokeWidth={1.75} /> },
         { href: "/einstellungen/projekte", title: "Projekte", text: "Unterlagen trennen, z. B. Steuer, Wohnung, Firma", icon: <FolderKanban size={22} strokeWidth={1.75} /> },
         { href: "/einstellungen/api", title: "API & MCP", text: "Andere Apps und KI-Agenten verbinden, Rechte festlegen", icon: <Cable size={22} strokeWidth={1.75} /> },
         { href: "/einstellungen/sicherheit", title: "Zwei-Faktor", text: "Code aus der Authenticator-App beim Anmelden", icon: <KeyRound size={22} strokeWidth={1.75} /> },

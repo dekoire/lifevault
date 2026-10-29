@@ -5,6 +5,7 @@ import { extract, FILE_TYPES, PdfLocked, slicePdf, splitPlan, TEXT_TYPES, toColu
 import { unauthorized, userClient } from "@/lib/server";
 import { OFFICE_TYPES } from "@/lib/office";
 import { rankAfterUpload } from "@/lib/rank";
+import { realMime } from "@/lib/sniff";
 
 export const maxDuration = 300;
 
@@ -56,8 +57,12 @@ export async function POST(req: Request) {
     await sb.from("documents").update({ status: "error", error: msg }).eq("id", id);
     return Response.json({ error: msg }, { status: 422 });
   };
-  const mediaType = inline && typeof body?.mediaType === "string" ? body.mediaType : doc.mime_type;
-  if (![...FILE_TYPES, ...TEXT_TYPES, ...Object.keys(OFFICE_TYPES)].includes(mediaType)) return fail("Dieser Dateityp wird noch nicht unterstützt (Foto, PDF, Text, PowerPoint, Word, Excel).");
+  let mediaType: string = inline && typeof body?.mediaType === "string" ? body.mediaType : doc.mime_type;
+  const supported = (m: string) => [...FILE_TYPES, ...TEXT_TYPES, ...Object.keys(OFFICE_TYPES)].includes(m);
+  const unsupported = () => fail("Dieser Dateityp wird noch nicht unterstützt (Foto, PDF, Text, PowerPoint, Word, Excel).");
+  // ohne Endung hochgeladen (octet-stream): erst nach dem Laden am Inhalt erkennen
+  const unknown = mediaType === "application/octet-stream" || mediaType === "binary/octet-stream" || !mediaType;
+  if (!unknown && !supported(mediaType)) return unsupported();
 
   let data: Uint8Array;
   if (inline) {
@@ -68,6 +73,11 @@ export async function POST(req: Request) {
     const { data: file, error: dlErr } = await sb.storage.from("documents").download(doc.file_path);
     if (dlErr || !file) return fail("Die Datei konnte nicht geladen werden.");
     data = new Uint8Array(await file.arrayBuffer());
+  }
+  if (unknown) {
+    mediaType = realMime(mediaType, data);
+    if (!supported(mediaType)) return unsupported();
+    await sb.from("documents").update({ mime_type: mediaType }).eq("id", id);
   }
 
   // mehrere Briefe in einer PDF → in einzelne Dokumente trennen (nicht bei verschlüsselten Dateien)
