@@ -29,7 +29,7 @@ function batches(docs: Doc[]) {
   return out.filter((b) => b.length >= 2).reverse().slice(0, 3);
 }
 
-async function toPdf(docs: Doc[]) {
+export async function toPdf(docs: Doc[]) {
   const { PDFDocument } = await import("pdf-lib");
   const pdf = await PDFDocument.create();
   for (const d of docs) {

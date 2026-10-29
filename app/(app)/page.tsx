@@ -6,6 +6,7 @@ import { ClusterIcon } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
 import { TodoList } from "@/components/TodoList";
 import { MergeSuggestions } from "@/components/MergeSuggestions";
+import { CardWallet } from "@/components/CardWallet";
 import { RecentTable } from "@/components/RecentTable";
 import { DuplicateHint } from "@/components/Duplicates";
 import { todos } from "@/lib/actions";
@@ -107,6 +108,7 @@ export default function Home() {
               </section>
               <DuplicateHint docs={docs} />
               <MergeSuggestions />
+              <CardWallet title="Wichtige Karten" compact />
               <TodoList docs={docs} />
               {recent.length > 0 && (
                 <section className={`${CARD} overflow-hidden`}>

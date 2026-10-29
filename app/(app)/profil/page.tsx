@@ -1,4 +1,5 @@
 "use client";
+import { CardWallet } from "@/components/CardWallet";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Briefcase, Car, CircleAlert, FileText, HeartPulse, Home, IdCard, Landmark, Loader2, RefreshCw, ScrollText, ShieldCheck, Sparkles, UserRound, type LucideIcon } from "lucide-react";
@@ -116,6 +117,8 @@ export default function ProfilPage() {
         )}
         {profile?.intro && <Clamp className="mt-3 max-w-4xl text-[13.5px] leading-relaxed text-soft">{profile.intro}</Clamp>}
       </section>
+
+      <div className="mb-4"><CardWallet /></div>
 
       {steck.length > 0 && (
         <section className={`${CARD} mb-4 overflow-hidden`}>

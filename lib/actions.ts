@@ -1,3 +1,4 @@
+import { walletCards } from "@/lib/cards";
 import { recheckOf } from "@/lib/recheck";
 import type { Doc, Fact } from "@/lib/types";
 
@@ -101,6 +102,13 @@ export function todos(docs: Doc[], today: string, opts: { pastDays?: number; ahe
       continue;
     }
     out.push({ doc: d, date: pick.date, what: pick.what, more: list.length - 1, days: day(pick.date), payment: paymentOf(d), total: PAY_ITEM.test(pick.what) ? total : undefined });
+  }
+  // Karten & Ausweise: 90 Tage vor Ablauf erinnern (eine Aufgabe je Karte, nicht je Foto)
+  for (const c of walletCards(docs)) {
+    if (!c.validDate) continue;
+    const date = `${c.validDate.getFullYear()}-${String(c.validDate.getMonth() + 1).padStart(2, "0")}-${String(c.validDate.getDate()).padStart(2, "0")}`;
+    const n = day(date);
+    if (n <= 90 && n >= -60) out.push({ doc: c.main, date, what: `${c.label} läuft ab – rechtzeitig verlängern`, more: 0, days: n });
   }
   // gleiche Sache, mehrere Schreiben (Rechnung → Erinnerung → Mahnung): nur das neueste zeigen, die älteren hängen daran
   const key = (t: Todo) => (t.doc.sender ? `${t.doc.sender.toLowerCase().replace(/[^a-z0-9äöü]+/g, " ").trim().split(" ").slice(0, 2).join(" ")}` : t.doc.id);
