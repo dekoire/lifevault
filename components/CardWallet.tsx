@@ -1,38 +1,21 @@
 "use client";
 import { useMemo, useState } from "react";
-import { AlertTriangle, Combine, Loader2, WalletCards } from "lucide-react";
+import { AlertTriangle, Combine, WalletCards } from "lucide-react";
 import { useDetail } from "@/components/DetailPanel";
-import { toPdf } from "@/components/MergeSuggestions";
+import { MergeSheet } from "@/components/MergeReview";
 import { SenderLogo } from "@/components/SenderLogo";
-import { KIND_BG, walletCards, type WalletCard } from "@/lib/cards";
+import { cardOrder, KIND_BG, walletCards } from "@/lib/cards";
 import { useDocs } from "@/lib/docs";
 
 const fmtValid = (d?: Date) => (d ? d.toLocaleDateString("de-DE", { month: "2-digit", year: "numeric" }) : undefined);
 
 /** Karten & Ausweise als Wallet zum Wischen – Nummern nur maskiert, Tippen öffnet das Dokument */
 export function CardWallet({ title = "Karten & Ausweise", compact = false }: { title?: string; compact?: boolean }) {
-  const { allDocs, upload, remove } = useDocs();
+  const { allDocs } = useDocs();
   const cards = useMemo(() => walletCards(allDocs), [allDocs]);
   const open = useDetail();
   const [ask, setAsk] = useState<string>();
-  const [busy, setBusy] = useState<string>();
-  const [error, setError] = useState<string>();
   if (!cards.length) return null;
-
-  // alle Fotos einer Karte zu einem PDF (Vorderseite zuerst), Einzelfotos löschen
-  const merge = async (c: WalletCard) => {
-    setBusy(c.key); setError(undefined);
-    try {
-      const order = [c.main, ...c.docs.filter((d) => d !== c.main)];
-      const pdf = await toPdf(order);
-      const name = `${c.label}${c.issuer ? ` ${c.issuer}` : ""}`.replace(/[\\/:*?"<>|]/g, "").slice(0, 100);
-      const ids = await upload([new File([pdf], `${name}.pdf`, { type: "application/pdf" })], { projectId: c.main.project_id });
-      if (!ids.length) throw new Error("Hochladen hat nicht geklappt – die Fotos bleiben erhalten.");
-      for (const d of c.docs) await remove(d);
-      setAsk(undefined);
-    } catch (e) { setError((e as Error).message); }
-    finally { setBusy(undefined); }
-  };
 
   return (
     <section>
@@ -59,19 +42,14 @@ export function CardWallet({ title = "Karten & Ausweise", compact = false }: { t
               {c.check && (
                 <div className="mt-1.5 flex items-center gap-2 px-1 text-[12px] text-soft">
                   <span className="min-w-0 flex-1 truncate">{c.check}</span>
-                  {c.docs.length >= 2 && (ask === c.key
-                    ? <span className="flex shrink-0 gap-1.5">
-                        <button type="button" onClick={() => setAsk(undefined)} className="font-semibold text-muted">Nein</button>
-                        <button type="button" disabled={!!busy} onClick={() => void merge(c)} className="inline-flex items-center gap-1 font-semibold text-selected">{busy === c.key && <Loader2 size={12} className="animate-spin" />} Ja, {c.docs.length} → 1 PDF</button>
-                      </span>
-                    : <button type="button" onClick={() => setAsk(c.key)} className="inline-flex shrink-0 items-center gap-1 font-semibold text-fg"><Combine size={12} /> Zusammenführen</button>)}
+                  {c.docs.length >= 2 && <button type="button" onClick={() => setAsk(c.key)} className="inline-flex shrink-0 items-center gap-1 font-semibold text-fg"><Combine size={12} /> Ansehen & zusammenführen</button>}
                 </div>
               )}
             </div>
           );
         })}
       </div>
-      {error && <p role="alert" className="mt-1 text-[13px] text-negative-text">{error}</p>}
+      {(() => { const c = cards.find((x) => x.key === ask); return c ? <MergeSheet docs={cardOrder(c).ids.map((id) => c.docs.find((d) => d.id === id)!)} skip={cardOrder(c).skip} title={`${c.label}${c.issuer && c.kind !== "id" ? ` ${c.issuer}` : ""}`} reason={c.check} onClose={() => setAsk(undefined)} /> : null; })()}
     </section>
   );
 }

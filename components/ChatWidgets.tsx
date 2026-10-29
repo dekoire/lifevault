@@ -6,6 +6,7 @@ import { nameFromEmail } from "@/components/AvatarMenu";
 import { ClusterTag } from "@/components/ClusterIcon";
 import { useDetail } from "@/components/DetailPanel";
 import { Qr } from "@/components/DocActions";
+import { ActionsWidget } from "@/components/ChatActions";
 import { partnerFacts } from "@/components/PartnerInfo";
 import { SenderLogo } from "@/components/SenderLogo";
 import { KIND } from "@/components/TodoList";
@@ -23,7 +24,7 @@ import type { Doc } from "@/lib/types";
  * Bausteine im Chat: Die KI nennt nur Dokument-IDs bzw. Partner-Schlüssel – Beträge, IBAN, Adressen usw.
  * kommen hier aus den echten Daten. So erfindet die KI keine Bankverbindungen.
  */
-export const WIDGETS = ["zahlung", "partner", "dokumente", "aufgaben", "uebersicht", "gehalt"] as const;
+export const WIDGETS = ["zahlung", "partner", "dokumente", "aufgaben", "uebersicht", "gehalt", "aktion"] as const;
 export type WidgetKind = (typeof WIDGETS)[number];
 
 // Kachel-Verläufe wie in Finastry
@@ -216,9 +217,10 @@ function DocsWidget({ body }: { body: string }) {
   if (!list.length) return null;
   return (
     <div className="-mx-1 flex snap-x gap-2.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
-      {list.slice(0, 12).map((d) => (
-        <button key={d.id} type="button" onClick={() => open?.({ kind: "doc", id: d.id })} className="w-40 shrink-0 snap-start overflow-hidden rounded-2xl border border-card-line bg-surface text-left shadow-card transition hover:border-brand-500/40">
-          <span className="relative block h-28 overflow-hidden"><Thumb d={d} /><span className="absolute top-2 left-2"><SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={26} /></span></span>
+      {list.slice(0, 12).map((d, i) => (
+        <button key={d.id} type="button" onClick={() => open?.({ kind: "doc", id: d.id })} className="w-40 shrink-0 snap-start overflow-hidden rounded-2xl border border-card-line bg-surface text-left shadow-card hover:border-brand-500/40">
+          {/* Nummer, damit man sagen kann „verbinde 1 und 2“ */}
+          <span className="relative block h-28 overflow-hidden"><Thumb d={d} /><span className="absolute top-2 left-2"><SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={26} /></span>{list.length > 1 && <span className="tnum absolute top-2 right-2 grid h-6 min-w-6 place-items-center rounded-full bg-fg px-1.5 text-[12px] font-bold text-canvas">{i + 1}</span>}</span>
           <span className="block p-2.5"><b className="line-clamp-2 text-[12.5px] leading-4">{d.title ?? d.file_name}</b><span className="mt-1 block truncate text-[11px] text-muted">{d.doc_type ?? "Dokument"} · {fmtDate(dateOf(d))}</span></span>
         </button>
       ))}
@@ -349,6 +351,7 @@ export function ChatWidget({ kind, body }: { kind: string; body: string }) {
     case "aufgaben": return <TodosWidget body={body} />;
     case "uebersicht": return <OverviewWidget />;
     case "gehalt": return <SalaryWidget body={body} />;
+    case "aktion": return <ActionsWidget body={body} />;
     default: return null;
   }
 }

@@ -30,6 +30,15 @@ const SINGLE: CardKind[] = ["id", "drive", "health"];
 // keine Karte, auch wenn „Karte“ im Text steht
 const NOT_CARD = /rechnung|mahnung|brief|informationsschreiben|zahlschein|vertrag|bescheid|merkblatt|broschüre|formular/i;
 
+/** Rückseite? (die EHIC ist die Rückseite der Gesundheitskarte) */
+export const isBack = (d: Pick<Doc, "title" | "doc_type">) => /rückseite|ehic|europäische krankenversicherungskarte/i.test(`${d.title ?? ""} ${d.doc_type ?? ""}`);
+/** Reihenfolge fürs Zusammenführen: Vorderseite, Rückseite; weitere Fotos derselben Seite vorab abwählen (doppelt) */
+export function cardOrder(c: Pick<WalletCard, "docs" | "main">) {
+  const fronts = [c.main, ...c.docs.filter((d) => d !== c.main && !isBack(d))], backs = c.docs.filter((d) => d !== c.main && isBack(d));
+  const keep = [fronts[0], backs[0]].filter((d): d is Doc => !!d);
+  const rest = [...fronts.slice(1), ...backs.slice(1)];
+  return { ids: [...keep, ...rest].map((d) => d.id), skip: keep.length >= 2 ? rest.map((d) => d.id) : [] };
+}
 const fact = (d: Doc, re: RegExp) => d.key_facts?.find((f) => re.test(f.label))?.value?.trim();
 const holderOf = (d: Doc) => fact(d, /karteninhaber|name auf/i) ?? ([fact(d, /vorname/i), fact(d, /nachname|^name\b/i)].filter(Boolean).join(" ") || undefined);
 
@@ -71,14 +80,14 @@ export function walletCards(docs: Doc[]): WalletCard[] {
     const label = kind === "id" ? (/reisepass/i.test(t) ? "Reisepass" : /aufenthalt/i.test(t) ? "Aufenthaltstitel" : "Personalausweis")
       : kind === "bank" ? (/kreditkarte/i.test(t) ? "Kreditkarte" : /girocard/i.test(t) && !/visa|master/i.test(t) ? "girocard" : "Debitkarte")
       : kind === "health" ? "Gesundheitskarte" : kind === "other" ? (d.doc_type?.replace(/\s*\(.*\)/, "") ?? "Karte") : KINDS.find(([k]) => k === kind)![2];
-    const side = /rückseite/i.test(`${d.title} ${d.doc_type}`);
+    const side = isBack(d);
     if (!cur) {
       map.set(key, { key, kind, label, issuer: d.sender, domain: kind === "id" ? "bund.de" : d.sender_domain, cluster: d.cluster, holder: holderOf(d), number: mask(number), valid, validDate: parseValid(valid), docs: [d], main: d });
       continue;
     }
     cur.docs.push(d);
     // Vorderseite / Dokument mit mehr Angaben als Hauptbild, fehlende Angaben ergänzen
-    if (!side && /rückseite/i.test(`${cur.main.title} ${cur.main.doc_type}`)) cur.main = d;
+    if (!side && isBack(cur.main)) cur.main = d;
     cur.issuer ??= d.sender; if (kind !== "id") cur.domain ??= d.sender_domain;
     cur.number ??= mask(number);
     if (!cur.validDate && valid) { cur.valid = valid; cur.validDate = parseValid(valid); }
@@ -87,7 +96,7 @@ export function walletCards(docs: Doc[]): WalletCard[] {
   const now = Date.now();
   return [...map.values()].map((c) => {
     // Hinweis zum Prüfen: mehrere Einzelfotos, nur Rückseite, unklarer Aussteller, abgelaufen
-    const onlyBack = c.docs.every((d) => /rückseite/i.test(`${d.title} ${d.doc_type}`));
+    const onlyBack = c.docs.every(isBack);
     const check = c.validDate && c.validDate.getTime() < now ? "abgelaufen"
       : onlyBack ? "nur Rückseite – Vorderseite fehlt?"
       : c.docs.length > 2 ? `${c.docs.length} Fotos – doppelt? zusammenführen`
