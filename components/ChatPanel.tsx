@@ -23,7 +23,7 @@ export function Sources({ text }: { text: string }) {
       <div className="grid gap-2 sm:grid-cols-2">
         {list.map((d) => (
           <Link key={d.id} href={`/d/${d.id}`} className="flex items-center gap-3 rounded-xl border border-card-line bg-surface px-3 py-2.5 hover:bg-surface-2">
-            <SenderLogo domain={d.sender_domain} cluster={d.cluster} size={34} />
+            <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={34} />
             <span className="min-w-0"><span className="block truncate text-[14px] font-semibold">{d.title ?? d.file_name}</span><span className="block truncate text-[12px] text-muted">{[d.sender, d.doc_date].filter(Boolean).join(" · ")}</span></span>
           </Link>
         ))}

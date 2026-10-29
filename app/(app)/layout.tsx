@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Camera, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
+import { Building2, Camera, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
 import { Logo, LogoMark } from "@/components/Logo";
 import { MfaChallenge, MfaEnroll } from "@/components/Mfa";
 import { useUploadPickers } from "@/components/UploadButtons";
@@ -10,6 +10,7 @@ import { DocsProvider } from "@/lib/docs";
 import { MeProvider, useMe } from "@/lib/me";
 import { ProjectsProvider } from "@/lib/projects";
 import { ProjectSwitcher, UploadTarget } from "@/components/ProjectSwitcher";
+import { UploadProgress } from "@/components/UploadProgress";
 import { supabase, useSession } from "@/lib/supabase";
 
 const Splash = () => <div className="grid min-h-dvh place-items-center bg-page"><span className="animate-pulse"><LogoMark size={56} /></span></div>;
@@ -60,12 +61,14 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
     { href: "/", label: "Start", icon: House, match: (p) => p === "/" || p.startsWith("/c/") || p.startsWith("/d/") },
     { href: "/chat", label: "Fragen", icon: MessageSquare, match: (p) => p.startsWith("/chat") },
     { href: "/profil", label: "Profil", icon: UserRound, match: (p) => p.startsWith("/profil") },
+    { href: "/partner", label: "Partner", icon: Building2, match: (p) => p.startsWith("/partner") },
     { href: "/einstellungen", label: "Einstellungen", icon: Settings, match: (p) => p.startsWith("/einstellungen") },
     ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: ShieldCheck, match: (p: string) => p.startsWith("/admin") }] : []),
   ];
   return (
     <div className="min-h-dvh bg-page">
       {inputs}
+      <UploadProgress />
       {/* Desktop: Seitenleiste wie bei Finastry */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-card-line bg-surface px-3 py-5 lg:flex">
         <Link href="/" className="mb-5 px-2"><Logo size={30} /></Link>
@@ -103,7 +106,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
           <Tab n={NAV[2]} on={NAV[2].match(path)} />
           <button type="button" onClick={() => setSheet(true)} aria-label="Dokument hinzufügen" className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand-500 text-white active:scale-95"><Plus size={24} strokeWidth={2.4} /></button>
           <Tab n={NAV[1]} on={NAV[1].match(path)} />
-          <Tab n={NAV[3]} on={NAV[3].match(path) || path.startsWith("/admin")} label="Mehr" />
+          <Tab n={NAV[4]} on={NAV[4].match(path) || path.startsWith("/admin") || path.startsWith("/partner")} label="Mehr" />
         </div>
       </nav>
 

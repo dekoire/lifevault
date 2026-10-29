@@ -14,7 +14,7 @@ export function DocRow({ d }: { d: Doc }) {
     <Link href={`/d/${d.id}`} className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2/70 active:bg-surface-2 ${d.archived ? "opacity-60" : ""}`}>
       {processing ? (
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-lavender"><span className="flex gap-0.5">{[0, 1, 2].map((i) => <span key={i} className="typing-dot h-1.5 w-1.5 rounded-full bg-brand-500" style={{ animationDelay: `${i * 0.15}s` }} />)}</span></span>
-      ) : <SenderLogo domain={d.sender_domain} cluster={d.cluster} />}
+      ) : <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} />}
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
           <span className="truncate text-[15px] font-semibold">{processing ? d.file_name : d.title ?? d.file_name}</span>

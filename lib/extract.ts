@@ -12,7 +12,7 @@ const Schema = z.object({
   title: z.string().describe("kurzer, sprechender Titel, z. B. „Arbeitsvertrag Bosch“, „Gehaltsabrechnung März 2026“, „Rechnung Telekom Oktober 2026“"),
   docType: z.string().describe("Art, z. B. Vertrag, Gehaltsabrechnung, Rechnung, Mahnung, Kassenbon, Arztbrief, Befund, Angebot, Bescheid, Police"),
   sender: z.string().nullable().describe("Absender bzw. Vertragspartner, Arbeitgeber, Händler, Praxis (Firmenname ohne Rechtsform-Zusätze, wenn eindeutig)"),
-  senderDomain: z.string().nullable().describe("Webadresse des Absenders ohne https, z. B. vodafone.de, o2online.de, telekom.de – nur wenn sicher bekannt, sonst null"),
+  senderDomain: z.string().nullable().describe("Hauptwebadresse des Absenders ohne https, z. B. vodafone.de, o2online.de, telekom.de, huk.de, mercedes-benz.de, dm.de – bei bekannten Firmen immer angeben (auch wenn sie nicht im Dokument steht), bei unbekannten nur, wenn sie im Dokument steht, sonst null"),
   docDate: z.string().nullable().describe("Datum des Dokuments als YYYY-MM-DD, sonst null"),
   summary: z.string().describe("Zusammenfassung in 2–3 Sätzen: worum geht es, was ist wichtig, was ist zu tun – OHNE Namen von Privatpersonen, Adressen, Geburtsdaten, Kontonummern oder Kennnummern"),
   keyFacts: z.array(z.object({
@@ -33,6 +33,7 @@ Lies das Dokument vollständig. Gib den gesamten Text wortgetreu zurück – nic
 Ordne es genau einer Überkategorie zu:
 ${CLUSTERS.map((c) => `- ${c.id}: ${c.label} (${c.hint})`).join("\n")}
 Gehaltsabrechnungen, Arbeitsverträge, Zeugnisse → arbeit. Arztbriefe, Befunde, Rezepte, Krankenkasse → gesundheit.
+Alle Kennungen gegenüber dem Absender (Kundennummer, Vertragsnummer, Versicherungsschein-/Policennummer, Rufnummer, Zählernummer, Mitgliedsnummer, Personalnummer, Benutzername/Login, Rechnungsnummer, Aktenzeichen, IBAN, Kfz-Kennzeichen) einzeln in die Gruppe „Kennungen & Nummern“ – mit klarem Label.
 Schreibe alle wichtigen Fakten heraus und sortiere sie in Gruppen (personenbezogene Daten getrennt von Beträgen und von Metadaten wie Zeitraum/Gültigkeit). Markiere personenbezogene Fakten mit personal = true.
 Datumsangaben immer als YYYY-MM-DD. Was nicht im Dokument steht, lässt du leer bzw. null.`;
 

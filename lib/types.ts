@@ -1,5 +1,5 @@
 /** Fakt mit Gruppe (z. B. „Persönliche Daten“, „Bezüge“, „Abzüge“, „Gültigkeit“) */
-export type Fact = { label: string; value: string; group?: string };
+export type Fact = { label: string; value: string; group?: string; personal?: boolean };
 export type Deadline = { date: string; what: string };
 export type Amount = { label: string; value: number; currency: string };
 

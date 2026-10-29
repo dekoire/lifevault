@@ -46,7 +46,7 @@ export async function POST(req: Request) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return Response.json({ error: "Ungültige Anfrage." }, { status: 400 });
   const inline = typeof body?.data === "string";
 
-  const { data: doc } = await sb.from("documents").select("id,file_path,file_name,mime_type,size_bytes,project_id,received_at,split_from").eq("id", id).maybeSingle();
+  const { data: doc } = await sb.from("documents").select("*").eq("id", id).maybeSingle();
   if (!doc) return Response.json({ error: "Nicht gefunden." }, { status: 404 });
   const fail = async (msg: string) => {
     await sb.from("documents").update({ status: "error", error: msg }).eq("id", id);
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
           const up = await sb.storage.from("documents").upload(path, bytes, { contentType: "application/pdf" });
           if (up.error) throw up.error;
           const name = `${doc.file_name.replace(/\.pdf$/i, "")} – Teil ${i + 1} (S. ${p.fromPage}${p.toPage > p.fromPage ? `–${p.toPage}` : ""}).pdf`;
-          const { data: row, error } = await sb.from("documents").insert({ file_path: path, file_name: name.slice(0, 200), mime_type: "application/pdf", size_bytes: bytes.length, project_id: doc.project_id, received_at: doc.received_at, split_from: doc.id }).select("id").single();
+          const { data: row, error } = await sb.from("documents").insert({ file_path: path, file_name: name.slice(0, 200), mime_type: "application/pdf", size_bytes: bytes.length, ...(doc.project_id ? { project_id: doc.project_id } : {}), received_at: doc.received_at, split_from: doc.id }).select("id").single();
           if (error) throw error;
           ids.push(row.id);
         }

@@ -1,8 +1,11 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Briefcase, Car, CircleAlert, HeartPulse, Home, Landmark, Loader2, RefreshCw, ScrollText, ShieldCheck, Sparkles, UserRound, type LucideIcon } from "lucide-react";
 import { CARD, PageHeader } from "@/components/ui";
+import { CopyValue } from "@/components/CopyValue";
+import { buildPerson } from "@/lib/person";
+import { fmtDate } from "@/lib/docs";
 import type { LifeProfile } from "@/app/api/profile/route";
 import { useDocs } from "@/lib/docs";
 import { authFetch, supabase, useSession } from "@/lib/supabase";
@@ -12,7 +15,9 @@ const ICONS: Record<string, LucideIcon> = { person: UserRound, arbeit: Briefcase
 /** Lebensprofil: was gilt aktuell, was war früher – aus den Dokumenten, mit Quellen */
 export default function ProfilPage() {
   const session = useSession();
-  const { docs } = useDocs();
+  const { docs, allDocs } = useDocs();
+  const person = useMemo(() => buildPerson(allDocs), [allDocs]);
+  const [showEarlier, setShowEarlier] = useState(false);
   const [profile, setProfile] = useState<LifeProfile | null>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -48,6 +53,30 @@ export default function ProfilPage() {
         subtitle="Was aktuell gilt – aus deinen Unterlagen zusammengestellt"
         action={<button type="button" onClick={() => void build()} disabled={busy || !ready} className="inline-flex h-10 items-center gap-2 rounded-full bg-fg px-4 text-[14px] font-semibold text-canvas disabled:opacity-50">{busy ? <Loader2 size={16} className="animate-spin" /> : profile ? <RefreshCw size={16} /> : <Sparkles size={16} />} {profile ? "Aktualisieren" : "Profil erstellen"}</button>}
       />
+      {person.length > 0 && (
+        <section className={`${CARD} mb-4 overflow-hidden`}>
+          <div className="flex items-center justify-between px-5 pt-4 pb-2">
+            <h2 className="flex items-center gap-2.5 text-[16px] font-semibold"><span className="grid h-8 w-8 place-items-center rounded-full bg-fg text-canvas"><UserRound size={16} /></span>Steckbrief</h2>
+            {person.some((f) => f.earlier.length) && <button type="button" onClick={() => setShowEarlier(!showEarlier)} className="text-[13px] font-semibold text-selected">{showEarlier ? "Nur aktuell" : "Frühere Werte"}</button>}
+          </div>
+          <p className="px-5 pb-2 text-[12px] text-muted">Automatisch aus deinen Dokumenten – jeweils der neueste Stand, mit Quelle.</p>
+          <ul className="grid divide-y divide-line md:grid-cols-2 md:divide-y-0">
+            {person.map((f) => (
+              <li key={f.id} className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 border-line px-5 py-2.5 text-[14px] md:border-b md:odd:border-r">
+                <span className="text-muted">{f.label}</span>
+                <span className="min-w-0 space-y-1">
+                  {[...f.current, ...(showEarlier ? f.earlier : [])].map((v, i) => (
+                    <span key={i} className={`block ${i >= f.current.length ? "opacity-55" : ""}`}>
+                      <CopyValue value={v.value} />
+                      <Link href={`/d/${v.docId}`} className="block truncate text-[11px] text-muted hover:text-selected">{i >= f.current.length ? "früher · " : ""}{v.docTitle} · {fmtDate(v.date)}</Link>
+                    </span>
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {error && <p role="alert" className="mb-4 rounded-xl bg-negative/10 px-4 py-3 text-[14px] text-negative-text">{error}</p>}
       {profile === undefined ? (
         <div className="grid h-40 place-items-center"><Loader2 className="animate-spin text-muted" /></div>

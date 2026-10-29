@@ -6,6 +6,8 @@ import { ClusterIcon } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
 import { UploadCard } from "@/components/UploadButtons";
 import { PageHeader } from "@/components/ui";
+import { SenderLogo } from "@/components/SenderLogo";
+import { buildPartners } from "@/lib/partners";
 import { useProjects } from "@/lib/projects";
 import { CLUSTERS } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
@@ -14,6 +16,7 @@ import { fmtDate, useDocs } from "@/lib/docs";
 export default function Home() {
   const { docs, loading, pendingProtect } = useDocs();
   const { currentProject } = useProjects();
+  const partners = useMemo(() => buildPartners(docs), [docs]);
   const [q, setQ] = useState("");
   const today = new Date().toISOString().slice(0, 10);
   const counts = useMemo(() => {
@@ -87,6 +90,19 @@ export default function Home() {
             <>
               <div className="lg:hidden"><UploadCard /></div>
               <div className="lg:hidden">{deadlineCard}</div>
+              {partners.length > 0 && (
+                <section>
+                  <div className="mb-3 flex items-center justify-between"><h2 className="text-[17px] font-semibold">Deine Partner</h2><Link href="/partner" className="text-[13px] font-semibold text-selected">Alle {partners.length}</Link></div>
+                  <div className="-mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:px-0">
+                    {partners.slice(0, 12).map((p) => (
+                      <Link key={p.key} href={`/partner/${p.key}`} className={`${CARD} flex w-[104px] shrink-0 flex-col items-center gap-2 p-3 text-center ${p.active ? "" : "opacity-60"}`}>
+                        <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={44} />
+                        <span className="line-clamp-2 text-[12px] leading-4 font-semibold">{p.name}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              )}
               <section>
                 <h2 className="mb-3 text-[17px] font-semibold">Bereiche</h2>
                 {counts.size === 0 && !loading && <p className="mb-3 text-[14px] text-muted">Noch nichts abgelegt. Fotografiere ein Dokument oder lade ein PDF hoch – Lifevault sortiert es automatisch in einen dieser Bereiche.</p>}

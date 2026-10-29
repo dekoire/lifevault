@@ -7,10 +7,19 @@ import { authFetch, supabase } from "@/lib/supabase";
 import { openBytes, sealBytes, vaultKey } from "@/lib/vault";
 import { LIST_COLS, type Doc } from "@/lib/types";
 
-type Ctx = { docs: Doc[]; allDocs: Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null }) => Promise<void>; pendingProtect: number; reprocess: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
+export type BatchItem = { key: string; name: string; id?: string; state: "uploading" | "saved" | "failed"; error?: string };
+type Ctx = { batch: BatchItem[]; clearBatch: () => void; docs: Doc[]; allDocs: Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null }) => Promise<void>; pendingProtect: number; reprocess: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
 const DocsCtx = createContext<Ctx | null>(null);
 
 const OK = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+
+/** „image.jpg“ vom iPhone u. Ä. → „Foto 29.10.2026 07:25.jpg“ */
+function friendlyName(name: string, i: number, n: number) {
+  if (!/^(image|img[_-]?\d*|photo|foto|pxl_|dsc|screenshot|scan)[^/]*\.(jpe?g|png|heic|heif|webp)$/i.test(name)) return name;
+  const now = new Date();
+  const stamp = `${now.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })} ${now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
+  return `Foto ${stamp}${n > 1 ? ` (${i + 1})` : ""}.${name.split(".").pop()!.toLowerCase()}`;
+}
 
 /** Fotos verkleinern (lange Kante 2400 px) und als JPEG speichern – auch HEIC vom iPhone, sofern der Browser es lesen kann */
 async function prepare(file: File): Promise<File> {
@@ -37,8 +46,14 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(0);
+  const [batch, setBatch] = useState<BatchItem[]>([]);
+  const patch = (key: string, p: Partial<BatchItem>) => setBatch((b) => b.map((x) => (x.key === key ? { ...x, ...p } : x)));
+  const clearBatch = useCallback(() => setBatch([]), []);
   const refresh = useCallback(async () => {
-    const { data } = await supabase.from("documents").select(LIST_COLS).order("received_at", { ascending: false }).limit(1000);
+    const load = (cols: string) => supabase.from("documents").select(cols).order("received_at", { ascending: false }).limit(1000);
+    let { data, error } = await load(LIST_COLS);
+    // Datenbank noch ohne Projekte (Migration 0003 fehlt): ohne die neuen Spalten laden
+    if (error) ({ data, error } = await load(LIST_COLS.replace(",project_id,split_from", "")));
     setDocs((data as unknown as Doc[]) ?? []);
     setLoading(false);
   }, []);
@@ -70,7 +85,10 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
     const encrypt = !!opts.encrypt && !!vaultKey();
     const projectId = opts.projectId ?? (current !== "all" ? current : defaultProject?.id ?? null);
     setUploading((n) => n + files.length);
-    await Promise.all(files.map(async (raw) => {
+    const items = files.map((f, i) => ({ key: crypto.randomUUID(), name: friendlyName(f.name, i, files.length), state: "uploading" as const }));
+    setBatch((b) => [...b.filter((x) => x.state !== "failed"), ...items]);
+    await Promise.all(files.map(async (raw, i) => {
+      const item = items[i];
       try {
         const file = await prepare(raw);
         const ext = (file.name.split(".").pop() ?? "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "bin";
@@ -80,14 +98,15 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
         const body = encrypt ? new Blob([(await sealBytes(plain)) as BlobPart], { type: "application/octet-stream" }) : file;
         const { error: upErr } = await supabase.storage.from("documents").upload(path, body, { contentType: encrypt ? "application/octet-stream" : file.type || "application/octet-stream" });
         if (upErr) throw upErr;
-        const { data, error } = await supabase.from("documents").insert({ file_path: path, file_name: raw.name.slice(0, 200), mime_type: file.type || "application/octet-stream", size_bytes: file.size, encrypted: encrypt, project_id: projectId }).select("id").single();
+        const { data, error } = await supabase.from("documents").insert({ file_path: path, file_name: item.name.slice(0, 200), mime_type: file.type || "application/octet-stream", size_bytes: file.size, encrypted: encrypt, ...(projectId ? { project_id: projectId } : {}) }).select("id").single();
         if (error) throw error;
+        patch(item.key, { id: data.id, state: "saved" });
         await refresh();
         if (encrypt) await processEncrypted({ id: data.id, mime_type: file.type }, plain).catch(async (e) => { await supabase.from("documents").update({ status: "error", error: (e as Error).message }).eq("id", data.id); }).finally(() => refresh());
         else void process(data.id);
       } catch (e) {
         console.error(e);
-        alert(`„${raw.name}“ konnte nicht hochgeladen werden.`);
+        patch(item.key, { state: "failed", error: "Hochladen hat nicht geklappt." });
       } finally {
         setUploading((n) => n - 1);
       }
@@ -168,7 +187,7 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
   const pendingProtect = unlocked ? 0 : toProtect.length;
   // Ansicht auf das gewählte Projekt beschränken
   const visible = useMemo(() => (current === "all" ? docs : docs.filter((d) => d.project_id === current)), [docs, current]);
-  const value = useMemo(() => ({ docs: visible, allDocs: docs, loading, refresh, upload, reprocess, remove, uploading, pendingProtect }), [visible, docs, loading, refresh, upload, reprocess, remove, uploading, pendingProtect]);
+  const value = useMemo(() => ({ batch, clearBatch, docs: visible, allDocs: docs, loading, refresh, upload, reprocess, remove, uploading, pendingProtect }), [batch, clearBatch, visible, docs, loading, refresh, upload, reprocess, remove, uploading, pendingProtect]);
   return <DocsCtx.Provider value={value}>{children}</DocsCtx.Provider>;
 }
 
