@@ -95,26 +95,26 @@ export default function ProfilPage() {
       />
 
       {/* Kopf: Avatar, Name, Alter, Kurzfassung, wichtigste Eckdaten */}
-      <section className={`${CARD} mb-4 overflow-hidden`}>
-        <div className="h-24 bg-[linear-gradient(120deg,#6d4aff_0%,#8f72ff_55%,#c3b4ff_100%)]" />
-        <div className="px-5 pb-5 md:px-6">
-          <div className="-mt-11 flex items-end gap-4">
-            {email && <span className="rounded-full ring-4 ring-surface"><Avatar email={email} size={88} /></span>}
+      <section className={`${CARD} mb-4 p-4 md:p-5`}>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+          {email && <Avatar email={email} size={52} />}
+          <div className="min-w-0 flex-1">
+            <h2 className="text-[18px] leading-6 font-semibold">{fullName || "Du"}</h2>
+            {birth && <p className="text-[13px] text-muted">geboren am {birth}{age !== null ? ` · ${age} Jahre` : ""}</p>}
           </div>
-          <h2 className="mt-3 text-[24px] leading-8 font-[650] tracking-tight">{fullName || "Du"}</h2>
-          {birth && <p className="text-[14px] text-muted">geboren am {birth}{age !== null ? ` · ${age} Jahre` : ""}</p>}
-          {chips.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {chips.map((c) => { const lp = c.icon === Home ? undefined : logoFor(c.v, []); return <span key={c.v} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-card-line bg-surface py-1 pr-3 pl-2 text-[13px] font-semibold">{lp ? <SenderLogo domain={lp.domain} sender={lp.name} cluster={lp.cluster} size={20} bare /> : <c.icon size={14} className="mx-0.5 shrink-0" />}<span className="truncate">{c.v}</span></span>; })}
-            </div>
-          )}
-          {profile?.intro && <Clamp className="mt-4 max-w-3xl text-[15px] leading-relaxed text-soft">{profile.intro}</Clamp>}
-          <dl className="mt-5 grid grid-cols-3 gap-2 border-t border-line pt-4">
-            <div><dt className="text-[12px] text-muted">Dokumente</dt><dd className="tnum text-[22px] font-bold text-brand-500">{ready}</dd></div>
-            <div><dt className="text-[12px] text-muted">Lebensbereiche</dt><dd className="tnum text-[22px] font-bold text-brand-500">{profile?.sections.length ?? "–"}</dd></div>
-            <div><dt className="text-[12px] text-muted">Stand</dt><dd className="text-[15px] leading-8 font-semibold">{profile ? new Date(profile.generatedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) : "–"}{newer > 0 && <span className="ml-1.5 rounded-full bg-brand-500/10 px-2 py-0.5 text-[11.5px] font-semibold text-brand-500">{newer} neu</span>}</dd></div>
+          {/* kleine Kennzahlen rechts */}
+          <dl className="flex items-center gap-5 text-[12px] text-muted">
+            <div><dt>Dokumente</dt><dd className="tnum text-[16px] font-bold text-brand-500">{ready}</dd></div>
+            <div><dt>Bereiche</dt><dd className="tnum text-[16px] font-bold text-brand-500">{profile?.sections.length ?? "–"}</dd></div>
+            <div><dt>Stand</dt><dd className="text-[13px] leading-6 font-semibold text-fg">{profile ? new Date(profile.generatedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "–"}{newer > 0 && <span className="ml-1 rounded-full bg-brand-500/10 px-1.5 py-px text-[11px] font-semibold text-brand-500">{newer} neu</span>}</dd></div>
           </dl>
         </div>
+        {chips.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {chips.map((c) => { const lp = c.icon === Home ? undefined : logoFor(c.v, []); return <span key={c.v} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-card-line bg-surface py-0.5 pr-2.5 pl-1.5 text-[12.5px] font-semibold">{lp ? <SenderLogo domain={lp.domain} sender={lp.name} cluster={lp.cluster} size={18} bare /> : <c.icon size={13} className="mx-0.5 shrink-0" />}<span className="truncate">{c.v}</span></span>; })}
+          </div>
+        )}
+        {profile?.intro && <Clamp className="mt-3 max-w-4xl text-[13.5px] leading-relaxed text-soft">{profile.intro}</Clamp>}
       </section>
 
       {steck.length > 0 && (
