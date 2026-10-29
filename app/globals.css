@@ -135,6 +135,8 @@ a, button, [role="button"], summary, input, select, textarea {
   transition-timing-function: var(--ease-out);
 }
 :focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 2px; border-radius: 10px; }
+/* Eingabefelder mit eigenem Rahmen (Chat): kein lila Fokusrahmen */
+[data-own-focus]:focus-visible { outline: none; }
 @media (prefers-reduced-motion: no-preference) {
   /* Antippen: kurz eindrücken */
   button:not(:disabled):active, [role="button"]:active, summary:active { transform: scale(0.97); }

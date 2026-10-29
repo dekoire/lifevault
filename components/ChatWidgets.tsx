@@ -245,7 +245,7 @@ function TodosWidget({ body }: { body: string }) {
   useEffect(() => { try { setDone(JSON.parse(localStorage.getItem(DONE) ?? "[]")); } catch { /* egal */ } }, []);
   const list = todos(allDocs, today).filter((t) => !want.length || want.includes(t.doc.id));
   const toggle = (k: string) => setDone((cur) => { const n = cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]; try { localStorage.setItem(DONE, JSON.stringify(n)); } catch { /* egal */ } return n; });
-  if (!list.length) return <p className="rounded-2xl bg-surface-2 px-4 py-3 text-[13.5px]">Nichts offen. 🎉</p>;
+  if (!list.length) return <p className="rounded-2xl border border-card-line bg-surface px-4 py-3 text-[13.5px]">Nichts offen. 🎉</p>;
   const openCount = list.filter((t) => !done.includes(`${t.doc.id}|${t.date}`)).length;
   return (
     <div className="overflow-hidden rounded-2xl border border-card-line bg-surface">

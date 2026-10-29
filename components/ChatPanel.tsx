@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Brain, Camera, Check, ChevronDown, CornerDownRight, ExternalLink, FileDown, Globe, Loader2, Mic, MicOff, Paperclip, Plus, Square, Telescope, X, Zap } from "lucide-react";
+import { ArrowUp, Brain, Camera, Check, ChevronDown, CornerDownRight, ExternalLink, FileDown, Globe, Loader2, Mic, Paperclip, Plus, Square, Telescope, X, Zap } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { Markdown } from "@/components/Markdown";
 import { ChatWidget } from "@/components/ChatWidgets";
@@ -175,7 +175,7 @@ export function MessageList({ msgs, compact, onResearch, onSave, onAsk, busy }: 
         m.role === "user" ? (
           <div key={i} className="flex flex-col items-end gap-1.5">
             {m.attachments?.length ? <div className="flex max-w-[85%] flex-wrap justify-end gap-1">{m.attachments.map((a) => <EntityLink key={a.id} href={`/d/${a.id}`} label={a.name} />)}</div> : null}
-            <div className="max-w-[85%] rounded-[20px] rounded-br-md bg-surface-3 px-4 py-2.5 text-[15px] leading-6 whitespace-pre-wrap">{m.content}</div>
+            <div className="max-w-[85%] rounded-[20px] rounded-br-md bg-surface px-4 py-2.5 shadow-card text-[15px] leading-6 whitespace-pre-wrap">{m.content}</div>
           </div>
         ) : (
           <div key={i} className="flex gap-3">
@@ -203,28 +203,168 @@ const DEPTHS: { id: Depth; label: string; text: string; icon: typeof Zap }[] = [
 ];
 export type Attachment = { key: string; name: string; id?: string; failed?: boolean };
 
-/** Sprachaufnahme über die Spracherkennung des Browsers (Safari, Chrome); Text landet im Eingabefeld */
-function useDictation(onText: (t: string) => void) {
-  const [on, setOn] = useState(false);
-  const rec = useRef<{ stop: () => void } | null>(null);
-  type SR = { lang: string; interimResults: boolean; continuous: boolean; start: () => void; stop: () => void; onresult: (e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void; onend: () => void; onerror: () => void };
-  const Ctor = typeof window !== "undefined" ? ((window as unknown as { SpeechRecognition?: new () => SR; webkitSpeechRecognition?: new () => SR }).SpeechRecognition ?? (window as unknown as { webkitSpeechRecognition?: new () => SR }).webkitSpeechRecognition) : undefined;
-  const toggle = () => {
-    if (on) { rec.current?.stop(); return; }
-    if (!Ctor) { alert("Spracheingabe wird von diesem Browser nicht unterstützt. Tipp: die Diktier-Taste der Tastatur nutzen."); return; }
+/* Spracheingabe über die Spracherkennung des Browsers (Safari, Chrome) – wie bei Finastry: Text erscheint live im Feld */
+type Rec = { lang: string; continuous: boolean; interimResults: boolean; start(): void; stop(): void; abort?(): void; onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null; onend: (() => void) | null; onerror: ((e: { error?: string }) => void) | null };
+const speechRec = () => typeof window === "undefined" ? undefined : ((window as unknown as { SpeechRecognition?: new () => Rec; webkitSpeechRecognition?: new () => Rec }).SpeechRecognition ?? (window as unknown as { webkitSpeechRecognition?: new () => Rec }).webkitSpeechRecognition);
+const DICTATION_ERRORS: Record<string, string> = {
+  "not-allowed": "Das Mikrofon ist für Lifevault blockiert. Erlaube es im Browser (Schloss-Symbol links neben der Adresse › Mikrofon) und versuch es noch einmal.",
+  "service-not-allowed": "Die Spracherkennung ist auf diesem Gerät aus. Am Mac: Systemeinstellungen › Tastatur › Diktieren einschalten, dann neu laden.",
+  "audio-capture": "Kein Mikrofon gefunden. Ist eins angeschlossen und erlaubt?",
+  network: "Die Spracherkennung braucht gerade Internet (Chrome und Edge erkennen die Sprache online).",
+  "no-speech": "Nichts gehört – sprich etwas näher ans Mikrofon.",
+  "language-not-supported": "Deutsch wird von der Spracherkennung dieses Browsers nicht unterstützt.",
+};
+const DICTATION_UNSUPPORTED = "Dieser Browser kann keine Spracheingabe (z. B. Firefox). Nimm Chrome, Edge oder Safari – oder die Diktier-Taste der Tastatur.";
+
+function useDictation(onText: (t: string) => void, onError: (message: string) => void) {
+  const rec = useRef<Rec>(undefined);
+  const [listening, setListening] = useState(false);
+  // Pegel 0–1 für die Wellenform: am Mikrofon gemessen (nicht auf iPhone/iPad – dort blockiert das die Erkennung), sonst geschätzt
+  const level = useRef(0);
+  const meter = useRef<{ stop(): void; since: number }>(undefined);
+  const base = useRef("");
+  const last = useRef("");
+  const stopping = useRef(false);
+  const stopMeter = () => { meter.current?.stop(); meter.current = undefined; level.current = 0; };
+  const release = () => {
+    const old = rec.current;
+    rec.current = undefined;
+    if (!old) return;
+    old.onresult = null; old.onend = null; old.onerror = null;
+    try { (old.abort ?? old.stop).call(old); } catch { /* egal */ }
+  };
+  useEffect(() => () => { release(); stopMeter(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const startMeter = async (r: Rec) => {
+    const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    try { if (ios || sessionStorage.getItem("lifevault:no-meter") || !navigator.mediaDevices?.getUserMedia) return; } catch { return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+      if (rec.current !== r || stopping.current) return stream.getTracks().forEach((t) => t.stop());
+      const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = new AC();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      ctx.createMediaStreamSource(stream).connect(analyser);
+      const buf = new Uint8Array(analyser.fftSize);
+      let raf = 0;
+      const loop = () => {
+        analyser.getByteTimeDomainData(buf);
+        let sum = 0;
+        for (const v of buf) sum += ((v - 128) / 128) ** 2;
+        level.current = Math.max(level.current * 0.86, Math.min(1, Math.sqrt(sum / buf.length) * 5));
+        raf = requestAnimationFrame(loop);
+      };
+      loop();
+      meter.current = { since: Date.now(), stop: () => { cancelAnimationFrame(raf); stream.getTracks().forEach((t) => t.stop()); void ctx.close(); } };
+    } catch { /* kein Zugriff: Wellenform folgt den Erkennungs-Ereignissen */ }
+  };
+
+  const start = (text: string, keepBase = false, retry = true) => {
+    const Ctor = speechRec();
+    if (!Ctor) { onError(DICTATION_UNSUPPORTED); return; }
+    release();
     const r = new Ctor();
     r.lang = "de-DE";
-    r.interimResults = false;
     r.continuous = true;
-    r.onresult = (e) => { for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) onText(e.results[i][0].transcript.trim()); };
-    r.onend = () => setOn(false);
-    r.onerror = () => setOn(false);
+    r.interimResults = true;
+    if (!keepBase) base.current = text;
+    stopping.current = false;
+    let done = text ? `${text.trim()} ` : "";
+    last.current = text;
+    r.onresult = (e) => {
+      if (rec.current !== r || stopping.current) return;
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const res = e.results[i];
+        if (res.isFinal) done += `${res[0].transcript.trim()} `;
+        else interim += res[0].transcript;
+      }
+      last.current = (done + interim).trimStart();
+      if (!meter.current) level.current = Math.max(level.current, 0.35 + Math.random() * 0.45);
+      onText(last.current);
+    };
+    r.onend = () => {
+      if (rec.current !== r) return;
+      // manche Geräte beenden die Erkennung, sobald zusätzlich gemessen wird: dann ohne Messung weiter
+      if (!stopping.current && meter.current && Date.now() - meter.current.since < 1500) {
+        try { sessionStorage.setItem("lifevault:no-meter", "1"); } catch { /* egal */ }
+        stopMeter();
+        start(last.current, true);
+        return;
+      }
+      stopMeter();
+      rec.current = undefined;
+      setListening(false);
+    };
+    r.onerror = (e) => {
+      if (rec.current !== r) return;
+      rec.current = undefined;
+      stopMeter();
+      setListening(false);
+      if (e?.error && e.error !== "aborted") onError(DICTATION_ERRORS[e.error] ?? `Die Spracheingabe hat nicht geklappt (${e.error}).`);
+    };
     rec.current = r;
-    r.start();
-    setOn(true);
+    try {
+      r.start();
+      setListening(true);
+      void startMeter(r);
+    } catch {
+      rec.current = undefined;
+      setListening(false);
+      if (retry) setTimeout(() => start(text, keepBase, false), 350);
+      else onError("Die Spracheingabe ließ sich nicht starten. Tipp bitte noch einmal aufs Mikrofon.");
+    }
   };
-  useEffect(() => () => rec.current?.stop(), []);
-  return { on, toggle };
+  const stop = () => {
+    stopping.current = true;
+    const r = rec.current;
+    rec.current = undefined;
+    if (r) { r.onresult = null; r.onend = null; r.onerror = null; try { r.stop(); } catch { /* egal */ } }
+    stopMeter();
+    setListening(false);
+  };
+  /** Abbrechen: Aufnahme verwerfen, der Text von vorher kommt zurück */
+  const cancel = () => { stop(); onText(base.current); };
+  return { listening, start, stop, cancel, level };
+}
+
+/** Wellenform: rechts kommt laufend der aktuelle Pegel dazu und wandert nach links, Stille als Punkt */
+function VoiceWave({ level }: { level: React.RefObject<number> }) {
+  const cv = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const c = cv.current;
+    const g = c?.getContext("2d");
+    if (!c || !g) return;
+    const STEP = 6, BAR = 3, EVERY = 70;
+    const samples: number[] = [];
+    const color = getComputedStyle(c).color;
+    let lastAt = performance.now(), raf = 0;
+    const draw = (now: number) => {
+      const w = c.clientWidth, h = c.clientHeight, dpr = window.devicePixelRatio || 1;
+      if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+      const n = Math.ceil(w / STEP) + 1;
+      while (now - lastAt >= EVERY) { samples.push(level.current ?? 0); lastAt += EVERY; }
+      if (samples.length > n) samples.splice(0, samples.length - n);
+      const shift = ((now - lastAt) / EVERY) * STEP;
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, w, h);
+      g.fillStyle = color;
+      for (let i = 0; i < n; i++) {
+        const v = samples[samples.length - n + i] ?? 0;
+        const x = w - (n - i) * STEP - shift + STEP;
+        if (x < -BAR) continue;
+        g.beginPath();
+        if (v < 0.07) g.arc(x + BAR / 2, h / 2, 1.5, 0, Math.PI * 2);
+        else { const bh = Math.max(6, Math.min(h, v * h * 1.15)); if (g.roundRect) g.roundRect(x, (h - bh) / 2, BAR, bh, BAR / 2); else g.rect(x, (h - bh) / 2, BAR, bh); }
+        g.fill();
+      }
+      raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(raf);
+  }, [level]);
+  return <canvas ref={cv} aria-label="Aufnahme läuft" role="img" className="h-8 min-w-0 flex-1 text-fg [mask-image:linear-gradient(to_right,transparent,#000_24px)]" />;
 }
 
 /** Eingabe wie bei Finastry: Feld oben, darunter Plus (Foto/Datei), Antworttiefe, Mikrofon und Senden */
@@ -238,10 +378,11 @@ export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu de
   const area = useRef<HTMLTextAreaElement>(null);
   const cam = useRef<HTMLInputElement>(null);
   const files = useRef<HTMLInputElement>(null);
-  const dict = useDictation((t) => setText((x) => (x ? `${x.trimEnd()} ${t}` : t)));
+  const [err, setErr] = useState<string>();
+  const dict = useDictation(setText, setErr);
   const docOf = (a: Attachment) => (a.id ? allDocs.find((d) => d.id === a.id) : undefined);
   const pending = attachments.some((a) => !a.failed && docOf(a)?.status !== "ready" && docOf(a)?.status !== "error");
-  const send = () => { if ((text.trim() || attachments.length) && !busy && !pending) { onSend(text.trim() || "Was steht in dem Dokument, und was muss ich tun?"); setText(""); if (dict.on) dict.toggle(); } };
+  const send = () => { if ((text.trim() || attachments.length) && !busy && !pending) { onSend(text.trim() || "Was steht in dem Dokument, und was muss ich tun?"); if (dict.listening) dict.stop(); setText(""); } };
   const pick = (e: React.ChangeEvent<HTMLInputElement>) => { const l = [...(e.target.files ?? [])]; e.target.value = ""; if (l.length) onFiles?.(l); setMenu(""); };
   const cur = DEPTHS.find((d) => d.id === depth) ?? DEPTHS[1];
   const ready = attachments.map(docOf).find((d) => d?.status === "ready");
@@ -272,9 +413,25 @@ export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu de
         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }}
         rows={plain ? 3 : 1}
         maxLength={2000}
-        placeholder={dict.on ? "Ich höre zu …" : ready ? `Frag etwas zu „${ready.title}“ …` : placeholder}
+        placeholder={dict.listening ? "Ich höre zu …" : ready ? `Frag etwas zu „${ready.title}“ …` : placeholder}
+        data-own-focus
         className="block max-h-40 min-h-10 w-full resize-none bg-transparent px-2.5 py-2 text-[16px] leading-6 outline-none placeholder:text-muted"
       />
+      {err && (
+        <div role="alert" className="mx-1 mb-1 flex items-start gap-2 rounded-xl bg-negative/10 px-3 py-2 text-[12.5px] text-negative-text">
+          <span className="min-w-0 flex-1">{err}</span>
+          <button type="button" onClick={() => setErr(undefined)} aria-label="Hinweis schließen" className="shrink-0 opacity-70 hover:opacity-100"><X size={14} /></button>
+        </div>
+      )}
+      {dict.listening ? (
+        // Aufnahme: Verwerfen, Wellenform, Stopp (Quadrat), Senden – wie bei Finastry
+        <div className="flex items-center gap-2 px-0.5 pt-1">
+          <button type="button" onClick={dict.cancel} aria-label="Aufnahme verwerfen" title="Verwerfen" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-2 text-fg hover:bg-surface-3"><X size={19} /></button>
+          <VoiceWave level={dict.level} />
+          <button type="button" onClick={dict.stop} aria-label="Aufnahme beenden" title="Aufnahme beenden" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-2 text-fg hover:bg-surface-3"><Square size={14} fill="currentColor" /></button>
+          <button type="submit" disabled={!text.trim() || pending} aria-label="Senden" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-500 text-white transition disabled:bg-surface-3 disabled:text-muted"><ArrowUp size={19} strokeWidth={2.4} /></button>
+        </div>
+      ) : (
       <div className="flex items-center gap-1.5 px-0.5 pt-1">
         {onFiles && (
           <button type="button" onClick={() => setMenu(menu === "plus" ? "" : "plus")} aria-label="Datei oder Foto hinzufügen" aria-expanded={menu === "plus"} className="grid h-9 w-9 place-items-center rounded-full border border-card-line text-fg hover:bg-surface-2"><Plus size={18} /></button>
@@ -283,13 +440,14 @@ export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu de
           <button type="button" onClick={() => setMenu(menu === "depth" ? "" : "depth")} aria-expanded={menu === "depth"} title="Antworttiefe" className="inline-flex h-9 items-center gap-1.5 rounded-full border border-card-line px-3 text-[13px] font-semibold text-soft hover:bg-surface-2 hover:text-fg"><cur.icon size={14} /> {cur.label} <ChevronDown size={13} /></button>
         )}
         <span className="flex-1" />
-        <button type="button" onClick={dict.toggle} aria-label={dict.on ? "Aufnahme beenden" : "Spracheingabe"} title="Spracheingabe" className={`grid h-9 w-9 place-items-center rounded-full ${dict.on ? "bg-urgent text-white" : "text-soft hover:bg-surface-2 hover:text-fg"}`}>{dict.on ? <MicOff size={17} /> : <Mic size={17} />}</button>
+        <button type="button" onClick={() => { setErr(undefined); dict.start(text); }} aria-label="Spracheingabe" title="Sprechen statt tippen" className="grid h-9 w-9 place-items-center rounded-full text-soft hover:bg-surface-2 hover:text-fg"><Mic size={18} /></button>
         {busy ? (
           <button type="button" onClick={onStop} aria-label="Stoppen" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg text-canvas"><Square size={14} fill="currentColor" /></button>
         ) : (
           <button type="submit" disabled={(!text.trim() && !attachments.length) || pending} aria-label="Senden" title={pending ? "Warte, bis die Datei ausgelesen ist" : "Senden"} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-500 text-white transition disabled:bg-surface-3 disabled:text-muted"><ArrowUp size={19} strokeWidth={2.4} /></button>
         )}
       </div>
+      )}
       {menu && <div className="fixed inset-0 z-10" onClick={() => setMenu("")} aria-hidden />}
       {menu === "plus" && (
         <div className="sheet-up absolute bottom-full left-2 z-20 mb-2 w-64 rounded-2xl border border-card-line bg-surface p-1.5 shadow-[0_12px_32px_rgba(16,24,40,.14)]">

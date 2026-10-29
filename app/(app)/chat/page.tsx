@@ -60,7 +60,7 @@ function Chat() {
 
   const list = (
     <div className="flex h-full flex-col">
-      <button type="button" onClick={() => open(undefined)} className="mx-3 mt-3 mb-3 flex h-10 items-center gap-2.5 rounded-full px-3.5 text-[14.5px] font-medium hover:bg-surface-3"><SquarePen size={16} className="text-soft" /> Neuer Chat</button>
+      <button type="button" onClick={() => open(undefined)} className="mx-3 mt-3 mb-3 flex h-10 items-center gap-2.5 rounded-full px-3.5 text-[14.5px] font-medium hover:bg-surface-2"><SquarePen size={16} className="text-soft" /> Neuer Chat</button>
       <div className="px-5 pb-1 text-[12px] font-medium text-muted">Letzte</div>
       <div className="no-scrollbar flex-1 overflow-y-auto px-2 pb-4">
         {threads.length === 0 && <p className="px-3 py-2 text-[13px] text-muted">Noch keine Gespräche.</p>}
@@ -75,22 +75,22 @@ function Chat() {
   );
 
   return (
-    <div className="flex min-h-dvh bg-canvas">
+    <div className="flex min-h-dvh bg-page">
       {/* Desktop: Verlauf links */}
-      {side && <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 border-r border-card-line bg-page lg:block">{list}</aside>}
+      {side && <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 border-r border-card-line bg-surface lg:block">{list}</aside>}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="pt-safe sticky top-0 z-20 bg-canvas/90 backdrop-blur-xl">
+        <header className="pt-safe sticky top-0 z-20 bg-page/90 backdrop-blur-xl">
           <div className="mx-auto flex h-14 items-center justify-between gap-2 px-3 lg:h-16 lg:px-5">
-            <button type="button" onClick={() => (history.length > 1 ? router.back() : router.push("/"))} className="inline-flex h-10 items-center gap-1 rounded-full pr-3 pl-1.5 text-[14.5px] font-semibold hover:bg-surface-3 lg:hidden"><ChevronLeft size={18} /> Zurück</button>
+            <button type="button" onClick={() => (history.length > 1 ? router.back() : router.push("/"))} className="inline-flex h-10 items-center gap-1 rounded-full pr-3 pl-1.5 text-[14.5px] font-semibold hover:bg-surface lg:hidden"><ChevronLeft size={18} /> Zurück</button>
             <span className="flex min-w-0 items-center gap-2 max-lg:hidden">
-              <button type="button" onClick={toggleSide} aria-label={side ? "Verlauf ausblenden" : "Verlauf einblenden"} title={side ? "Verlauf ausblenden" : "Verlauf einblenden"} className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-surface-3">{side ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}</button>
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-2 text-fg"><MessageSquare size={16} /></span>
+              <button type="button" onClick={toggleSide} aria-label={side ? "Verlauf ausblenden" : "Verlauf einblenden"} title={side ? "Verlauf ausblenden" : "Verlauf einblenden"} className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-surface">{side ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}</button>
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface text-fg shadow-card"><MessageSquare size={16} /></span>
               <span className="min-w-0"><b className="block truncate text-[15px] leading-5">{empty ? "Fragen" : threads.find((t) => t.id === current)?.title ?? "Chat"}</b><span className="block text-[12px] leading-4 text-muted">{empty ? "Neuer Chat" : `${threads.length} Gespräche im Verlauf`}</span></span>
             </span>
             <span className="flex items-center gap-1">
-              <button type="button" onClick={() => setDrawer(true)} className="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-[14px] font-semibold hover:bg-surface-3 lg:hidden"><History size={17} /> Verlauf</button>
-              <button type="button" onClick={() => open(undefined)} aria-label="Neuer Chat" title="Neuer Chat" className="grid h-10 w-10 place-items-center rounded-full hover:bg-surface-3"><SquarePen size={18} /></button>
+              <button type="button" onClick={() => setDrawer(true)} className="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-[14px] font-semibold hover:bg-surface lg:hidden"><History size={17} /> Verlauf</button>
+              <button type="button" onClick={() => open(undefined)} aria-label="Neuer Chat" title="Neuer Chat" className="grid h-10 w-10 place-items-center rounded-full bg-surface shadow-card hover:bg-surface-2"><SquarePen size={18} /></button>
               {session?.user.email && <span className="ml-1 max-lg:hidden"><AvatarMenu email={session.user.email} /></span>}
             </span>
           </div>
@@ -104,7 +104,7 @@ function Chat() {
               <p className="mt-1.5 text-[14px] text-muted">{ready ? `Ich kenne ${ready} ${ready === 1 ? "Dokument" : "Dokumente"} von dir und nenne dir immer die Quelle.` : "Lade zuerst ein paar Dokumente hoch – dann frag mich alles dazu."}</p>
               <div className="mt-6 grid w-full gap-2">
                 {SUGGESTIONS.map(({ icon: Icon, q }) => (
-                  <button key={q} type="button" onClick={() => void chat.send(q)} className="flex items-center gap-3 rounded-xl bg-surface-2 px-4 py-3 text-left text-[14px] font-medium hover:bg-surface-3"><Icon size={17} className="shrink-0 text-brand-500" /> {q}</button>
+                  <button key={q} type="button" onClick={() => void chat.send(q)} className="flex items-center gap-3 rounded-xl border border-card-line bg-surface px-4 py-3 text-left text-[14px] font-medium shadow-card hover:bg-surface-2"><Icon size={17} className="shrink-0 text-brand-500" /> {q}</button>
                 ))}
               </div>
               {!ready && <Link href="/" className="mt-4 text-[14px] font-semibold text-selected">Dokumente hochladen</Link>}
@@ -114,7 +114,7 @@ function Chat() {
           )}
         </div>
 
-        <div className={`fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-canvas via-canvas to-canvas/0 px-3 pt-6 pb-3 lg:bottom-0 lg:pb-6 ${side ? "lg:left-[calc(var(--side,15rem)+18rem)]" : "lg:left-[var(--side,15rem)]"}`}>
+        <div className={`fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-page via-page to-page/0 px-3 pt-6 pb-3 lg:bottom-0 lg:pb-6 ${side ? "lg:left-[calc(var(--side,15rem)+18rem)]" : "lg:left-[var(--side,15rem)]"}`}>
           {chat.gate && (
             <div className="mx-auto mb-3 max-w-3xl">
               <div className="rounded-3xl border border-card-line bg-surface p-4 shadow-card">
@@ -133,7 +133,7 @@ function Chat() {
 
       {drawer && (
         <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setDrawer(false)}>
-          <div className="sheet-up pt-safe absolute inset-y-0 left-0 w-[86%] max-w-sm bg-page" onClick={(e) => e.stopPropagation()}>
+          <div className="sheet-up pt-safe absolute inset-y-0 left-0 w-[86%] max-w-sm bg-surface" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 pt-3"><span className="flex items-center gap-2 text-[16px] font-semibold"><MessageSquare size={17} /> Verlauf</span><button type="button" onClick={() => setDrawer(false)} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3"><X size={17} /></button></div>
             {list}
           </div>
