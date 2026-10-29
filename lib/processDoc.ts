@@ -6,6 +6,7 @@ import { extract, FILE_TYPES, PdfLocked, slicePdf, splitPlan, TEXT_TYPES, toColu
 import { OFFICE_TYPES } from "@/lib/office";
 import { rankAfterUpload } from "@/lib/rank";
 import { realMime } from "@/lib/sniff";
+import { buildView } from "@/lib/view";
 
 const MAX_BYTES = 20 * 1024 * 1024;
 
@@ -127,6 +128,10 @@ export async function processDocument(sb: SupabaseClient, userId: string, body: 
       return Response.json({ ok: true, meta, content });
     }
     await sb.from("documents").update({ ...meta, ...content, status: "ready", error: null }).eq("id", id).eq("user_id", userId);
+    // aufbereitete Ansicht (Kacheln, Frist, Inhalt, Kosten) – Fehler stören das Auslesen nicht, sie entsteht dann beim Öffnen
+    await buildView({ title: meta.title, docType: meta.doc_type, sender: meta.sender, docDate: meta.doc_date, summary: content.summary, keyFacts: content.key_facts, amounts: content.amounts, deadlines: content.deadlines, fullText: content.full_text })
+      .then((view) => view && sb.from("documents").update({ view }).eq("id", id).eq("user_id", userId))
+      .catch((e) => console.error("view", (e as Error).message));
     await archiveCheck(sb, userId, id, o).catch((e) => console.error("archive", (e as Error).message));
     // Wichtigkeit und Bezug zur Grundlage beim Partner (nach dem Archivieren – Überholtes zählt weniger)
     await rankAfterUpload(sb, id, userId).catch((e) => console.error("rank", (e as Error).message));

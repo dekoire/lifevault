@@ -46,7 +46,18 @@ export interface Doc {
   /** Rolle beim Partner und Bezug zur Grundlage (z. B. Rechnung → Vertrag) */
   partner_role?: "grundlage" | "aenderung" | "laufend" | "schriftverkehr" | "nebensache" | null;
   basis_id?: string | null;
+  /** aufbereitete Ansicht (lib/view.ts) – nur bei unverschlüsselten Dokumenten, nicht in der Liste geladen */
+  view?: DocView | null;
 }
+
+/** Aufbereitete Ansicht: drei Kacheln, wichtigste Frist, Inhalt, Kosten Stand heute */
+export type DocView = {
+  glance: { label: string; value: string; hint: string | null; kind: "date" | "money" | "text" }[];
+  action: { label: string; date: string; what: string } | null;
+  content: { title: string; points: string[] };
+  costs: { total: { label: string; value: number; per: "einmalig" | "monatlich" | "vierteljährlich" | "jährlich" | null } | null; items: { label: string; value: number; note: string | null }[] } | null;
+  at: string;
+};
 
 /** Inhalt, der bei verschlüsselten Dokumenten im Tresor liegt */
 export type SecretPart = Pick<Doc, "summary" | "key_facts" | "deadlines" | "amounts" | "full_text">;

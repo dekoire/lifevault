@@ -27,8 +27,11 @@ import { openDoc, protectDoc, unprotectDoc } from "@/lib/protect";
 import { sensitivity } from "@/lib/sensitive";
 import { WebSourceCard } from "@/components/WebSourceCard";
 import { MergedParts } from "@/components/MergedParts";
-import { supabase } from "@/lib/supabase";
-import type { Doc, Fact, SecretPart } from "@/lib/types";
+import { authFetch, supabase } from "@/lib/supabase";
+import type { Doc, DocView, Fact, SecretPart } from "@/lib/types";
+import { contactOf } from "@/lib/actions";
+import { RelationGraph } from "@/components/RelationGraph";
+import { ChevronDown, Mail, MapPin, Phone, UserRound, Globe } from "lucide-react";
 
 /** Fakten nach Gruppe sortieren (Reihenfolge wie vom Modell geliefert) */
 function groupFacts(facts: Fact[]) {
@@ -135,6 +138,13 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
   const [more, setMore] = useState<Record<string, boolean>>({});
   const detail = useDetail();
   const mail = useMailOrigin(id);
+  // aufbereitete Ansicht fehlt (älteres Dokument): einmal nachholen
+  const viewAsked = useRef<string>(undefined);
+  useEffect(() => {
+    if (!doc || doc.view || doc.encrypted || doc.status !== "ready" || viewAsked.current === doc.id) return;
+    viewAsked.current = doc.id;
+    void authFetch("/api/view", { method: "POST", body: JSON.stringify({ id: doc.id }) }).then((r) => r.json()).then((j: { view?: DocView }) => j.view && setDoc((d) => (d && d.id === doc.id ? { ...d, view: j.view } : d))).catch(() => undefined);
+  }, [doc]);
   const chat = useChat({ docId: id, docText: doc?.encrypted && content ? `${content.summary ?? ""}\n${JSON.stringify(content.key_facts)}\n${content.full_text ?? ""}` : undefined });
 
   if (!doc) return <p className="py-20 text-center text-muted">Lädt …</p>;
@@ -157,6 +167,17 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
     ...(nextDl ? [{ label: "Nächste Frist", value: fmtDate(nextDl.date), sub: `${nextDl.what} · in ${daysTo} ${daysTo === 1 ? "Tag" : "Tagen"}`, urgent: daysTo <= 7 }] : [{ label: "Datum", value: fmtDate(doc.doc_date ?? doc.received_at), sub: doc.doc_type ?? undefined }]),
     ...(refFact ? [{ label: refFact.label, value: refFact.value, copy: refFact.value }] : []),
   ];
+  // einheitliche Kacheln aus der aufbereiteten Ansicht (sonst die grobe Auswahl von oben)
+  const view = doc.encrypted ? null : doc.view ?? null;
+  const tiles: typeof glance = view?.glance.length ? view.glance.map((g) => ({ label: g.label, value: g.value, sub: g.hint ?? undefined })) : glance;
+  // die eine Frist, die zählt – oben rechts
+  const act = view?.action && view.action.date >= today ? view.action : !view && nextDl ? { label: "Frist", date: nextDl.date, what: nextDl.what } : null;
+  const actDays = act ? Math.round((Date.parse(act.date) - Date.parse(today)) / 864e5) : 0;
+  // persönliche Angaben, Kontakt und Kosten haben eigene Kacheln
+  const personal = (content?.key_facts ?? []).filter((f) => f.personal);
+  const contact = content ? contactOf({ ...doc, ...content } as Doc, content.full_text) : undefined;
+  const COST_GROUP = /kosten|preis|beitr|betr(a|ä)g|rechnung|beleg|gebühr|zahlung|summe|leistung(en)? &? ?kosten/i;
+  const restGroups = sortedGroups.map(([g, fs]) => [g, fs.filter((f) => !f.personal)] as const).filter(([g, fs]) => fs.length && !/persönlich|kontakt/i.test(g) && !(view?.costs && COST_GROUP.test(g)));
   const fileUrl = doc.encrypted ? opened?.url : url;
   const image = doc.mime_type.startsWith("image/");
   const isOpen = (k: string, def: boolean) => open[k] ?? def;
@@ -210,8 +231,16 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
             </div>
           </div>
         </div>
-        <div className="flex shrink-0 gap-1.5">
+        <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
+          {act && (
+            <span className={`inline-flex items-center gap-2 rounded-2xl px-3.5 py-2 ${actDays <= 7 ? "bg-urgent text-white" : "border border-card-line bg-surface"}`} title={act.what}>
+              <CalendarClock size={16} className="shrink-0" />
+              <span className="leading-tight"><span className={`block text-[11.5px] ${actDays <= 7 ? "text-white/80" : "text-muted"}`}>{act.label}</span><b className="tnum text-[15px]">{fmtDate(act.date)}</b><span className={`ml-1.5 text-[12px] ${actDays <= 7 ? "text-white/80" : "text-muted"}`}>{actDays === 0 ? "heute" : `in ${actDays} ${actDays === 1 ? "Tag" : "Tagen"}`}</span></span>
+            </span>
+          )}
+          <div className="flex gap-1.5">
           {tools.filter((t) => !t.hidden).map((t) => <button key={t.label} type="button" disabled={busy} onClick={t.onClick} title={t.label} aria-label={t.label} className={`${ICON_BTN} ${t.danger ? "hover:text-negative-text" : ""} disabled:opacity-50`}>{t.icon}</button>)}
+          </div>
         </div>
       </div>
 
@@ -239,63 +268,92 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
       <div className={`grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] lg:items-start ${doc.encrypted && !unlocked ? "hidden" : ""}`}>
         {/* links: Daten */}
         <div className="space-y-3">
-          {(explain || (show.summary && content?.summary)) && (
-            <section className={`${CARD} p-4`}>
-              {explain && <h2 className="mb-1.5 text-[16px] leading-6 font-semibold">{explain}</h2>}
-              {show.summary && content?.summary && <Clamp className="text-[15px] leading-6 text-soft">{content.summary}</Clamp>}
-            </section>
-          )}
-          {glance.length > 0 && (
-            <div className={`grid gap-2 ${glance.length >= 3 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2"}`}>
-              {glance.map((g, i) => (
-                <div key={i} className={`group relative min-w-0 rounded-2xl border px-3.5 py-3 ${g.urgent ? "border-urgent bg-urgent text-white" : "border-card-line bg-surface"} ${glance.length === 3 && i === 2 ? "col-span-2 sm:col-span-1" : ""}`}>
+          {/* 1. drei Kacheln je nach Art (Rechnung: Datum · Betrag · zahlen bis; Versicherung: Art · gilt ab · Laufzeit …) */}
+          {tiles.length > 0 && (
+            <div className={`grid gap-2 ${tiles.length >= 3 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2"}`}>
+              {tiles.map((g, i) => (
+                <div key={i} className={`group relative min-w-0 rounded-2xl border px-3.5 py-3 ${g.urgent ? "border-urgent bg-urgent text-white" : "border-card-line bg-surface"} ${tiles.length === 3 && i === 2 ? "col-span-2 sm:col-span-1" : ""}`}>
                   <span className={`block truncate text-[12px] ${g.urgent ? "text-white/80" : "text-muted"}`}>{g.label}</span>
-                  <span className="tnum mt-0.5 block truncate text-[18px] leading-6 font-[650]">{g.value}</span>
+                  <span className="tnum mt-0.5 block truncate text-[18px] leading-6 font-[650]" title={g.value}>{g.value}</span>
                   {g.sub && <span className={`block truncate text-[11.5px] ${g.urgent ? "text-white/80" : "text-muted"}`} title={g.sub}>{g.sub}</span>}
                   {g.copy && <CopyBtn value={g.copy} className="absolute top-2.5 right-2.5" />}
                 </div>
               ))}
             </div>
           )}
-          <DocPayment doc={doc} url={fileUrl} fullText={content?.full_text} related={relatedPayDocs(doc, docs)} />
-          {show.info && (
-            <Section title="Überblick" icon={<FileText size={16} />} open={isOpen("info", false)} onToggle={() => toggle("info", false)}>
-              <KeyValueTable rows={[
-                { label: "Art", value: doc.doc_type ?? "–" },
-                { label: "Absender", value: doc.sender ?? "–" },
-                { label: "Datum", value: fmtDate(doc.doc_date) || "–" },
-                { label: "Eingang", value: fmtDate(doc.received_at) },
-                { label: "Bereich", value: c.label },
-                ...(projects.length > 1 ? [{ label: "Projekt", value: (
-                  <select value={doc.project_id ?? ""} onChange={(e) => void run(async () => { const { error } = await supabase.from("documents").update({ project_id: e.target.value }).eq("id", doc.id); if (error) throw error; setDoc({ ...doc, project_id: e.target.value }); })}
-                    className="h-8 rounded-full border border-card-line bg-surface px-2.5 text-[13px] font-semibold">
-                    {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                ) }] : []),
-                ...(mail ? [{ label: "Aus E-Mail", value: <>{mail.subject || "(ohne Betreff)"}<span className="block text-[12px] font-normal text-muted">{(mail.sender ?? "").replace(/<.*>/, "").trim() || mail.sender} · {fmtDate(mail.mail_date)}</span></> }] : []),
-                { label: "Datei", value: `${doc.file_name} · ${doc.size_bytes < 1048576 ? `${Math.max(1, Math.round(doc.size_bytes / 1024))} KB` : `${(doc.size_bytes / 1048576).toLocaleString("de-DE", { maximumFractionDigits: 1 })} MB`}` },
-                ...(doc.tags?.length && show.tags ? [{ label: "Schlagworte", value: doc.tags.join(", ") }] : []),
-              ]} />
+
+          {/* 2. Inhalt: worum es geht – Befund, Leistungen, was versichert ist … */}
+          {(view?.content.points.length || explain || (show.summary && content?.summary)) && (
+            <section className={`${CARD} p-4`}>
+              <h2 className="mb-1.5 text-[16px] leading-6 font-semibold">{view?.content.title ?? explain ?? "Worum es geht"}</h2>
+              {show.summary && content?.summary && <Clamp className="text-[14.5px] leading-6 text-soft">{content.summary}</Clamp>}
+              {!!view?.content.points.length && <ul className="mt-3 space-y-1.5 text-[14px] leading-6">{view.content.points.map((p, i) => <li key={i} className="flex gap-2.5"><span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />{p}</li>)}</ul>}
+              {!doc.encrypted && !view && doc.status === "ready" && <p className="mt-3 text-[12.5px] text-muted">Wird aufbereitet …</p>}
+            </section>
+          )}
+
+          {/* 3. Überblick – immer offen, nur das Nötige */}
+          <section className={`${CARD} overflow-hidden`}>
+            <h2 className="flex items-center gap-2 px-4 pt-3.5 pb-1 text-[15px] font-semibold"><FileText size={16} /> Überblick</h2>
+            <KeyValueTable rows={[
+              { label: "Art", value: doc.doc_type ?? "–" },
+              { label: "Absender", value: doc.sender ?? "–" },
+              { label: "Datum", value: fmtDate(doc.doc_date) || "–" },
+              { label: "Eingang", value: fmtDate(doc.received_at) },
+              ...(mail ? [{ label: "Aus E-Mail", value: <>{mail.subject || "(ohne Betreff)"}<span className="block text-[12px] font-normal text-muted">{(mail.sender ?? "").replace(/<.*>/, "").trim() || mail.sender} · {fmtDate(mail.mail_date)}</span></> }] : []),
+              ...(projects.length > 1 ? [{ label: "Projekt", value: (
+                <select value={doc.project_id ?? ""} onChange={(e) => void run(async () => { const { error } = await supabase.from("documents").update({ project_id: e.target.value }).eq("id", doc.id); if (error) throw error; setDoc({ ...doc, project_id: e.target.value }); })}
+                  className="h-8 rounded-full border border-card-line bg-surface px-2.5 text-[13px] font-semibold">
+                  {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              ) }] : []),
+            ]} />
+          </section>
+
+          {/* 4. Bezahlen – immer als Kachel, auch wenn gerade nichts offen ist */}
+          <DocPayment always doc={doc} url={fileUrl} fullText={content?.full_text} related={relatedPayDocs(doc, docs)} />
+
+          {/* 5. Kosten Stand heute – zusammengefasst, Einzelheiten zum Aufklappen */}
+          {view?.costs ? <CostCard costs={view.costs} /> : show.amounts && !!content?.amounts?.length && (
+            <Section title="Beträge" icon={<Wallet size={16} />} count={content.amounts.length} open={isOpen("am", false)} onToggle={() => toggle("am", false)}>
+              <KeyValueTable rows={content.amounts.map((a) => ({ label: a.label, value: <span className="tnum">{fmtMoney(a.value, a.currency)}</span> }))} />
             </Section>
           )}
-          {show.facts && sortedGroups.map(([g, fs]) => {
+
+          {/* 6. Daten über dich */}
+          {show.facts && personal.length > 0 && (
+            <Section title="Daten über dich" icon={<UserRound size={16} />} count={personal.length} open={isOpen("me", false)} onToggle={() => toggle("me", false)}>
+              <FactGrid facts={personal} />
+            </Section>
+          )}
+
+          {/* 7. Kontakt */}
+          {contact && (contact.phones.length + contact.emails.length + contact.addresses.length + contact.links.length > 0) && (
+            <Section title="Kontakt" icon={<Phone size={16} />} open={isOpen("ct", true)} onToggle={() => toggle("ct", true)}>
+              <ul className="divide-y divide-line border-t border-line text-[14px]">
+                {doc.sender && <li className="px-4 py-2.5 font-semibold">{doc.sender}</li>}
+                {contact.phones.map((p) => <li key={p} className="group relative flex items-center gap-2.5 px-4 py-2.5"><Phone size={14} className="shrink-0 text-muted" /><a href={`tel:${p.replace(/[^\d+]/g, "")}`} className="font-semibold hover:underline">{p}</a><CopyBtn value={p} className="absolute top-1/2 right-2.5 -translate-y-1/2" /></li>)}
+                {contact.emails.map((e) => <li key={e} className="group relative flex items-center gap-2.5 px-4 py-2.5"><Mail size={14} className="shrink-0 text-muted" /><a href={`mailto:${e}`} className="font-semibold break-all hover:underline">{e}</a><CopyBtn value={e} className="absolute top-1/2 right-2.5 -translate-y-1/2" /></li>)}
+                {contact.addresses.map((a) => <li key={a} className="group relative flex items-start gap-2.5 px-4 py-2.5"><MapPin size={14} className="mt-1 shrink-0 text-muted" /><span className="pr-8">{a}</span><CopyBtn value={a} className="absolute top-1/2 right-2.5 -translate-y-1/2" /></li>)}
+                {contact.links.slice(0, 3).map((l) => <li key={l} className="flex items-center gap-2.5 px-4 py-2.5"><Globe size={14} className="shrink-0 text-muted" /><a href={l} target="_blank" rel="noopener noreferrer" className="truncate font-semibold text-selected hover:underline">{l.replace(/^https?:\/\//, "")}</a></li>)}
+              </ul>
+            </Section>
+          )}
+
+          {/* 8. weitere Angaben (Kennungen, Vertragsdaten …) */}
+          {show.facts && restGroups.map(([g, fs]) => {
             const all = more[g];
             const rows = all ? fs : fs.slice(0, 8);
             return (
-              <Section key={g} title={g} count={fs.length} open={isOpen(`g:${g}`, true)} onToggle={() => toggle(`g:${g}`, true)}>
+              <Section key={g} title={g} count={fs.length} open={isOpen(`g:${g}`, false)} onToggle={() => toggle(`g:${g}`, false)}>
                 <FactGrid facts={rows} />
                 {fs.length > 8 && <button type="button" onClick={() => setMore({ ...more, [g]: !all })} className="w-full border-t border-line bg-surface-2 px-4 py-2.5 text-center text-[13px] font-semibold text-fg transition-colors hover:bg-surface-3">{all ? "Weniger anzeigen" : `Alle ${fs.length} anzeigen`}</button>}
               </Section>
             );
           })}
           {show.deadlines && !!content?.deadlines?.length && (
-            <Section title="Fristen & Termine" icon={<CalendarClock size={16} />} count={content.deadlines.length} open={isOpen("dl", true)} onToggle={() => toggle("dl", true)}>
+            <Section title="Fristen & Termine" icon={<CalendarClock size={16} />} count={content.deadlines.length} open={isOpen("dl", false)} onToggle={() => toggle("dl", false)}>
               <KeyValueTable rows={content.deadlines.map((x) => ({ label: fmtDate(x.date), value: x.what }))} />
-            </Section>
-          )}
-          {show.amounts && !!content?.amounts?.length && (
-            <Section title="Beträge" icon={<Wallet size={16} />} count={content.amounts.length} open={isOpen("am", false)} onToggle={() => toggle("am", false)}>
-              <KeyValueTable rows={content.amounts.map((a) => ({ label: a.label, value: <span className="tnum">{fmtMoney(a.value, a.currency)}</span> }))} />
             </Section>
           )}
         </div>
@@ -322,7 +380,31 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
           )}
         </div>
       </div>
+      {/* ganz unten: wie die Dokumente zusammenhängen */}
+      {!(doc.encrypted && !unlocked) && <RelationGraph doc={doc} />}
     </div>
+  );
+}
+
+/** Kosten Stand heute: Summe groß, Positionen zum Aufklappen (brutto, zusammengefasst) */
+function CostCard({ costs }: { costs: NonNullable<DocView["costs"]> }) {
+  const [open, setOpen] = useState(false);
+  const per = costs.total?.per && costs.total.per !== "einmalig" ? ` ${costs.total.per}` : "";
+  return (
+    <section className={`${CARD} overflow-hidden`}>
+      <div className="flex items-start justify-between gap-3 px-4 pt-3.5 pb-3">
+        <span className="min-w-0">
+          <span className="flex items-center gap-2 text-[12px] font-semibold tracking-wide text-muted uppercase"><Wallet size={14} /> Kosten · Stand heute</span>
+          {costs.total ? <><b className="tnum mt-1 block text-[24px] leading-8">{fmtMoney(costs.total.value, "EUR")}<span className="text-[14px] font-semibold text-muted">{per}</span></b><span className="block text-[12.5px] text-muted">{costs.total.label}</span></> : <b className="mt-1 block text-[15px]">{costs.items.length} Positionen</b>}
+        </span>
+      </div>
+      {costs.items.length > 0 && (
+        <>
+          <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center justify-between border-t border-line px-4 py-2.5 text-[13px] font-semibold hover:bg-surface-2">Zusammensetzung<ChevronDown size={15} className={`text-muted transition-transform ${open ? "rotate-180" : ""}`} /></button>
+          {open && <ul className="divide-y divide-line border-t border-line text-[13.5px]">{costs.items.map((x, i) => <li key={i} className="flex items-baseline gap-3 px-4 py-2"><span className="min-w-0 flex-1">{x.label}{x.note && <span className="block text-[12px] text-muted">{x.note}</span>}</span><span className="tnum shrink-0 font-semibold">{fmtMoney(x.value, "EUR")}</span></li>)}</ul>}
+        </>
+      )}
+    </section>
   );
 }
 

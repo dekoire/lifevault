@@ -93,7 +93,7 @@ export function ImportanceCard({ doc, onChange }: { doc: Doc; onChange: (d: Doc)
   };
   const basis = doc.basis_id ? allDocs.find((d) => d.id === doc.basis_id) : undefined;
   const children = allDocs.filter((d) => d.basis_id === doc.id).sort((a, b) => (b.doc_date ?? b.received_at).localeCompare(a.doc_date ?? a.received_at));
-  const reason = doc.importance === null ? "Wird gerade bewertet …" : doc.importance_reason ?? "";
+  const reason = doc.importance === null ? "Wird gerade bewertet …" : doc.importance_reason === "von dir festgelegt" ? "" : doc.importance_reason ?? "";
   const docLink = (d: Doc) => <Link key={d.id} href={`/d/${d.id}`} className="block truncate font-semibold text-selected hover:underline">{d.title ?? d.file_name}</Link>;
   const rows = [
     doc.partner_role && { k: "Rolle", v: <span className="font-semibold">{roleLabel(doc.partner_role)}</span> },
@@ -102,19 +102,27 @@ export function ImportanceCard({ doc, onChange }: { doc: Doc; onChange: (d: Doc)
   ].filter((r): r is { k: string; v: React.JSX.Element } => !!r);
   return (
     <section className="rounded-2xl border border-card-line bg-surface shadow-card">
-      <div className="flex items-center gap-3 px-4 pt-3.5 pb-3">
-        <span className="min-w-0 flex-1">
-          <span className="block text-[14px] font-semibold">Wichtigkeit</span>
-          {reason && <span className="block text-[12.5px] leading-5 text-muted">{reason}</span>}
-        </span>
-        <label className={`${CHIP} relative shrink-0 cursor-pointer text-fg hover:bg-surface-2`} title="Wichtigkeit ändern">
-          <ImportanceDots value={value} />
-          {importanceLabel(value)}
-          <ChevronDown size={12} className="text-muted" />
+      <div className="px-4 pt-3.5 pb-3">
+        <div className="flex items-start gap-3">
+          <span className="min-w-0 flex-1">
+            <span className="block text-[12px] font-semibold tracking-wide text-muted uppercase">Wichtigkeit</span>
+            <b className="block text-[19px] leading-7">{importanceLabel(value)}</b>
+          </span>
+          <label className={`${CHIP} relative mt-1 shrink-0 cursor-pointer text-soft hover:bg-surface-2`} title="Wichtigkeit ändern">
+            Ändern
+            <ChevronDown size={12} className="text-muted" />
           <select aria-label="Wichtigkeit" value={value} onChange={(e) => void save(Number(e.target.value))} className="absolute inset-0 cursor-pointer opacity-0">
             {IMPORTANCE.map((x) => <option key={x.value} value={x.value}>{x.value} – {x.label}</option>)}
-          </select>
-        </label>
+            </select>
+          </label>
+        </div>
+        {/* Stufe als Balken: 1 Unwichtig … 5 Unverzichtbar */}
+        <div className="mt-2 grid grid-cols-5 gap-1" aria-hidden>
+          {[1, 2, 3, 4, 5].map((i) => <span key={i} className="h-1.5 rounded-full" style={{ background: i <= value ? `color-mix(in srgb, var(--color-brand-500) ${40 + i * 12}%, transparent)` : "var(--color-line)" }} />)}
+        </div>
+        <div className="mt-1 flex justify-between text-[10.5px] text-muted"><span>unwichtig</span><span>unverzichtbar</span></div>
+        {reason && <p className="mt-2 text-[13px] leading-5 text-soft"><b className="font-semibold text-fg">Warum: </b>{reason}</p>}
+        {doc.importance_manual && <p className="mt-1 text-[12px] text-muted">Von dir festgelegt – bleibt beim Neubewerten.</p>}
       </div>
       {rows.length > 0 && (
         <dl className="divide-y divide-line border-t border-line text-[13px]">
