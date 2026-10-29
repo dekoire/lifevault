@@ -20,7 +20,7 @@ export default function SettingsPage() {
         { href: "/einstellungen/sicherheit", title: "Zwei-Faktor", text: "Code aus der Authenticator-App beim Anmelden", icon: <KeyRound size={22} strokeWidth={1.75} /> },
         { href: "/einstellungen/sperre", title: "App-Sperre (PIN)", text: "Nach Inaktivität sperren, standardmäßig nach 15 Minuten", icon: <Timer size={22} strokeWidth={1.75} /> },
         { href: "/einstellungen/tresor", title: "Tresor & Verschlüsselung", text: "Bereiche oder einzelne Dateien Ende-zu-Ende verschlüsseln", icon: <LockKeyhole size={22} strokeWidth={1.75} /> },
-        { href: "/einstellungen/downloads", title: "Letzte Downloads", text: "Deine Exporte als ZIP – erneut laden oder löschen", icon: <Download size={22} strokeWidth={1.75} /> },
+        { href: "/downloads", title: "Downloads", text: "Deine Exporte als ZIP – erneut laden oder löschen", icon: <Download size={22} strokeWidth={1.75} /> },
         { href: "/einstellungen/darstellung", title: "Darstellung", text: "Hell, Dunkel oder wie das Gerät", icon: <Palette size={22} strokeWidth={1.75} /> },
         { href: "/einstellungen/konto", title: "Konto", text: "E-Mail, Passwort, Daten", icon: <UserRound size={22} strokeWidth={1.75} /> },
         ...(isAdmin ? [{ href: "/admin", title: "Admin", text: "Benutzer, Zwei-Faktor-Pflicht, Dokumentansicht", icon: <ShieldCheck size={22} strokeWidth={1.75} /> }] : []),

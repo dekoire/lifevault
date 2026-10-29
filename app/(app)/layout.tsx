@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ExportSheet } from "@/components/ExportSheet";
 import { JobToasts } from "@/components/JobToasts";
+import { DownloadsMenu } from "@/components/settings/Downloads";
 import { useCallback, useEffect, useState } from "react";
-import { Building2, Camera, Download, PanelLeftClose, PanelLeftOpen, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
+import { Building2, Camera, FolderOutput, PanelLeftClose, PanelLeftOpen, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
 import { Logo, LogoMark } from "@/components/Logo";
 import { MfaChallenge, MfaEnroll } from "@/components/Mfa";
 import { useCaptureTray } from "@/components/CaptureTray";
@@ -120,7 +121,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
             <Link href="/" aria-label="Start"><Logo size={28} /></Link>
             <span className="flex items-center gap-2">
               <GlobalSearch compact />
-              {path === "/" && <button type="button" onClick={() => setExporting(true)} aria-label="Exportieren" className="grid h-10 w-10 place-items-center rounded-full bg-surface-3 text-soft"><Download size={18} /></button>}
+              {path === "/" && <button type="button" onClick={() => setExporting(true)} aria-label="Exportieren" className="grid h-10 w-10 place-items-center rounded-full bg-surface-3 text-soft"><FolderOutput size={18} /></button>}
               <ProjectSwitcher compact />
               <Link href="/einstellungen" aria-label="Einstellungen" className="grid h-10 w-10 place-items-center rounded-full bg-surface-3 text-soft"><Settings size={18} /></Link>
             </span>
@@ -132,7 +133,8 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
         <div className="relative z-20 hidden h-16 items-center gap-3 bg-page px-12 lg:ml-[var(--side,15rem)] lg:flex xl:px-16 2xl:px-20">
           <GlobalSearch />
           <span className="flex-1" />
-          {path === "/" && <button type="button" onClick={() => setExporting(true)} aria-label="Exportieren" title="Exportieren" className="inline-flex h-10 items-center gap-2 rounded-full border border-card-line bg-surface px-4 text-[14px] font-semibold text-fg transition-colors hover:bg-surface-2"><Download size={17} /> Export</button>}
+          {path === "/" && <button type="button" onClick={() => setExporting(true)} aria-label="Exportieren" title="Exportieren" className="grid h-10 w-10 place-items-center rounded-full border border-card-line bg-surface text-fg transition-colors hover:bg-surface-2"><FolderOutput size={17} /></button>}
+          <DownloadsMenu />
           <button type="button" onClick={() => setSheet(true)} aria-label="Hinzufügen" title="Hinzufügen" className="grid h-10 w-10 place-items-center rounded-full bg-brand-500 text-white transition-colors hover:bg-brand-600"><Plus size={19} /></button>
           <AvatarMenu email={email} />
         </div>

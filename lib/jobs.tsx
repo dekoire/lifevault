@@ -8,7 +8,7 @@ import type { Doc } from "@/lib/types";
 
 /**
  * Hintergrund-Aufgaben (Export, Mail-Abruf) mit Fortschritt – angezeigt unten rechts als lila Karte.
- * Fertige Exporte bleiben in diesem Browser gespeichert (IndexedDB, die letzten 5) und stehen unter Einstellungen › Downloads.
+ * Fertige Exporte bleiben in diesem Browser gespeichert (IndexedDB, die letzten 20) und stehen unter Downloads.
  */
 export type Job = { id: string; kind: "export" | "mail"; title: string; detail?: string; done: number; total: number; state: "running" | "done" | "error"; downloadId?: string };
 
@@ -32,7 +32,7 @@ export function dismissJob(id: string) { jobs = jobs.filter((j) => j.id !== id);
 
 /* ---------- gespeicherte Downloads ---------- */
 export type SavedDownload = { id: string; name: string; created: string; count: number; size: number; blob: Blob };
-const DB = "lifevault-downloads", STORE = "zips", KEEP = 5;
+const DB = "lifevault-downloads", STORE = "zips", KEEP = 20;
 const db = () => new Promise<IDBDatabase>((ok, no) => {
   const r = indexedDB.open(DB, 1);
   r.onupgradeneeded = () => r.result.createObjectStore(STORE, { keyPath: "id" });
