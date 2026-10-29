@@ -5,6 +5,7 @@ import { ProjectsSettings } from "@/components/settings/Projects";
 import { NotificationSettings } from "@/components/settings/Notifications";
 import { AppLockSettings } from "@/components/settings/AppLock";
 import { AppearanceSettings } from "@/components/settings/Appearance";
+import { RankingSettings } from "@/components/settings/Ranking";
 import { unprotectDoc } from "@/lib/protect";
 import { Loader2, Lock, LockOpen } from "lucide-react";
 import { ClusterIcon } from "@/components/ClusterIcon";
@@ -17,7 +18,7 @@ import { useMe } from "@/lib/me";
 import { supabase, useSession } from "@/lib/supabase";
 import { createVault, lockVault } from "@/lib/vault";
 
-const TITLES: Record<string, string> = { sicherheit: "Zwei-Faktor", tresor: "Tresor & Verschlüsselung", konto: "Konto", projekte: "Projekte", api: "API & MCP", mitteilungen: "Mitteilungen", sperre: "App-Sperre (PIN)", darstellung: "Darstellung" };
+const TITLES: Record<string, string> = { sicherheit: "Zwei-Faktor", tresor: "Tresor & Verschlüsselung", konto: "Konto", projekte: "Projekte", api: "API & MCP", mitteilungen: "Mitteilungen", sperre: "App-Sperre (PIN)", darstellung: "Darstellung", bewertung: "Wichtigkeit & Zusammenhang" };
 
 export default function SettingsSection({ params }: { params: Promise<{ section: string }> }) {
   const { section } = use(params);
@@ -34,6 +35,7 @@ export default function SettingsSection({ params }: { params: Promise<{ section:
         {section === "mitteilungen" && <NotificationSettings />}
         {section === "sperre" && <AppLockSettings />}
         {section === "darstellung" && <AppearanceSettings />}
+        {section === "bewertung" && <RankingSettings />}
       </div>
     </>
   );

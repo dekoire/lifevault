@@ -9,6 +9,7 @@ import { openBytes, sealBytes, vaultKey } from "@/lib/vault";
 import { isBack } from "@/lib/cards";
 import { removeThumbs } from "@/lib/thumbs";
 import { LIST_COLS, type Doc } from "@/lib/types";
+import { extFor, realMime } from "@/lib/sniff";
 
 export type BatchItem = { key: string; name: string; id?: string; state: "uploading" | "saved" | "failed"; error?: string };
 type Ctx = { batch: BatchItem[]; clearBatch: () => void; docs: Doc[]; allDocs: Doc[]; partsOf: (id: string) => Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null; silent?: boolean; noSplit?: boolean }) => Promise<string[]>; pendingProtect: number; reprocess: (id: string, password?: string) => Promise<void>; splitDoc: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
@@ -118,19 +119,21 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
       const item = items[i];
       try {
         const file = await prepare(raw);
-        const ext = (file.name.split(".").pop() ?? "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "bin";
-        const path = `${userId}/${crypto.randomUUID()}.${ext}`;
         const plain = new Uint8Array(await file.arrayBuffer());
+        // ohne Endung (z. B. „Vertragsänderung_23.09.2025“) meldet der Browser keinen Typ – dann am Inhalt erkennen
+        const mime = realMime(file.type, plain);
+        const ext = extFor(mime) ?? ((/\.([a-z0-9]{1,5})$/i.exec(file.name)?.[1] ?? "bin").toLowerCase());
+        const path = `${userId}/${crypto.randomUUID()}.${ext}`;
         // direkt verschlüsselt: nur verschlüsselte Bytes landen im Speicher
         const body = encrypt ? new Blob([(await sealBytes(plain)) as BlobPart], { type: "application/octet-stream" }) : file;
-        const { error: upErr } = await supabase.storage.from("documents").upload(path, body, { contentType: encrypt ? "application/octet-stream" : file.type || "application/octet-stream" });
+        const { error: upErr } = await supabase.storage.from("documents").upload(path, body, { contentType: encrypt ? "application/octet-stream" : mime });
         if (upErr) throw upErr;
-        const { data, error } = await supabase.from("documents").insert({ file_path: path, file_name: item.name.slice(0, 200), mime_type: file.type || "application/octet-stream", size_bytes: file.size, encrypted: encrypt, ...(projectId ? { project_id: projectId } : {}) }).select("id").single();
+        const { data, error } = await supabase.from("documents").insert({ file_path: path, file_name: item.name.slice(0, 200), mime_type: mime, size_bytes: file.size, encrypted: encrypt, ...(projectId ? { project_id: projectId } : {}) }).select("id").single();
         if (error) throw error;
         patch(item.key, { id: data.id, state: "saved" });
         ids.push(data.id);
         await refresh();
-        if (encrypt) await processEncrypted({ id: data.id, mime_type: file.type }, plain).catch(async (e) => { await supabase.from("documents").update({ status: "error", error: (e as Error).message }).eq("id", data.id); }).finally(() => refresh());
+        if (encrypt) await processEncrypted({ id: data.id, mime_type: mime }, plain).catch(async (e) => { await supabase.from("documents").update({ status: "error", error: (e as Error).message }).eq("id", data.id); }).finally(() => refresh());
         else void process(data.id, opts.noSplit ? false : undefined);
       } catch (e) {
         console.error(e);
