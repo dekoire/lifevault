@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
-import { ArrowRight, CalendarClock, ExternalLink, GitBranch, Hash, History, MessageSquare, PanelRight, PencilLine, ShoppingBag, X, Loader2 } from "lucide-react";
+import { ArrowRight, CalendarClock, ExternalLink, GitBranch, Hash, History, MessageSquare, PanelRight, PencilLine, ShoppingBag, X, Loader2, ChevronDown } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
 import { DocTable } from "@/components/DocTable";
 import { PartnerSheet } from "@/components/PartnerInfo";
@@ -37,6 +37,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
   // angeklickte Kennung → rechts nur Dokumente, die sie enthalten
   const [pick, setPick] = useState<PartnerId | null>(null);
   const [info, setInfo] = useState(false);
+  const [openTopic, setOpenTopic] = useState<string | null | undefined>(undefined);
   const [renaming, setRenaming] = useState(false);
   const restrict = useMemo(() => {
     if (!pick || !p) return null;
@@ -48,6 +49,8 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
   if (!p) return <p className="py-20 text-center text-muted">{loading ? "Lädt …" : "Nicht gefunden."}</p>;
 
   // gleiche Bezeichnung mit anderem Wert in älterem Dokument → „früher“
+  const topics = [...new Set(p.ids.map((i) => i.topic))];
+  const shownTopic = openTopic === undefined ? topics[0] : openTopic;
   const latestByLabel = new Map<string, string>();
   for (const i of p.ids) if (!latestByLabel.has(i.label.toLowerCase())) latestByLabel.set(i.label.toLowerCase(), i.value);
   const deadlines = p.docs.flatMap((d) => (d.deadlines ?? []).filter((x) => x.date >= today).map((x) => ({ ...x, d }))).sort((a, b) => a.date.localeCompare(b.date));
@@ -102,10 +105,17 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
             {p.ids.length ? (
               <>
                 <p className="px-5 pb-2 text-[12.5px] text-muted">Antippen zeigt rechts die Dokumente mit dieser Nummer.</p>
-                {[...new Set(p.ids.map((i) => i.topic))].map((topic) => (
+                {/* Themen zum Auf-/Zuklappen – immer nur eins offen (anfangs das erste) */}
+                {topics.map((topic) => { const isOpen = shownTopic === topic; const n = p.ids.filter((i) => i.topic === topic).length; return (
                   <div key={topic}>
-                    <h3 className="border-t border-line bg-surface-2/60 px-5 py-1.5 text-[12px] font-semibold tracking-wide text-soft uppercase">{topic}</h3>
-                    <ul className="divide-y divide-line">
+                    <h3 className="border-t border-line">
+                      <button type="button" aria-expanded={isOpen} onClick={() => setOpenTopic(isOpen ? null : topic)} className="flex w-full items-center gap-2 bg-surface-2/60 px-5 py-3.5 text-left text-[15px] font-semibold transition-colors hover:bg-surface-2">
+                        <span className="min-w-0 flex-1">{topic}</span>
+                        <span className="tnum rounded-full bg-surface px-2 py-px text-[12px] font-semibold text-soft">{n}</span>
+                        <ChevronDown size={17} className={`shrink-0 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                      </button>
+                    </h3>
+                    {isOpen && <ul className="divide-y divide-line border-t border-line">
                       {p.ids.filter((i) => i.topic === topic).map((i) => {
                         const old = latestByLabel.get(i.label.toLowerCase()) !== i.value;
                         const on = pick?.value === i.value && pick.label === i.label;
@@ -121,9 +131,9 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
                           </li>
                         );
                       })}
-                    </ul>
+                    </ul>}
                   </div>
-                ))}
+                ); })}
               </>
             ) : <p className="px-5 pb-4 text-[13px] text-muted">Keine Nummern gefunden. Neu ausgelesene Dokumente sammeln Kunden-, Vertrags- und Versicherungsnummern automatisch.</p>}
           </section>

@@ -70,10 +70,13 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
     </FilterBar>
   );
   const chip = restrict && (
-    <div className="flex items-center gap-2 rounded-2xl border border-brand-500/40 bg-lavender px-3.5 py-2 text-[13.5px]">
-      <Hash size={15} className="shrink-0 text-brand-500" />
-      <span className="min-w-0 flex-1 truncate">Nur Dokumente mit <b className="font-semibold">{restrict.label}</b></span>
-      <button type="button" onClick={onClearRestrict} aria-label="Kennungs-Filter entfernen" className="grid h-7 w-7 shrink-0 place-items-center rounded-full hover:bg-surface"><X size={15} /></button>
+    <div className="flex items-center gap-3 rounded-2xl px-4 py-3 text-white shadow-card" style={{ background: "var(--accent-grad, linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%))" }}>
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15"><Hash size={17} /></span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[11.5px] text-white/75">Gefiltert nach {restrict.label.split(":")[0]} · {list.length} {list.length === 1 ? "Dokument" : "Dokumente"}</span>
+        <b className="tnum block truncate text-[14.5px]">{restrict.label.includes(":") ? restrict.label.split(":").slice(1).join(":").trim() : restrict.label}</b>
+      </span>
+      <button type="button" onClick={onClearRestrict} aria-label="Kennungs-Filter entfernen" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-white/15 px-3 text-[12.5px] font-semibold hover:bg-white/25"><X size={14} /> Alle zeigen</button>
     </div>
   );
   const table = (
