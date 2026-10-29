@@ -29,12 +29,12 @@ function PaymentCard({ p, due }: { p: Payment; due?: { date: string; days: numbe
   const all = [p.recipient && `Empfänger: ${p.recipient}`, `IBAN: ${fmtIban(p.iban)}`, p.bic && `BIC: ${p.bic}`, p.amount && `Betrag: ${fmtMoney(p.amount, p.currency)}`, p.reference && `Verwendungszweck: ${p.reference}`].filter(Boolean).join("\n");
   const late = due && due.days < 0;
   return (
-    <section className={`overflow-hidden rounded-2xl border ${late ? "border-urgent/40" : "border-card-line"} bg-surface`}>
-      <div className={`flex items-center justify-between gap-3 px-3.5 py-3 ${late ? "bg-urgent text-white" : "bg-surface-2"}`}>
+    <section className="overflow-hidden rounded-2xl border border-card-line bg-surface">
+      <div className="flex items-center justify-between gap-3 bg-surface-2 px-3.5 py-3">
         <span className="flex items-center gap-2 text-[13.5px] font-semibold"><Landmark size={16} /> Überweisung</span>
         <span className="text-right">
           {p.amount !== undefined && <b className="tnum block text-[18px] leading-6">{fmtMoney(p.amount, p.currency)}</b>}
-          {due && <span className={`block text-[11.5px] font-semibold ${late ? "text-white/90" : "text-muted"}`}>bis {fmtDate(due.date)} · {dueLabel(due.days)}</span>}
+          {due && <span className={`block text-[11.5px] font-semibold ${late ? "text-negative-text" : "text-muted"}`}>bis {fmtDate(due.date)} · {dueLabel(due.days)}</span>}
         </span>
       </div>
       <div className="divide-y divide-line">
@@ -102,9 +102,9 @@ export function DocActions({ doc, url, fullText }: { doc: Doc; url?: string; ful
   return (
     <div className="space-y-3">
       {todo && !payment && (
-        <p className={`flex items-start gap-2.5 rounded-2xl px-3.5 py-3 text-[13.5px] ${todo.days < 0 ? "bg-urgent text-white" : "border border-card-line bg-surface"}`}>
+        <p className="flex items-start gap-2.5 rounded-2xl border border-card-line bg-surface px-3.5 py-3 text-[13.5px]">
           <CalendarClock size={16} className="mt-0.5 shrink-0" />
-          <span><b>{todo.what}</b><span className={`block text-[12px] ${todo.days < 0 ? "text-white/85" : "text-muted"}`}>bis {fmtDate(todo.date)} · {dueLabel(todo.days)}</span></span>
+          <span><b>{todo.what}</b><span className={`block text-[12px] font-semibold ${todo.days < 0 ? "text-negative-text" : "text-muted"}`}>bis {fmtDate(todo.date)} · {dueLabel(todo.days)}</span></span>
         </p>
       )}
       {payment && <PaymentCard p={payment} due={todo ? { date: todo.date, days: todo.days } : undefined} />}

@@ -5,7 +5,7 @@ import { CalendarClock, ChevronRight, FileText, Layers, ListChecks, Lock, Search
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
 import { TodoList } from "@/components/TodoList";
-import { Duplicates } from "@/components/Duplicates";
+import { DuplicateHint } from "@/components/Duplicates";
 import { todos } from "@/lib/actions";
 import { PageHeader } from "@/components/ui";
 import { SenderLogo } from "@/components/SenderLogo";
@@ -15,8 +15,8 @@ import { CLUSTERS } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
 
 /** Start: Hochladen, Suche, Fristen, Cluster und zuletzt hinzugefügt */
-/** Kacheln auf der Startseite: weiß, ohne Rahmen und ohne Schatten */
-const TILE = "rounded-2xl bg-surface";
+/** Kacheln auf der Startseite: weiß mit feinem Rahmen und Schatten */
+const TILE = CARD;
 
 export default function Home() {
   const { docs, loading, pendingProtect } = useDocs();
@@ -103,7 +103,7 @@ export default function Home() {
                   })}
                 </div>
               </section>
-              <Duplicates docs={docs} />
+              <DuplicateHint docs={docs} />
               <TodoList docs={docs} />
               {recent.length > 0 && (
                 <section className={CARD}>

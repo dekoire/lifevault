@@ -18,16 +18,31 @@ function pair(a: Doc, b: Doc): { sure: boolean; why: string } | null {
   if (a.status !== "ready" || b.status !== "ready" || a.encrypted || b.encrypted) return null;
   if (a.split_from && a.split_from === b.split_from) return null; // Teile derselben getrennten PDF
   const ta = a.title ?? a.file_name, tb = b.title ?? b.file_name;
-  if (a.size_bytes === b.size_bytes && a.mime_type === b.mime_type && a.size_bytes > 0) return { sure: true, why: "gleiche Datei" };
+  if (a.size_bytes === b.size_bytes && a.mime_type === b.mime_type && a.size_bytes > 0) return { sure: true, why: "identische Datei zweimal hochgeladen" };
   if (!a.sender || !b.sender || partnerKey(a.sender) !== partnerKey(b.sender)) return null;
   const s = sim(ta, tb);
-  if (a.doc_date && a.doc_date === b.doc_date && s >= 0.6) return { sure: true, why: "gleicher Absender, gleiches Datum, gleicher Titel" };
-  const shared = [...amountsOf(a)].some((v) => amountsOf(b).has(v));
   const sameType = (a.doc_type ?? "").toLowerCase() === (b.doc_type ?? "").toLowerCase();
+  // Datum ist das stärkste Zeichen: gleicher Brief = gleiches Briefdatum
+  if (a.doc_date && a.doc_date === b.doc_date && s >= 0.6) return { sure: true, why: "gleiches Briefdatum, gleicher Absender und Titel" };
+  if (a.doc_date && a.doc_date === b.doc_date && (sameType || s >= 0.3)) return { sure: false, why: "gleiches Briefdatum und gleicher Absender" };
+  const shared = [...amountsOf(a)].some((v) => amountsOf(b).has(v));
   const near = a.doc_date && b.doc_date ? days(a.doc_date, b.doc_date) <= 14 : days(a.received_at, b.received_at) <= 30;
-  if (sameType && shared && near) return { sure: false, why: "gleicher Absender und Betrag" };
-  if (a.doc_date && a.doc_date === b.doc_date && sameType && s >= 0.4) return { sure: false, why: "gleicher Absender, gleiches Datum" };
+  if (sameType && shared && near) return { sure: false, why: a.doc_date && b.doc_date ? "gleicher Betrag, Briefdatum liegt nah beieinander" : "gleicher Betrag, bei einem fehlt das Briefdatum" };
   return null;
+}
+
+/** Erklärung für eine Gruppe: was ist gleich, worin unterscheiden sie sich (Datei, Datum, Bereich) */
+export function explain(g: DupGroup) {
+  const d0 = g.docs[0];
+  const dates = [...new Set(g.docs.map((d) => d.doc_date ?? "ohne Datum"))];
+  const kinds = g.docs.map((d) => (d.mime_type.startsWith("image/") ? "Foto" : d.mime_type === "application/pdf" ? "PDF" : "Datei"));
+  return {
+    sender: d0.sender ?? "",
+    date: dates.length === 1 ? dates[0] : null,
+    dates,
+    files: kinds.join(" + "),
+    amount: [...amountsOf(d0)].find((v) => g.docs.every((d) => amountsOf(d).has(v))),
+  };
 }
 
 export function findDuplicates(docs: Doc[], dismissed: string[] = []): DupGroup[] {
