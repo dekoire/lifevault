@@ -9,6 +9,7 @@ import { CARD, PageHeader } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
 import { buildPartners, type Partner } from "@/lib/partners";
+import { useHistoryLinks } from "@/lib/history";
 
 type Key = "name" | "cluster" | "docs" | "ids" | "last";
 const COLS: Col<Key>[] = [
@@ -25,7 +26,9 @@ const kindOf = (p: Partner) => (p.isShop ? "shop" : "vertrag");
 /** Alle Vertragspartner, Dienstleister und Händler aus deinen Dokumenten – sortier- und filterbar */
 export default function PartnersPage() {
   const { docs, loading } = useDocs();
-  const all = useMemo(() => buildPartners(docs), [docs]);
+  const { byPartner } = useHistoryLinks(docs);
+  // Verlauf: Partner, die abgelöst wurden (anderer Arzt, Übergabe, neuer Arbeitgeber), gelten als „früher“
+  const all = useMemo(() => buildPartners(docs).map((p) => (byPartner.get(p.key)?.entry.status === "früher" ? { ...p, active: false } : p)), [docs, byPartner]);
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<Sort<Key>>({ key: "last", dir: "desc" });
   const [fCluster, setFCluster] = useState("");
@@ -73,10 +76,12 @@ export default function PartnersPage() {
                           <b className="truncate text-[14.5px]">{p.name}</b>
                           {p.isShop && <span className="shrink-0 rounded-full border border-card-line px-1.5 py-px text-[11px] font-semibold text-soft">Händler</span>}
                           {!p.active && <span className="shrink-0 rounded-full border border-card-line px-1.5 py-px text-[11px] font-semibold text-soft">früher</span>}
+                          {byPartner.get(p.key)?.entry.status === "aktuell" && byPartner.get(p.key)?.prev && <span className="shrink-0 rounded-full bg-positive/10 px-1.5 py-px text-[11px] font-semibold text-positive-text">aktuell · {byPartner.get(p.key)!.role}</span>}
                         </span>
+                        {!p.active && (byPartner.get(p.key)?.next ?? byPartner.get(p.key)?.current) && <span className="hidden truncate text-[12.5px] text-muted md:block">abgelöst durch {(byPartner.get(p.key)!.next ?? byPartner.get(p.key)!.current)!.name}</span>}
                         <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-muted md:hidden">
                           <ClusterTag id={p.cluster} className="shrink-0 text-soft" /><span>·</span>
-                          <span className="truncate">{p.docs.length} Dok.{p.ids.length ? ` · ${p.ids.length} Kenn.` : ""} · {fmtDate(p.last)}</span>
+                          <span className="truncate">{!p.active && (byPartner.get(p.key)?.next ?? byPartner.get(p.key)?.current) ? `→ ${(byPartner.get(p.key)!.next ?? byPartner.get(p.key)!.current)!.name} · ` : ""}{p.docs.length} Dok.{p.ids.length ? ` · ${p.ids.length} Kenn.` : ""} · {fmtDate(p.last)}</span>
                         </span>
                       </span>
                     </span>

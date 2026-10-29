@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Brain, Camera, Check, ChevronDown, FileDown, Globe, Loader2, Mic, MicOff, Paperclip, Plus, Square, Telescope, X, Zap } from "lucide-react";
+import { ArrowUp, Brain, Camera, Check, ChevronDown, CornerDownRight, ExternalLink, FileDown, Globe, Loader2, Mic, MicOff, Paperclip, Plus, Square, Telescope, X, Zap } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { Markdown } from "@/components/Markdown";
 import { useDetail } from "@/components/DetailPanel";
@@ -24,6 +24,63 @@ function splitMarker(text: string): { text: string; research?: Research } {
   if (!m) return { text: text.replace(/\[\[RECHERCHE[\s\S]*$/, "").trimEnd() };
   const id = /^[0-9a-f-]{36}$/i.test(m[3] ?? "") ? m[3] : undefined;
   return { text: text.slice(0, m.index).trimEnd(), research: { query: m[1].replace(/^[„"]|[“"]$/g, ""), reason: m[2], docId: id, state: "ask" } };
+}
+
+const FOLLOW = /\n?\[\[FOLGEFRAGEN:\s*([^\]]*)\]\]/;
+/** Antwort zerlegen: Folgefragen, Internet-Links und Recherche-Vorschlag herauslösen, Rest ist Markdown */
+function parseAnswer(raw: string) {
+  const f = FOLLOW.exec(raw);
+  const followUps = f ? f[1].split("|").map((q) => q.trim().replace(/^[„"]|[“"]$/g, "")).filter((q) => q.length > 3).slice(0, 4) : [];
+  // halbe Marker während des Streamens nicht anzeigen
+  let text = raw.replace(FOLLOW, "").replace(/\n?\[\[(?!RECHERCHE)[^\]]*$/, "");
+  const { text: body } = splitMarker(text);
+  text = body;
+  // externe Links aus „Quellen im Internet“ / „Weiterführende Links“ als Knöpfe
+  const links: { title: string; url: string }[] = [];
+  text = text.replace(/\n#{1,4}\s*(Quellen im Internet|Weiterführende Links|Links)\s*\n((?:\s*[-*•]\s*\[[^\]]+\]\(https?:[^)]+\)[^\n]*\n?)+)/gi, (_m, _h, list: string) => {
+    for (const m of list.matchAll(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g)) links.push({ title: m[1], url: m[2] });
+    return "\n";
+  });
+  text = text.replace(/\n#{1,4}\s*Quellen\s*\n[\s\S]*$/i, "");
+  return { text: text.trimEnd(), followUps, links };
+}
+
+/** Internet-Links als Knöpfe mit Favicon und Domain */
+function WebLinks({ links }: { links: { title: string; url: string }[] }) {
+  if (!links.length) return null;
+  const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } };
+  return (
+    <div className="mt-4">
+      <div className="mb-2 text-[12px] font-semibold tracking-wide text-muted uppercase">Im Internet</div>
+      <div className="flex flex-wrap gap-2">
+        {links.slice(0, 8).map((l) => (
+          <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-2 rounded-full border border-card-line bg-surface py-1.5 pr-3.5 pl-1.5 text-[13px] font-semibold hover:bg-surface-2">
+            <span className="grid h-6 w-6 shrink-0 place-items-center overflow-hidden rounded-full bg-surface-2"><img src={`/api/logo?d=${encodeURIComponent(host(l.url))}`} alt="" width={16} height={16} className="object-contain" /></span>
+            <span className="min-w-0 truncate">{l.title}</span>
+            <span className="shrink-0 text-[11.5px] font-medium text-muted">{host(l.url)}</span>
+            <ExternalLink size={13} className="shrink-0 text-muted" />
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Vorgeschlagene Anschlussfragen – ein Klick schickt sie ab */
+function FollowUps({ qs, onAsk }: { qs: string[]; onAsk: (q: string) => void }) {
+  if (!qs.length) return null;
+  return (
+    <div className="mt-4">
+      <div className="mb-2 text-[12px] font-semibold tracking-wide text-muted uppercase">Weiter fragen</div>
+      <div className="flex flex-col items-start gap-1.5">
+        {qs.map((q) => (
+          <button key={q} type="button" onClick={() => onAsk(q)} className="inline-flex max-w-full items-center gap-2 rounded-full border border-card-line bg-surface px-3.5 py-2 text-left text-[13.5px] font-medium hover:border-brand-500/50 hover:bg-lavender">
+            <CornerDownRight size={14} className="shrink-0 text-brand-500" /> <span className="min-w-0">{q}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /** Quellen unter einer Antwort: verlinkte Dokumente als Kacheln mit Logo */
@@ -106,7 +163,8 @@ function SaveCard({ o, onAnswer }: { o: SaveOffer; onAnswer?: (yes: boolean) => 
   );
 }
 
-export function MessageList({ msgs, compact, onResearch, onSave }: { msgs: Msg[]; compact?: boolean; onResearch?: (i: number, yes: boolean) => void; onSave?: (i: number, yes: boolean) => void }) {
+export function MessageList({ msgs, compact, onResearch, onSave, onAsk, busy }: { msgs: Msg[]; compact?: boolean; onResearch?: (i: number, yes: boolean) => void; onSave?: (i: number, yes: boolean) => void; onAsk?: (q: string) => void; busy?: boolean }) {
+  const lastAnswer = msgs.map((m) => m.role).lastIndexOf("assistant");
   return (
     <div className={compact ? "space-y-5" : "space-y-6"}>
       {msgs.map((m, i) =>
@@ -119,7 +177,10 @@ export function MessageList({ msgs, compact, onResearch, onSave }: { msgs: Msg[]
           <div key={i} className="flex gap-3">
             <span className="mt-0.5 shrink-0"><LogoMark size={26} /></span>
             <div className="min-w-0 flex-1">
-              {m.content ? <><Markdown text={splitMarker(m.content).text.replace(/\n#{1,4}\s*Quellen\s*\n[\s\S]*$/i, "")} /><Sources text={m.content} /></> : <Typing />}
+              {m.content ? (() => {
+                const a = parseAnswer(m.content);
+                return <><Markdown text={a.text} /><Sources text={m.content} /><WebLinks links={a.links} />{onAsk && i === lastAnswer && !busy && !m.research && <FollowUps qs={a.followUps} onAsk={onAsk} />}</>;
+              })() : <Typing />}
               {m.research && <ResearchCard r={m.research} onAnswer={(yes) => onResearch?.(i, yes)} />}
               {m.save && <SaveCard o={m.save} onAnswer={(yes) => onSave?.(i, yes)} />}
             </div>
@@ -321,7 +382,10 @@ export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; 
       if ((e as Error).name === "AbortError") out = out || "(abgebrochen)";
       else { const m = (e as Error).message; out = /load failed|failed to fetch|network/i.test(m) ? "Die Verbindung ist abgebrochen. Bitte die Frage noch einmal senden." : m; }
     } finally {
-      const { text, research } = splitMarker(out);
+      // Folgefragen dürfen vor oder nach der Recherche-Zeile stehen: vorher herauslösen, danach wieder anhängen
+      const follow = FOLLOW.exec(out)?.[0].trim();
+      const { text: body, research } = splitMarker(out.replace(FOLLOW, "").trimEnd());
+      const text = follow ? `${body}\n\n${follow}` : body;
       const all: Msg[] = [...next, { role: "assistant", content: text, ...(research ? { research: { ...research, docId: research.docId ?? docId } } : {}) }];
       setMsgs(all);
       setBusy(false);

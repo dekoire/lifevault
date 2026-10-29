@@ -109,7 +109,7 @@ function Chat() {
               {!ready && <Link href="/" className="mt-4 text-[14px] font-semibold text-selected">Dokumente hochladen</Link>}
             </div>
           ) : (
-            <div className="pt-4"><MessageList msgs={chat.msgs} onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} /><div ref={end} /></div>
+            <div className="pt-4"><MessageList msgs={chat.msgs} busy={chat.busy} onAsk={(q) => void chat.send(q)} onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} /><div ref={end} /></div>
           )}
         </div>
 

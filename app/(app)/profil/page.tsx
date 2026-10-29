@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Briefcase, Car, CircleAlert, HeartPulse, Home, Landmark, Loader2, RefreshCw, ScrollText, ShieldCheck, Sparkles, UserRound, type LucideIcon } from "lucide-react";
 import { CARD, PageHeader } from "@/components/ui";
 import { CopyValue } from "@/components/CopyValue";
+import { HistoryTimeline } from "@/components/HistoryTimeline";
 import { buildPerson } from "@/lib/person";
 import { fmtDate } from "@/lib/docs";
 import type { LifeProfile } from "@/app/api/profile/route";
@@ -98,6 +99,7 @@ export default function ProfilPage() {
             <p className="text-[15px] leading-relaxed">{profile.intro}</p>
             <p className="mt-2 text-[12px] text-muted">Stand {new Date(profile.generatedAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })} · aus {profile.docCount} Dokumenten{newer > 0 && <> · <b className="text-selected">{newer} neue seitdem</b></>}</p>
           </section>
+          {profile.history && <HistoryTimeline history={profile.history} docs={docs} />}
           <label className="flex w-fit items-center gap-2 text-[13px] text-soft"><input type="checkbox" checked={past} onChange={(e) => setPast(e.target.checked)} className="accent-brand-500" /> Frühere Angaben zeigen</label>
           <div className="grid gap-4 lg:grid-cols-2">
             {profile.sections.map((s) => {

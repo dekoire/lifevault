@@ -83,7 +83,11 @@ export function Markdown({ text }: { text: string }) {
 }
 
 function MarkdownText({ text }: { text: string }) {
-  const blocks = text.replace(/\r/g, "").replace(/```\w*\n?/g, "").split(/\n{2,}/);
+  // Listen- und Textzeilen im selben Absatz trennen, damit „- …“ zwischen Sätzen eine echte Liste wird
+  const isItem = (l: string) => /^\s*([-*•]|\d+\.)\s+/.test(l);
+  const lines = text.replace(/\r/g, "").replace(/```\w*\n?/g, "").split("\n");
+  const spaced = lines.flatMap((l, i) => (i > 0 && l.trim() && lines[i - 1].trim() && !l.trim().startsWith("|") && !/^#{1,4}\s/.test(lines[i - 1]) && isItem(l) !== isItem(lines[i - 1]) ? ["", l] : [l]));
+  const blocks = spaced.join("\n").split(/\n{2,}/);
   return (
     <div className="space-y-3 text-[15px] leading-7">
       {blocks.map((b, bi) => {

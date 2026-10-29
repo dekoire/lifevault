@@ -12,6 +12,7 @@ import { chrono, fmtDate, fmtMoney, isUrgent, useDocs } from "@/lib/docs";
 import { useProjects } from "@/lib/projects";
 import { explainDoc, groupRank } from "@/lib/doctypes";
 import { partnerKey } from "@/lib/partners";
+import { useHistoryLinks } from "@/lib/history";
 import { useDetail } from "@/components/DetailPanel";
 import { OfficePreview } from "@/components/OfficePreview";
 import { officeKind } from "@/lib/office";
@@ -46,6 +47,8 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
   const { id } = use(params);
   const router = useRouter();
   const { docs, allDocs, reprocess, splitDoc, remove, refresh } = useDocs();
+  const { newerDoc } = useHistoryLinks(allDocs);
+  const newer = newerDoc.get(id);
   const { projects } = useProjects();
   const { settings, unlocked } = useMe();
   const show = settings.doc_sections;
@@ -161,6 +164,13 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
       {doc.status === "processing" && <div className={`${CARD} mb-4 p-4`}><span className="flex items-center gap-2.5"><span className="flex gap-1">{[0, 1, 2].map((i) => <span key={i} className="typing-dot h-1.5 w-1.5 rounded-full bg-fg" style={{ animationDelay: `${i * 0.15}s` }} />)}</span><span className="text-shimmer text-[14px] font-medium">Wird ausgelesen und sortiert …</span></span></div>}
       {doc.status === "error" && <p className="mb-4 rounded-xl bg-negative/10 p-4 text-[14px] text-negative-text">{doc.error}</p>}
       {doc.archived && doc.archived_reason && <p className="mb-4 rounded-xl bg-surface-3 px-4 py-3 text-[13px] text-soft"><b>Archiviert:</b> {doc.archived_reason}</p>}
+      {newer && (
+        <p className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-amber/30 bg-amber/5 px-4 py-3 text-[13px]">
+          <b>Ältere Fassung ({newer.topic}).</b>
+          {newer.currentDocId && docs.find((d) => d.id === newer.currentDocId) && <span>Aktuell gilt: <Link href={`/d/${newer.currentDocId}`} className="font-semibold underline">{docs.find((d) => d.id === newer.currentDocId)!.title}</Link></span>}
+          {newer.note && <span className="basis-full text-muted">{newer.note}</span>}
+        </p>
+      )}
       {doc.encrypted && !unlocked && <div className="mb-4"><VaultUnlock /></div>}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] lg:items-start">
@@ -239,7 +249,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
           {show.chat && (
             <section className={`${CARD} p-4`}>
               <h2 className="mb-3 text-[15px] font-semibold">Frag zu diesem Dokument</h2>
-              {chat.msgs.length > 0 && <div className="mb-4 max-h-[50vh] overflow-y-auto pr-1"><MessageList msgs={chat.msgs} compact onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} /></div>}
+              {chat.msgs.length > 0 && <div className="mb-4 max-h-[50vh] overflow-y-auto pr-1"><MessageList msgs={chat.msgs} compact busy={chat.busy} onAsk={(q) => void chat.send(q)} onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} /></div>}
               <Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} placeholder="z. B. Wie hoch ist mein Netto?" depth={chat.depth} onDepth={chat.setDepth} />
             </section>
           )}

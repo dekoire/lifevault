@@ -1,20 +1,23 @@
 "use client";
 import Link from "next/link";
 import { use, useMemo, useState } from "react";
-import { CalendarClock, ExternalLink, Filter, Hash, MessageSquare, ShoppingBag } from "lucide-react";
+import { ArrowRight, CalendarClock, ExternalLink, GitBranch, Hash, History, MessageSquare, ShoppingBag } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
 import { DocTable } from "@/components/DocTable";
 import { SenderLogo } from "@/components/SenderLogo";
 import { BackLink, CARD, PageHeader } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
 import { fmtDate, fmtMoney, useDocs } from "@/lib/docs";
-import { buildPartners, docsWithValue, type PartnerId } from "@/lib/partners";
+import { buildPartners, docsWithValue, partnerKey, type PartnerId } from "@/lib/partners";
+import { CHANGE_LABEL, span, useHistoryLinks } from "@/lib/history";
 
 /** Ein Partner: alle Kennungen zum Kopieren, Fristen, Einkäufe und Dokumente */
 export default function PartnerPage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = use(params);
   const { docs, loading } = useDocs();
   const p = useMemo(() => buildPartners(docs).find((x) => x.key === key), [docs, key]);
+  const { byPartner } = useHistoryLinks(docs);
+  const link = byPartner.get(key);
   // angeklickte Kennung → rechts nur Dokumente, die sie enthalten
   const [pick, setPick] = useState<PartnerId | null>(null);
   const restrict = useMemo(() => {
@@ -39,12 +42,23 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
       <PageHeader
         icon={<SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={56} />}
         title={p.name}
-        subtitle={<>{clusterOf(p.cluster).label} · {p.docs.length} {p.docs.length === 1 ? "Dokument" : "Dokumente"} · {fmtDate(p.first)}{p.first !== p.last ? ` – ${fmtDate(p.last)}` : ""}{!p.active && " · früher"}</>}
+        subtitle={<>{clusterOf(p.cluster).label} · {p.docs.length} {p.docs.length === 1 ? "Dokument" : "Dokumente"} · {fmtDate(p.first)}{p.first !== p.last ? ` – ${fmtDate(p.last)}` : ""}{(!p.active || link?.entry.status === "früher") && " · früher"}</>}
         action={<>
           {p.domain && <a href={`https://${p.domain}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-full border border-card-line bg-surface px-4 text-[13px] font-semibold hover:bg-surface-2"><ExternalLink size={15} /> {p.domain}</a>}
           <Link href={`/chat?q=${encodeURIComponent(`Was habe ich alles mit ${p.name}? Verträge, Nummern, Kosten, Fristen.`)}`} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas"><MessageSquare size={15} /> Fragen</Link>
         </>}
       />
+      {link && (link.prev || link.next || link.current) && (
+        <section className={`mb-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border px-4 py-3 text-[13.5px] ${link.entry.status === "früher" ? "border-amber/30 bg-amber/5" : "border-card-line bg-surface"}`}>
+          <History size={16} className="shrink-0 text-soft" />
+          <span className="font-semibold">{link.role} · {span(link.entry)}</span>
+          {link.entry.status === "früher" && (link.next ?? link.current) && (
+            <span className="inline-flex items-center gap-1.5">Abgelöst durch <ArrowRight size={13} /> <Link href={`/partner/${partnerKey((link.next ?? link.current)!.name)}`} className="font-semibold underline">{(link.next ?? link.current)!.name}</Link>{link.next?.change && <span className="inline-flex items-center gap-1 rounded-full border border-card-line px-2 py-px text-[11px] font-semibold">{link.next.change === "uebergabe" && <GitBranch size={11} />}{CHANGE_LABEL[link.next.change]}</span>}</span>
+          )}
+          {link.prev && <span className="text-soft">Vorher: <Link href={`/partner/${partnerKey(link.prev.name)}`} className="font-medium underline">{link.prev.name}</Link> ({span(link.prev)})</span>}
+          {(link.entry.note || link.next?.note) && <span className="basis-full text-[12.5px] text-muted">{link.next?.note ?? link.entry.note}</span>}
+        </section>
+      )}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
         <div className="space-y-4">
           {p.isShop ? (
