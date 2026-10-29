@@ -21,8 +21,8 @@ const CHIP = "inline-flex h-7 items-center gap-1.5 rounded-full border border-ca
  * Wichtigkeit als Chip (gleich hoch wie Bereich/Status/Tags) und, falls bekannt, die Rolle beim Partner.
  * Antippen öffnet die Auswahl; von Hand gesetzt bleibt sie beim Neubewerten.
  */
-export function ImportanceChips({ doc, onChange }: { doc: Doc; onChange: (d: Doc) => void }) {
-  const { refresh } = useDocs();
+export function ImportanceChips({ doc, onChange, relation = false }: { doc: Doc; onChange: (d: Doc) => void; relation?: boolean }) {
+  const { allDocs, refresh } = useDocs();
   if (doc.importance === undefined || doc.status !== "ready") return null; // Datenbank noch ohne Wichtigkeit
   const value = importanceOf(doc);
   const save = async (n: number) => {
@@ -31,9 +31,13 @@ export function ImportanceChips({ doc, onChange }: { doc: Doc; onChange: (d: Doc
     await supabase.from("documents").update(patch).eq("id", doc.id);
     void refresh();
   };
+  const reason = doc.importance_reason && doc.importance_reason !== "von dir festgelegt" ? doc.importance_reason : "";
+  // relation: Bezug zur Grundlage als kleiner Link-Chip in derselben Zeile (statt eigener Textzeile)
+  const basis = relation && doc.basis_id ? allDocs.find((d) => d.id === doc.basis_id) : undefined;
+  const children = relation ? allDocs.filter((d) => d.basis_id === doc.id).length : 0;
   return (
     <>
-      <label className={`${CHIP} relative cursor-pointer text-fg hover:bg-surface-2`} title="Wichtigkeit ändern">
+      <label className={`${CHIP} relative cursor-pointer text-fg hover:bg-surface-2`} title={`${reason ? `${reason} – ` : ""}antippen zum Ändern`}>
         <ImportanceDots value={value} />
         {doc.importance === null ? "Wird bewertet" : importanceLabel(value)}
         <ChevronDown size={12} className="text-muted" />
@@ -41,7 +45,8 @@ export function ImportanceChips({ doc, onChange }: { doc: Doc; onChange: (d: Doc
           {IMPORTANCE.map((x) => <option key={x.value} value={x.value}>{x.value} – {x.label}</option>)}
         </select>
       </label>
-      {doc.partner_role && <span className={`${CHIP} text-soft`} title="Rolle beim Partner">{roleLabel(doc.partner_role)}</span>}
+      {(relation ? doc.partner_role === "grundlage" : doc.partner_role) && <span className={`${CHIP} text-soft`} title={children ? `Grundlage für ${children} ${children === 1 ? "Dokument" : "Dokumente"}` : "Rolle beim Partner"}>{roleLabel(doc.partner_role)}{relation && children > 0 && <span className="tnum text-muted">· {children}</span>}</span>}
+      {basis && <Link href={`/d/${basis.id}`} className={`${CHIP} max-w-[16rem] text-selected hover:bg-surface-2`} title={`Gehört zu ${basis.title ?? basis.file_name}`}><Link2 size={12} className="shrink-0" /><span className="truncate">{basis.title ?? basis.file_name}</span></Link>}
     </>
   );
 }
@@ -72,5 +77,50 @@ export function DocImportance({ doc, onChange }: { doc: Doc; onChange: (d: Doc) 
       <div className="flex flex-wrap items-center gap-1.5"><ImportanceChips doc={doc} onChange={onChange} /></div>
       <RelationNote doc={doc} />
     </div>
+  );
+}
+
+/** Eigene Kachel (rechts unter dem Original): Wichtigkeit mit Grund, Rolle beim Partner, Bezug zur Grundlage und was dazugehört */
+export function ImportanceCard({ doc, onChange }: { doc: Doc; onChange: (d: Doc) => void }) {
+  const { allDocs, refresh } = useDocs();
+  if (doc.importance === undefined || doc.status !== "ready") return null;
+  const value = importanceOf(doc);
+  const save = async (n: number) => {
+    const patch = { importance: n, importance_reason: "von dir festgelegt", importance_manual: true };
+    onChange({ ...doc, ...patch });
+    await supabase.from("documents").update(patch).eq("id", doc.id);
+    void refresh();
+  };
+  const basis = doc.basis_id ? allDocs.find((d) => d.id === doc.basis_id) : undefined;
+  const children = allDocs.filter((d) => d.basis_id === doc.id).sort((a, b) => (b.doc_date ?? b.received_at).localeCompare(a.doc_date ?? a.received_at));
+  const reason = doc.importance === null ? "Wird gerade bewertet …" : doc.importance_reason ?? "";
+  const docLink = (d: Doc) => <Link key={d.id} href={`/d/${d.id}`} className="block truncate font-semibold text-selected hover:underline">{d.title ?? d.file_name}</Link>;
+  const rows = [
+    doc.partner_role && { k: "Rolle", v: <span className="font-semibold">{roleLabel(doc.partner_role)}</span> },
+    basis && { k: "Gehört zu", v: docLink(basis) },
+    children.length > 0 && { k: "Grundlage für", v: <>{children.slice(0, 3).map(docLink)}{children.length > 3 && <span className="text-muted">+ {children.length - 3} weitere</span>}</> },
+  ].filter((r): r is { k: string; v: React.JSX.Element } => !!r);
+  return (
+    <section className="rounded-2xl border border-card-line bg-surface shadow-card">
+      <div className="flex items-center gap-3 px-4 pt-3.5 pb-3">
+        <span className="min-w-0 flex-1">
+          <span className="block text-[14px] font-semibold">Wichtigkeit</span>
+          {reason && <span className="block text-[12.5px] leading-5 text-muted">{reason}</span>}
+        </span>
+        <label className={`${CHIP} relative shrink-0 cursor-pointer text-fg hover:bg-surface-2`} title="Wichtigkeit ändern">
+          <ImportanceDots value={value} />
+          {importanceLabel(value)}
+          <ChevronDown size={12} className="text-muted" />
+          <select aria-label="Wichtigkeit" value={value} onChange={(e) => void save(Number(e.target.value))} className="absolute inset-0 cursor-pointer opacity-0">
+            {IMPORTANCE.map((x) => <option key={x.value} value={x.value}>{x.value} – {x.label}</option>)}
+          </select>
+        </label>
+      </div>
+      {rows.length > 0 && (
+        <dl className="divide-y divide-line border-t border-line text-[13px]">
+          {rows.map((r) => <div key={r.k} className="grid grid-cols-[7rem_minmax(0,1fr)] gap-2 px-4 py-2.5"><dt className="text-muted">{r.k}</dt><dd className="min-w-0 space-y-0.5">{r.v}</dd></div>)}
+        </dl>
+      )}
+    </section>
   );
 }
