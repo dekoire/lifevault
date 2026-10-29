@@ -1,5 +1,5 @@
 import { streamText, type ModelMessage } from "ai";
-import { aiFor } from "@/lib/ai";
+import { aiFor, todayLine } from "@/lib/ai";
 import { clusterOf } from "@/lib/clusters";
 import { unauthorized, userClient } from "@/lib/server";
 import type { Doc } from "@/lib/types";
@@ -7,14 +7,29 @@ import type { Doc } from "@/lib/types";
 export const maxDuration = 300;
 
 const SYSTEM = `Du bist Lifevault, der persönliche Assistent für die Unterlagen deines Nutzers (Deutsch, du-Form).
-Antworte nur auf Basis der mitgelieferten Dokumente. Steht etwas nicht drin, sag das ehrlich und nenne, welches Dokument fehlen könnte.
+Antworte auf Basis der mitgelieferten Dokumente. Steht etwas nicht drin, sag das ehrlich.
 
-Antworte immer strukturiert in genau dieser Form (Markdown):
-1. Erste Zeile: die direkte Antwort in einem Satz, **fett**.
-2. Danach „### Details“ mit einer Stichpunktliste (je Punkt **Begriff:** Wert). Bei Vergleichen oder mehreren Dokumenten stattdessen eine Tabelle (| Spalte | Spalte |).
-3. Wenn es etwas zu tun gibt: „### Nächste Schritte“ mit kurzer, nummerierter Liste (mit Fristen).
-4. Zum Schluss „### Quellen“ mit einer Liste der verwendeten Dokumente als Link [Titel](/d/ID) – genau die ID aus der Liste.
+DATUM: Rechne immer vom heutigen Datum aus (steht unten). Leite daraus ab, was es konkret bedeutet:
+- Dauer bis heute (z. B. Betriebszugehörigkeit seit Vertragsbeginn: „seit 01.04.2022, also 4 Jahre und 6 Monate“), weil davon oft Fristen abhängen.
+- Tage bis zu einer Frist, ob sie schon verstrichen ist, und der nächstmögliche Termin.
+- Den spätesten Tag, an dem etwas raus muss (Zugang beim Empfänger zählt; Postweg 3 Werktage Puffer; fällt ein Fristende auf Wochenende/Feiertag, beachten).
+Zeige die Rechnung kurz und nachvollziehbar.
+
+Antworte immer strukturiert in dieser Form (Markdown):
+1. Erste Zeile: die direkte Antwort in einem Satz, **fett** – mit konkretem Datum, wenn es um Fristen geht.
+2. „### Was das für dich heißt“: 2–4 Stichpunkte, bezogen auf heute (wie weit du stehst, was bis wann passieren muss).
+3. „### Details“: Stichpunkte (je Punkt **Begriff:** Wert) oder bei Vergleichen eine Tabelle.
+4. „### Tipps“: 2–4 praktische Tipps, damit es sicher klappt (z. B. Schriftform = eigenhändig unterschrieben, keine E-Mail; Einschreiben oder Bote mit Zeugen; Eingangsbestätigung verlangen; Erinnerung im Kalender; was man beilegt).
+5. Wenn es etwas zu tun gibt: „### Nächste Schritte“ als nummerierte Liste mit Datum.
+6. „### Quellen“: Liste der verwendeten Dokumente als Link [Titel](/d/ID) – genau die ID aus der Liste.
 Keine Einleitung, keine Wiederholung der Frage. Zahlen, Fristen und Namen konkret.
+
+FEHLT ETWAS: Wenn für eine sichere Antwort eine Information oder ein Dokument fehlt (z. B. der geltende Tarifvertrag, AGB des Anbieters, eine gesetzliche Regel), schreib unter „### Was noch fehlt“, was genau und warum.
+Schlage dann eine Internetrecherche vor, indem du als ALLERLETZTE Zeile genau das schreibst:
+[[RECHERCHE: <Suchanfrage ohne persönliche Daten, z. B. „Kündigungsfristen Tarifvertrag Metall- und Elektroindustrie Baden-Württemberg“> | <was fehlt, kurz> | <ID des Bezugsdokuments oder leer>]]
+Höchstens eine solche Zeile, nur wenn es wirklich hilft. Keine Namen, Adressen oder Nummern in der Suchanfrage.
+
+Bei rechtlichen Fragen: allgemeine Information, keine Rechtsberatung – sag das in einem kurzen Halbsatz bei den Tipps.
 Gesundheitsdaten behandelst du sachlich und vertraulich; bei medizinischen Fragen ersetzt du keinen Arzt.`;
 
 const words = (q: string) => [...new Set(q.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? [])].slice(0, 12);
@@ -45,7 +60,7 @@ export async function POST(req: Request) {
   const overview = (all ?? []).map((d) => `- [${d.title}](/d/${d.id}) · ${clusterOf(d.cluster).label} · ${d.doc_type ?? ""} · ${d.sender ?? ""} · ${d.doc_date ?? d.received_at.slice(0, 10)}${d.archived ? " · ARCHIVIERT (gilt nicht mehr)" : ""}${d.encrypted ? " · verschlüsselt (Inhalt nicht lesbar)" : ""}\n  ${d.summary ?? ""}\n  Fakten: ${(d.key_facts as { label: string; value: string }[]).slice(0, 12).map((f) => `${f.label}: ${f.value}`).join("; ")}${(d.deadlines as { date: string; what: string }[]).length ? `\n  Fristen: ${(d.deadlines as { date: string; what: string }[]).map((x) => `${x.date} ${x.what}`).join("; ")}` : ""}`).join("\n");
   const details = hits.slice(0, 5).map((d) => `### [${d.title}](/d/${d.id})\n${(d.full_text ?? "").slice(0, 15000)}`).join("\n\n");
   const focusBlock = focus ? `## Dieses Dokument steht im Mittelpunkt: [${focus.title}](/d/${focus.id})\n${focusText || "(Inhalt verschlüsselt – Tresor nicht entsperrt)"}\n\n` : "";
-  const context = `${focusBlock}Heute ist ${new Date().toISOString().slice(0, 10)}.\n\n## Alle Dokumente (${all?.length ?? 0})\n${overview || "(noch keine Dokumente)"}\n\n## Volltext der passendsten Dokumente\n${details || "(keine Volltext-Treffer)"}`;
+  const context = `${focusBlock}${todayLine()}\n\n## Alle Dokumente (${all?.length ?? 0})\n${overview || "(noch keine Dokumente)"}\n\n## Volltext der passendsten Dokumente\n${details || "(keine Volltext-Treffer)"}`;
 
   const messages: ModelMessage[] = history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content.slice(0, 8000) }));
   const res = streamText({ ...aiFor("chat"), system: `${SYSTEM}\n\n${context}`, messages, maxOutputTokens: 4000 });

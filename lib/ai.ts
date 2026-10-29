@@ -19,3 +19,11 @@ export function aiFor(task: keyof typeof MODELS) {
     providerOptions: { gateway: { models: [...t.fallbacks], disallowPromptTraining: true, tags: [`task:${task}`] } satisfies GatewayProviderOptions },
   };
 }
+
+/** „Heute ist Donnerstag, 29. Oktober 2026 (2026-10-29), deutsche Zeit.“ */
+export function todayLine() {
+  const now = new Date();
+  const long = new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now);
+  const iso = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(now);
+  return `HEUTE ist ${long} (${iso}), deutsche Zeit.`;
+}

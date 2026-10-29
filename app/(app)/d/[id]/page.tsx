@@ -197,7 +197,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
           {show.chat && (
             <section className={`${CARD} p-4`}>
               <h2 className="mb-3 text-[15px] font-semibold">Frag zu diesem Dokument</h2>
-              {chat.msgs.length > 0 && <div className="mb-4 max-h-[50vh] overflow-y-auto pr-1"><MessageList msgs={chat.msgs} compact /></div>}
+              {chat.msgs.length > 0 && <div className="mb-4 max-h-[50vh] overflow-y-auto pr-1"><MessageList msgs={chat.msgs} compact onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} /></div>}
               <Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} placeholder="z. B. Wie hoch ist mein Netto?" />
             </section>
           )}
