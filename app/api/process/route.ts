@@ -1,6 +1,6 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import { aiFor } from "@/lib/ai";
+import { aiFor, loadAiSettings } from "@/lib/ai";
 import { extract, FILE_TYPES, slicePdf, splitPlan, TEXT_TYPES, toColumns, type Extracted } from "@/lib/extract";
 import { unauthorized, userClient } from "@/lib/server";
 import { OFFICE_TYPES } from "@/lib/office";
@@ -41,6 +41,7 @@ async function archiveCheck(sb: NonNullable<Awaited<ReturnType<typeof userClient
 export async function POST(req: Request) {
   const auth = await userClient(req);
   if (!auth) return unauthorized();
+  await loadAiSettings(auth.sb);
   const { sb } = auth;
   const body = (await req.json().catch(() => null)) as { id?: unknown; data?: unknown; mediaType?: unknown; split?: unknown } | null;
   const id = typeof body?.id === "string" ? body.id : "";

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Building2, Camera, PanelLeftClose, PanelLeftOpen, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
+import { AtSign, Building2, Camera, PanelLeftClose, PanelLeftOpen, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
 import { Logo, LogoMark } from "@/components/Logo";
 import { MfaChallenge, MfaEnroll } from "@/components/Mfa";
 import { useCaptureTray } from "@/components/CaptureTray";
@@ -72,6 +72,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
     { href: "/profil", label: "Profil", icon: UserRound, match: (p) => p.startsWith("/profil") },
     { href: "/partner", label: "Partner", icon: Building2, match: (p) => p.startsWith("/partner") },
     { href: "/einstellungen", label: "Einstellungen", icon: Settings, match: (p) => p.startsWith("/einstellungen") },
+    { href: "/mail", label: "E-Mail-Import", icon: AtSign, match: (p: string) => p.startsWith("/mail") },
     ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: ShieldCheck, match: (p: string) => p.startsWith("/admin") }] : []),
   ];
   return (
@@ -130,7 +131,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
           <Tab n={NAV[2]} on={NAV[2].match(path)} />
           <button type="button" onClick={() => setSheet(true)} aria-label="Dokument hinzufügen" className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand-500 text-white active:scale-95"><Plus size={24} strokeWidth={2.4} /></button>
           <Tab n={NAV[1]} on={NAV[1].match(path)} />
-          <Tab n={NAV[4]} on={NAV[4].match(path) || path.startsWith("/admin") || path.startsWith("/partner")} label="Mehr" />
+          <Tab n={NAV[4]} on={NAV[4].match(path) || path.startsWith("/admin") || path.startsWith("/partner") || path.startsWith("/mail")} label="Mehr" />
         </div>
       </nav>
 

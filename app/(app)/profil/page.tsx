@@ -7,6 +7,9 @@ import { Avatar, nameFromEmail } from "@/components/AvatarMenu";
 import { CopyValue } from "@/components/CopyValue";
 import { HistoryTimeline } from "@/components/HistoryTimeline";
 import { buildPerson } from "@/lib/person";
+import { buildPartners, partnerKey } from "@/lib/partners";
+import { SenderLogo } from "@/components/SenderLogo";
+import { Clamp } from "@/components/Clamp";
 import { fmtDate } from "@/lib/docs";
 import type { LifeProfile } from "@/app/api/profile/route";
 import { useDocs } from "@/lib/docs";
@@ -19,6 +22,7 @@ export default function ProfilPage() {
   const session = useSession();
   const { docs } = useDocs();
   const person = useMemo(() => buildPerson(docs), [docs]);
+  const partners = useMemo(() => buildPartners(docs), [docs]);
   const [showEarlier, setShowEarlier] = useState(false);
   const [allFields, setAllFields] = useState(false);
   const [profile, setProfile] = useState<LifeProfile | null>();
@@ -70,6 +74,13 @@ export default function ProfilPage() {
     { icon: Home, v: city },
     { icon: ShieldCheck, v: firstPart(fromProfile("versicherungen", /krankenkasse|krankenversicherung/i) ?? field("kk")?.value) },
   ].filter((c) => c.v) as { icon: LucideIcon; v: string }[];
+  // Logo zu einem Wert: Partner, dessen Name im Wert vorkommt (bevorzugt Absender der Quelldokumente)
+  const logoFor = (value: string, docIds: string[]) => {
+    const v = partnerKey(value);
+    const fromDocs = docIds.map((id) => docs.find((d) => d.id === id)?.sender).filter(Boolean).map((s) => partnerKey(s!));
+    const cands = partners.filter((p) => p.key.length >= 3 && (v === p.key || v.startsWith(`${p.key}-`) || v.includes(`-${p.key}-`) || v.endsWith(`-${p.key}`)));
+    return cands.sort((a, b) => Number(fromDocs.includes(b.key)) - Number(fromDocs.includes(a.key)) || b.key.length - a.key.length)[0];
+  };
   const steck = person.filter((f) => f.id !== "name");
   const shownSteck = allFields ? steck : steck.slice(0, 6);
   const sections = profile?.sections.map((s) => ({ ...s, items: s.items.filter((i) => past || i.status === "aktuell") })).filter((s) => s.items.length) ?? [];
@@ -94,10 +105,10 @@ export default function ProfilPage() {
           {birth && <p className="text-[14px] text-muted">geboren am {birth}{age !== null ? ` · ${age} Jahre` : ""}</p>}
           {chips.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
-              {chips.map((c) => <span key={c.v} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-card-line bg-surface px-3 py-1 text-[13px] font-semibold"><c.icon size={14} className="shrink-0" /><span className="truncate">{c.v}</span></span>)}
+              {chips.map((c) => { const lp = c.icon === Home ? undefined : logoFor(c.v, []); return <span key={c.v} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-card-line bg-surface py-1 pr-3 pl-2 text-[13px] font-semibold">{lp ? <SenderLogo domain={lp.domain} sender={lp.name} cluster={lp.cluster} size={20} bare /> : <c.icon size={14} className="mx-0.5 shrink-0" />}<span className="truncate">{c.v}</span></span>; })}
             </div>
           )}
-          {profile?.intro && <p className="mt-4 max-w-3xl text-[15px] leading-relaxed text-soft">{profile.intro}</p>}
+          {profile?.intro && <Clamp className="mt-4 max-w-3xl text-[15px] leading-relaxed text-soft">{profile.intro}</Clamp>}
           <dl className="mt-5 grid grid-cols-3 gap-2 border-t border-line pt-4">
             <div><dt className="text-[12px] text-muted">Dokumente</dt><dd className="tnum text-[22px] font-bold text-brand-500">{ready}</dd></div>
             <div><dt className="text-[12px] text-muted">Lebensbereiche</dt><dd className="tnum text-[22px] font-bold text-brand-500">{profile?.sections.length ?? "–"}</dd></div>
@@ -166,12 +177,14 @@ export default function ProfilPage() {
                   <ul className="divide-y divide-line border-t border-line">
                     {s.items.map((it, i) => (
                       <li key={i} className={`flex flex-col gap-1 px-5 py-3 sm:flex-row sm:gap-3 ${it.status === "früher" ? "bg-surface-2/50" : ""}`}>
-                        <span className="shrink-0 text-[13px] text-muted sm:w-36">{it.label}</span>
+                        <span lang="de" className="shrink-0 text-[13px] break-words hyphens-auto text-muted sm:w-36">{it.label}</span>
+                        <span className="flex min-w-0 flex-1 items-start gap-3">
+                        {(() => { const lp = logoFor(it.value, it.docIds); return lp ? <Link href={`/partner/${lp.key}`} title={lp.name} className="shrink-0"><SenderLogo domain={lp.domain} sender={lp.name} cluster={lp.cluster} size={32} bare /></Link> : null; })()}
                         <span className="min-w-0 flex-1">
-                          <span className={`text-[14px] font-semibold ${it.status === "früher" ? "text-soft" : ""}`}>{it.value}</span>
-                          {it.status === "früher" && <span className="ml-1.5 rounded-full border border-card-line bg-surface px-2 py-0.5 text-[11px] font-semibold text-muted">früher</span>}
-                          {it.detail && <span className="mt-0.5 block text-[12.5px] text-muted">{it.detail}</span>}
+                          <Clamp className={`text-[14px] font-semibold ${it.status === "früher" ? "text-soft" : ""}`}>{it.value}{it.status === "früher" && <span className="ml-1.5 rounded-full border border-card-line bg-surface px-2 py-0.5 text-[11px] font-semibold text-muted">früher</span>}</Clamp>
+                          {it.detail && <Clamp className="mt-0.5 text-[12.5px] text-muted">{it.detail}</Clamp>}
                           {it.docIds.length > 0 && <span className="mt-1.5 flex flex-wrap gap-1">{it.docIds.slice(0, 3).map((id) => titleOf(id) && <Link key={id} href={`/d/${id}`} className="inline-flex max-w-[15rem] items-center gap-1 truncate rounded-full border border-card-line bg-surface px-2 py-0.5 text-[11px] font-medium text-soft hover:text-fg"><FileText size={11} className="shrink-0" /><span className="truncate">{titleOf(id)}</span></Link>)}</span>}
+                        </span>
                         </span>
                       </li>
                     ))}

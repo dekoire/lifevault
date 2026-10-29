@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Check, GitMerge, Loader2, Users, X } from "lucide-react";
+import { Check, GitMerge, History, Loader2, PencilLine, Undo2, Users, X } from "lucide-react";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD } from "@/components/ui";
-import { useDocs } from "@/lib/docs";
+import { fmtDate, useDocs } from "@/lib/docs";
 import { findPartnerDuplicates, partnerPairKeys, type PartnerGroup } from "@/lib/partnerDupes";
-import { buildPartners } from "@/lib/partners";
+import { buildPartners, partnerKey } from "@/lib/partners";
 import { supabase } from "@/lib/supabase";
 import type { Doc } from "@/lib/types";
 
@@ -39,7 +39,11 @@ function Group({ g, onDismiss }: { g: PartnerGroup; onDismiss: () => void }) {
     const ids = others.flatMap((p) => p.docs.map((d) => d.id));
     if (!ids.length || !confirm(`${ids.length} ${ids.length === 1 ? "Dokument" : "Dokumente"} von ${others.map((p) => `„${p.name}“`).join(", ")} zu „${target.name}“ verschieben?`)) return;
     setBusy(true);
+    // vorher merken, wie jedes Dokument hieß – damit es rückgängig gemacht werden kann
+    const entries = others.flatMap((p) => p.docs.map((d) => ({ doc_id: d.id, sender: d.sender, sender_domain: d.sender_domain })));
+    const { data: log } = await supabase.from("partner_merges").insert({ target_name: target.name, target_domain: target.domain, kind: "merge", entries }).select("id").single();
     const { error } = await supabase.from("documents").update({ sender: target.name, ...(target.domain ? { sender_domain: target.domain } : {}) }).in("id", ids);
+    if (error && log) await supabase.from("partner_merges").delete().eq("id", log.id);
     setBusy(false);
     if (error) { alert("Das hat nicht geklappt. Bitte erneut versuchen."); return; }
     setDone(true);
@@ -85,3 +89,51 @@ function Group({ g, onDismiss }: { g: PartnerGroup; onDismiss: () => void }) {
 }
 
 export const PartnerIcon = Users;
+
+type MergeLog = { id: string; target_name: string; kind: string; entries: { doc_id: string; sender: string | null; sender_domain: string | null }[]; created_at: string; undone_at: string | null };
+
+/** Verlauf der Zusammenführungen (für einen Partner oder alle) – jede lässt sich rückgängig machen */
+export function MergeHistory({ pkey, compact }: { pkey?: string; compact?: boolean }) {
+  const { refresh } = useDocs();
+  const [list, setList] = useState<MergeLog[]>();
+  const [busy, setBusy] = useState<string>();
+  const load = () => void supabase.from("partner_merges").select("id,target_name,kind,entries,created_at,undone_at").order("created_at", { ascending: false }).limit(100).then(({ data }) => setList((data as MergeLog[]) ?? []));
+  useEffect(load, []);
+  const mine = (list ?? []).filter((m) => !pkey || partnerKey(m.target_name) === pkey || m.entries.some((e) => e.sender && partnerKey(e.sender) === pkey));
+  if (!mine.length) return null;
+  const undo = async (m: MergeLog) => {
+    if (!confirm(`${m.kind === "rename" ? "Umbenennung" : "Zusammenführung"} zu „${m.target_name}“ rückgängig machen? ${m.entries.length} ${m.entries.length === 1 ? "Dokument bekommt" : "Dokumente bekommen"} ihren alten Absender zurück.`)) return;
+    setBusy(m.id);
+    // je alter Name eine Aktualisierung
+    const groups = new Map<string, { sender: string | null; sender_domain: string | null; ids: string[] }>();
+    for (const e of m.entries) { const k = `${e.sender}|${e.sender_domain}`; const g = groups.get(k) ?? { sender: e.sender, sender_domain: e.sender_domain, ids: [] }; g.ids.push(e.doc_id); groups.set(k, g); }
+    let ok = true;
+    for (const g of groups.values()) { const { error } = await supabase.from("documents").update({ sender: g.sender, sender_domain: g.sender_domain }).in("id", g.ids); if (error) ok = false; }
+    if (ok) await supabase.from("partner_merges").update({ undone_at: new Date().toISOString() }).eq("id", m.id);
+    else alert("Nicht alles konnte zurückgesetzt werden. Bitte erneut versuchen.");
+    setBusy(undefined);
+    load();
+    await refresh();
+  };
+  return (
+    <section className={`${CARD} overflow-hidden`}>
+      <h2 className={`flex items-center gap-2 px-4 pt-3.5 pb-2 font-semibold ${compact ? "text-[14px]" : "text-[16px]"}`}><History size={16} /> Namen & Zusammenführungen</h2>
+      <ul className="divide-y divide-line border-t border-line">
+        {mine.map((m) => {
+          const names = [...new Map(m.entries.map((e) => [e.sender ?? "(ohne Absender)", 0])).keys()];
+          const count = (n: string) => m.entries.filter((e) => (e.sender ?? "(ohne Absender)") === n).length;
+          return (
+            <li key={m.id} className={`flex items-start gap-3 px-4 py-3 ${m.undone_at ? "opacity-55" : ""}`}>
+              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-2">{m.kind === "rename" ? <PencilLine size={15} /> : <GitMerge size={15} />}</span>
+              <span className="min-w-0 flex-1 text-[13px]">
+                <span className="block"><b className="font-semibold">{names.map((n) => `„${n}“ (${count(n)})`).join(", ")}</b> → <b className="font-semibold">„{m.target_name}“</b></span>
+                <span className="block text-[12px] text-muted">{fmtDate(m.created_at)} {m.kind === "rename" ? "umbenannt" : "zusammengeführt"}{m.undone_at ? ` · am ${fmtDate(m.undone_at)} rückgängig gemacht` : ""}</span>
+              </span>
+              {!m.undone_at && <button type="button" disabled={busy === m.id} onClick={() => void undo(m)} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold hover:bg-surface-2 disabled:opacity-50">{busy === m.id ? <Loader2 size={13} className="animate-spin" /> : <Undo2 size={13} />} Rückgängig</button>}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}

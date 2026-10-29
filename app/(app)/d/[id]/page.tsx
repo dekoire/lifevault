@@ -10,6 +10,7 @@ import { VaultUnlock } from "@/components/VaultUnlock";
 import { clusterOf } from "@/lib/clusters";
 import { chrono, fmtDate, fmtMoney, isUrgent, useDocs } from "@/lib/docs";
 import { useProjects } from "@/lib/projects";
+import { Clamp } from "@/components/Clamp";
 import { explainDoc, groupRank } from "@/lib/doctypes";
 import { partnerKey } from "@/lib/partners";
 import { useHistoryLinks } from "@/lib/history";
@@ -178,8 +179,8 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
         <div className="space-y-3">
           {(explain || (show.summary && content?.summary)) && (
             <section className={`${CARD} p-4`}>
-              {explain && <p className="mb-2 text-[13px] leading-5 text-muted">{explain}</p>}
-              {show.summary && content?.summary && <p className="text-[15px] leading-6">{content.summary}</p>}
+              {explain && <h2 className="mb-1.5 text-[16px] leading-6 font-semibold">{explain}</h2>}
+              {show.summary && content?.summary && <Clamp className="text-[15px] leading-6 text-soft">{content.summary}</Clamp>}
             </section>
           )}
           {glance.length > 0 && (

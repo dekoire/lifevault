@@ -1,21 +1,25 @@
 "use client";
 import Link from "next/link";
 import { use, useMemo, useState } from "react";
-import { ArrowRight, CalendarClock, ExternalLink, GitBranch, Hash, History, MessageSquare, PanelRight, ShoppingBag } from "lucide-react";
+import { ArrowRight, CalendarClock, ExternalLink, GitBranch, Hash, History, MessageSquare, PanelRight, PencilLine, ShoppingBag } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
 import { DocTable } from "@/components/DocTable";
 import { PartnerSheet } from "@/components/PartnerInfo";
+import { MergeHistory } from "@/components/PartnerDupes";
 import { SenderLogo } from "@/components/SenderLogo";
 import { BackLink, CARD, PageHeader } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
 import { fmtDate, fmtMoney, useDocs } from "@/lib/docs";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 import { buildPartners, docsWithValue, partnerKey, type PartnerId } from "@/lib/partners";
 import { CHANGE_LABEL, span, useHistoryLinks } from "@/lib/history";
 
 /** Ein Partner: alle Kennungen zum Kopieren, Fristen, Einkäufe und Dokumente */
 export default function PartnerPage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = use(params);
-  const { docs, loading } = useDocs();
+  const { docs, loading, refresh } = useDocs();
+  const router = useRouter();
   const p = useMemo(() => buildPartners(docs).find((x) => x.key === key), [docs, key]);
   const { byPartner } = useHistoryLinks(docs);
   const link = byPartner.get(key);
@@ -38,6 +42,18 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
   const total = p.docs.map((d) => d.amounts?.find((a) => /summe|gesamt|betrag|total/i.test(a.label)) ?? d.amounts?.[0]).filter(Boolean) as { value: number; currency: string }[];
   const spent = total.reduce((s, a) => s + a.value, 0);
 
+  // Umbenennen: alle Dokumente bekommen den neuen Absender; alter Name bleibt im Verlauf (rückgängig machbar)
+  const rename = async () => {
+    const name = prompt("Neuer Name für diesen Partner:", p.name)?.trim();
+    if (!name || name === p.name) return;
+    const entries = p.docs.map((d) => ({ doc_id: d.id, sender: d.sender, sender_domain: d.sender_domain }));
+    const { data: log } = await supabase.from("partner_merges").insert({ target_name: name.slice(0, 300), target_domain: p.domain, kind: "rename", entries }).select("id").single();
+    const { error } = await supabase.from("documents").update({ sender: name.slice(0, 300) }).in("id", entries.map((e) => e.doc_id));
+    if (error) { if (log) await supabase.from("partner_merges").delete().eq("id", log.id); alert("Umbenennen hat nicht geklappt."); return; }
+    await refresh();
+    router.replace(`/partner/${partnerKey(name)}`);
+  };
+
   return (
     <div>
       <BackLink href="/partner" label="Partner" />
@@ -46,6 +62,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
         title={p.name}
         subtitle={<>{clusterOf(p.cluster).label} · {p.docs.length} {p.docs.length === 1 ? "Dokument" : "Dokumente"} · {fmtDate(p.first)}{p.first !== p.last ? ` – ${fmtDate(p.last)}` : ""}{(!p.active || link?.entry.status === "früher") && " · früher"}</>}
         action={<>
+          <button type="button" onClick={() => void rename()} title="Umbenennen" aria-label="Umbenennen" className="grid h-10 w-10 place-items-center rounded-full border border-card-line bg-surface hover:bg-surface-2"><PencilLine size={15} /></button>
           <button type="button" onClick={() => setInfo(true)} className="inline-flex h-10 items-center gap-1.5 rounded-full border border-card-line bg-surface px-4 text-[13px] font-semibold hover:bg-surface-2"><PanelRight size={15} /> Kontakt & Infos</button>
           <Link href={`/chat?q=${encodeURIComponent(`Was habe ich alles mit ${p.name}? Verträge, Nummern, Kosten, Fristen.`)}`} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas"><MessageSquare size={15} /> Fragen</Link>
         </>}
@@ -104,6 +121,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
               <ul className="divide-y divide-line">{deadlines.map((x, i) => <li key={i}><Link href={`/d/${x.d.id}`} className="flex gap-3 px-5 py-2.5 text-[14px] hover:bg-surface-2/70"><span className="tnum w-24 shrink-0 font-semibold">{fmtDate(x.date)}</span><span className="min-w-0 truncate">{x.what}</span></Link></li>)}</ul>
             </section>
           )}
+          <MergeHistory pkey={p.key} compact />
         </div>
         <section className="space-y-3">
           <h2 className="text-[16px] font-semibold">Dokumente</h2>

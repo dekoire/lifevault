@@ -1,5 +1,5 @@
 import { streamText, type ModelMessage } from "ai";
-import { aiFor, todayLine } from "@/lib/ai";
+import { aiFor, loadAiSettings, todayLine } from "@/lib/ai";
 import { clusterOf } from "@/lib/clusters";
 import { buildPartners } from "@/lib/partners";
 import { unauthorized, userClient } from "@/lib/server";
@@ -58,6 +58,7 @@ const words = (q: string) => [...new Set(q.toLowerCase().match(/[\p{L}\p{N}]{3,}
 export async function POST(req: Request) {
   const auth = await userClient(req);
   if (!auth) return unauthorized();
+  await loadAiSettings(auth.sb);
   const { sb } = auth;
   const body = (await req.json().catch(() => null)) as { messages?: { role: string; content: string }[]; docId?: string; docText?: string; projectId?: string; depth?: string; attachIds?: string[] } | null;
   const history = (body?.messages ?? []).filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string").slice(-12);

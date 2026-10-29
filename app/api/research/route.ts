@@ -1,6 +1,6 @@
 import { gateway, generateText, Output, stepCountIs } from "ai";
 import { z } from "zod";
-import { aiFor, todayLine } from "@/lib/ai";
+import { aiFor, loadAiSettings, todayLine } from "@/lib/ai";
 import { unauthorized, userClient } from "@/lib/server";
 
 export const maxDuration = 120;
@@ -23,6 +23,7 @@ export type ResearchResult = z.infer<typeof Schema>;
 export async function POST(req: Request) {
   const auth = await userClient(req);
   if (!auth) return unauthorized();
+  await loadAiSettings(auth.sb);
   const body = (await req.json().catch(() => null)) as { query?: string; reason?: string; question?: string } | null;
   const query = body?.query?.trim().slice(0, 300) ?? "";
   if (!query) return Response.json({ error: "Suchanfrage fehlt." }, { status: 400 });

@@ -2,9 +2,9 @@
 import { use, useEffect, useState } from "react";
 import { BackLink, CARD, PageHeader, Switch } from "@/components/ui";
 import { useMe, type DocSections } from "@/lib/me";
-import { supabase, useSession } from "@/lib/supabase";
+import { authFetch, supabase, useSession } from "@/lib/supabase";
 
-const TITLES: Record<string, string> = { benutzer: "Benutzer", sicherheit: "Zwei-Faktor", dokumente: "Dokumentansicht" };
+const TITLES: Record<string, string> = { benutzer: "Benutzer", sicherheit: "Zwei-Faktor", dokumente: "Dokumentansicht", ki: "KI-Modelle" };
 
 export default function AdminSection({ params }: { params: Promise<{ section: string }> }) {
   const { section } = use(params);
@@ -18,6 +18,7 @@ export default function AdminSection({ params }: { params: Promise<{ section: st
         {section === "benutzer" && <Users />}
         {section === "sicherheit" && <MfaPolicy />}
         {section === "dokumente" && <DocView />}
+        {section === "ki" && <AiModels />}
       </div>
     </>
   );
@@ -103,6 +104,60 @@ function DocView() {
             <Switch on={settings.doc_sections[s.id]} onChange={(v) => void set(s.id, v)} label={s.label} />
           </li>
         ))}
+      </ul>
+    </section>
+  );
+}
+
+const TASKS: { id: string; label: string; text: string }[] = [
+  { id: "mail", label: "Mail-Vorprüfung", text: "Entscheidet beim E-Mail-Import, welche Anhänge relevant sind – viele kleine Aufrufe, günstig wählen" },
+  { id: "classify", label: "Einordnen & Archiv", text: "Prüft, ob neue Dokumente ältere ersetzen" },
+  { id: "read", label: "Dokumente auslesen", text: "Liest PDFs/Fotos und füllt Fakten, Fristen, Beträge – Qualität zählt" },
+  { id: "chat", label: "Chat & Recherche", text: "Antworten im Chat" },
+  { id: "profile", label: "Lebensprofil", text: "Erstellt das Profil und den Verlauf" },
+];
+type GwModel = { id: string; name: string; input: number | null; output: number | null };
+const price = (m?: GwModel) => (m && m.input !== null ? `$${m.input} / $${m.output} pro 1 Mio. Tokens (Ein/Aus)` : "Preis unbekannt");
+
+function AiModels() {
+  const [data, setData] = useState<{ defaults: Record<string, string>; models: GwModel[] }>();
+  const [chosen, setChosen] = useState<Record<string, string>>({});
+  const [saved, setSaved] = useState<string>();
+  useEffect(() => {
+    void authFetch("/api/models").then((r) => r.json()).then(setData);
+    void supabase.from("app_settings").select("ai_models").eq("id", 1).maybeSingle().then(({ data }) => setChosen((data?.ai_models as Record<string, string>) ?? {}));
+  }, []);
+  const save = async (task: string, model: string) => {
+    const next = { ...chosen };
+    if (!model || model === data?.defaults[task]) delete next[task]; else next[task] = model;
+    const { error } = await supabase.from("app_settings").update({ ai_models: next, updated_at: new Date().toISOString() }).eq("id", 1);
+    if (error) { alert(error.message); return; }
+    setChosen(next);
+    setSaved(task);
+    setTimeout(() => setSaved(undefined), 1500);
+  };
+  if (!data) return <p className="text-[14px] text-muted">Lädt Modelle …</p>;
+  const byProvider = [...data.models].sort((a, b) => a.id.localeCompare(b.id));
+  return (
+    <section className={CARD}>
+      <p className="px-5 pt-5 pb-2 text-[13px] text-muted">Welches Modell welche Aufgabe übernimmt – gilt für alle Benutzer, wirkt nach spätestens einer Minute. Fällt ein gewähltes Modell aus, springt der Standard ein. Alle Modelle laufen über das Vercel AI Gateway, ohne Training mit deinen Daten.</p>
+      <ul className="divide-y divide-line">
+        {TASKS.map((t) => {
+          const current = chosen[t.id] ?? data.defaults[t.id];
+          const m = data.models.find((x) => x.id === current);
+          return (
+            <li key={t.id} className="flex flex-col gap-2 px-5 py-4 md:flex-row md:items-center md:gap-4">
+              <span className="min-w-0 flex-1"><b className="text-[14px]">{t.label}</b>{saved === t.id && <span className="ml-2 text-[12px] font-semibold text-positive-text">gespeichert</span>}<span className="block text-[12px] text-muted">{t.text}</span></span>
+              <span className="flex w-full flex-col gap-1 md:w-[22rem]">
+                <select value={current} onChange={(e) => void save(t.id, e.target.value)} className="h-10 w-full rounded-full border border-card-line bg-surface px-3 text-[13px] font-semibold">
+                  {!m && <option value={current}>{current}</option>}
+                  {byProvider.map((x) => <option key={x.id} value={x.id}>{x.id}{x.id === data.defaults[t.id] ? " (Standard)" : ""}{x.input !== null ? ` · $${x.input}/$${x.output}` : ""}</option>)}
+                </select>
+                <span className="px-3 text-[11.5px] text-muted">{price(m)}{chosen[t.id] && <> · <button type="button" onClick={() => void save(t.id, "")} className="font-semibold text-selected">Standard ({data.defaults[t.id]})</button></>}</span>
+              </span>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

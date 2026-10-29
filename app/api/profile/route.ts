@@ -1,6 +1,6 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import { aiFor } from "@/lib/ai";
+import { aiFor, loadAiSettings } from "@/lib/ai";
 import { unauthorized, userClient } from "@/lib/server";
 import { HistorySchema, type History } from "@/lib/historySchema";
 
@@ -27,6 +27,7 @@ export type LifeProfile = z.infer<typeof Schema> & { generatedAt: string; docCou
 export async function POST(req: Request) {
   const auth = await userClient(req);
   if (!auth) return unauthorized();
+  await loadAiSettings(auth.sb);
   const { sb } = auth;
   const { data: docs } = await sb.from("documents").select("id,title,cluster,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,archived,archived_reason,encrypted").eq("status", "ready").order("received_at", { ascending: false }).limit(300);
   if (!docs?.length) return Response.json({ error: "Noch keine ausgelesenen Dokumente." }, { status: 400 });

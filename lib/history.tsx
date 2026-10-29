@@ -23,7 +23,9 @@ export function useLifeProfile() {
 /** Partner-Schlüssel eines Verlaufs-Eintrags: aus dem Namen und den Absendern seiner Quelldokumente */
 function keysOf(e: HistoryEntry, docs: Doc[]) {
   const keys = new Set([partnerKey(e.name)]);
-  for (const id of e.docIds) { const s = docs.find((d) => d.id === id)?.sender; if (s) keys.add(partnerKey(s)); }
+  // Absender der Quelle nur, wenn er zum Namen passt – sonst hängt z. B. „Wohnung“ an der Klinik, deren Brief die Adresse nennt
+  const words = new Set(partnerKey(e.name).split("-").filter((w) => w.length >= 3));
+  for (const id of e.docIds) { const s = docs.find((d) => d.id === id)?.sender; if (s && partnerKey(s).split("-").some((w) => words.has(w))) keys.add(partnerKey(s)); }
   return keys;
 }
 
