@@ -101,7 +101,7 @@ export default function ProfilPage() {
       />
 
       {/* Kopf: Avatar, Name, Alter, Kurzfassung, wichtigste Eckdaten */}
-      <section className={`${CARD} mb-4 overflow-hidden p-4 md:p-5`}>
+      <section className={`${CARD} mb-4 overflow-hidden p-4 md:p-5`} style={{ background: "var(--gradient-silver)" }}>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
           {email && <Avatar email={email} size={52} />}
           <div className="min-w-0 flex-1">
@@ -111,11 +111,11 @@ export default function ProfilPage() {
         </div>
         {chips.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {chips.map((c) => { const lp = c.icon === Home ? undefined : logoFor(c.v, []); return <span key={c.v} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-card-line bg-surface py-0.5 pr-2.5 pl-1.5 text-[12.5px] font-semibold">{lp ? <SenderLogo domain={lp.domain} sender={lp.name} cluster={lp.cluster} size={18} bare /> : <c.icon size={13} className="mx-0.5 shrink-0" />}<span className="truncate">{c.v}</span></span>; })}
+            {chips.map((c) => { const lp = c.icon === Home ? undefined : logoFor(c.v, []); return <span key={c.v} className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-surface py-0.5 shadow-card pr-2.5 pl-1.5 text-[12.5px] font-semibold">{lp ? <SenderLogo domain={lp.domain} sender={lp.name} cluster={lp.cluster} size={18} bare /> : <c.icon size={13} className="mx-0.5 shrink-0" />}<span className="truncate">{c.v}</span></span>; })}
           </div>
         )}
         {/* Kennzahlen in einer Leiste, durch Striche getrennt */}
-        <dl className="-mx-4 mt-4 -mb-4 grid grid-cols-3 divide-x divide-line border-t border-line md:-mx-5 md:-mb-5">
+        <dl className="-mx-4 mt-4 -mb-4 grid grid-cols-3 divide-x divide-card-line border-t border-card-line md:-mx-5 md:-mb-5">
           <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-muted">Dokumente</dt><dd className="tnum text-[18px] font-bold">{ready}</dd></div>
           <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-muted">Bereiche</dt><dd className="tnum text-[18px] font-bold">{profile?.sections.length ?? "–"}</dd></div>
           <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-muted">Stand</dt><dd className="flex flex-wrap items-center gap-1.5 text-[15px] leading-[27px] font-semibold">{profile ? new Date(profile.generatedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "–"}{newer > 0 && <span className="rounded-full bg-brand-500/10 px-1.5 py-px text-[11px] font-semibold text-brand-500">{newer} neu</span>}</dd></div>

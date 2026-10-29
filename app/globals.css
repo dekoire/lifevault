@@ -32,6 +32,8 @@
   --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04);
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+/* Silber-Verlauf wie Finastrys Gehalts-Kachel */
+:root { --gradient-silver: linear-gradient(120deg, #f8f9fb 0%, #f1f3f7 55%, #eaedf2 100%); }
 
 [data-theme="dark"] {
   --color-canvas: #0f0f12;
@@ -47,6 +49,7 @@
   --color-muted: #9a9aa6;
   --color-lavender: #241d47;
   --color-selected: #a995ff;
+  --gradient-silver: linear-gradient(120deg, #1f2633 0%, #262e3d 55%, #2e3747 100%);
 }
 
 html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
