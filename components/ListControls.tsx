@@ -146,7 +146,7 @@ export function FilterBar({ q, onQ, placeholder, children, actions, activeCount,
               <button type="button" onClick={() => setOpen(false)} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3"><X size={17} /></button>
             </div>
             <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">{children}</div>
-            <div className="pb-safe flex items-center gap-2 border-t border-line px-5 py-4">
+            <div className="flex items-center gap-2 border-t border-line px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <button type="button" onClick={onReset} disabled={!activeCount} className="h-11 rounded-full px-4 text-[14px] font-semibold text-soft hover:bg-surface-2 disabled:opacity-40">Zurücksetzen</button>
               <button type="button" onClick={() => setOpen(false)} className="ml-auto h-11 rounded-full bg-fg px-5 text-[14px] font-semibold text-canvas">Anzeigen</button>
             </div>

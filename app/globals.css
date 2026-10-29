@@ -72,6 +72,7 @@ body {
 
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+/* Achtung: überschreibt eigenen Innenabstand (steht außerhalb der Tailwind-Ebenen) – bei Elementen mit p-…/pb-… stattdessen pb-[max(1rem,env(safe-area-inset-bottom))] */
 .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 .pt-safe { padding-top: env(safe-area-inset-top); }
 

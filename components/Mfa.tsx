@@ -81,7 +81,7 @@ export function MfaEnroll({ onDone, forced = false }: { onDone: () => void; forc
 
 function Screen({ title, text, children }: { title: string; text: string; children: React.ReactNode }) {
   return (
-    <div className="pt-safe grid min-h-dvh place-items-center bg-page px-5 py-10">
+    <div className="grid min-h-dvh place-items-center bg-page px-5 pt-[max(2.5rem,env(safe-area-inset-top))] pb-10">
       <div className="w-full max-w-[400px]">
         <div className="mb-6 flex items-center gap-3"><LogoMark size={40} /><ShieldCheck size={22} className="text-positive" /></div>
         <h1 className="text-[26px] leading-8 font-[650] tracking-tight">{title}</h1>

@@ -161,7 +161,7 @@ export function MergeSheet(props: Parameters<typeof MergeReview>[0] & { onClose:
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && close(); window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
   return createPortal(
     <div data-closing={closing || undefined} className="sheet-backdrop fixed inset-0 z-50 flex items-end bg-black/35 lg:items-stretch lg:justify-end" onClick={close}>
-      <aside role="dialog" aria-modal="true" aria-label="Zusammenführen" data-closing={closing || undefined} onClick={(e) => e.stopPropagation()} className="sheet-panel pb-safe max-h-[94dvh] w-full overflow-y-auto rounded-t-3xl bg-canvas p-4 shadow-lg sm:p-5 lg:h-full lg:max-h-none lg:w-[560px] lg:rounded-none">
+      <aside role="dialog" aria-modal="true" aria-label="Zusammenführen" data-closing={closing || undefined} onClick={(e) => e.stopPropagation()} className="sheet-panel max-h-[94dvh] w-full overflow-y-auto rounded-t-3xl bg-canvas p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-lg sm:p-5 sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] lg:h-full lg:max-h-none lg:w-[560px] lg:rounded-none">
         <MergeReview {...props} onDone={() => { props.onDone?.(); close(); }} onCancel={close} onNotSame={props.onNotSame ? () => { props.onNotSame?.(); close(); } : undefined} />
       </aside>
     </div>,
