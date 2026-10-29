@@ -49,22 +49,24 @@ function exportMarkdown(d: Doc, c: SecretPart) {
 function SensitiveBadge({ doc, unlocked, onProtect }: { doc: Doc; unlocked: boolean; onProtect: () => void }) {
   const { vault } = useMe();
   const s = sensitivity(doc);
+  // Kachel mit Farbverlauf wie in Finastry, weiße Schrift
+  const G = { teal: "linear-gradient(120deg,#1f9688 0%,#27a294 100%)", red: "linear-gradient(120deg,#d4143c 0%,#e8305a 100%)", amber: "linear-gradient(120deg,#c46d06 0%,#d07a12 100%)", ink: "linear-gradient(120deg,#1b2130 0%,#262d3d 100%)" };
+  const box = "flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3.5 text-[13px] text-white shadow-card";
   if (doc.encrypted) return (
-    <div className="flex items-center gap-3 rounded-2xl border border-positive/30 bg-positive/8 px-4 py-3 text-[13px]">
-      <ShieldCheck size={18} className="shrink-0 text-positive-text" />
-      <span className="min-w-0 flex-1"><b className="text-positive-text">Verschlüsselt geschützt</b><span className="block text-soft">Datei und Inhalt liegen nur verschlüsselt auf dem Server.</span></span>
+    <div className={box} style={{ background: G.teal }}>
+      <ShieldCheck size={20} className="shrink-0" />
+      <span className="min-w-0 flex-1"><b className="text-[14px]">Verschlüsselt geschützt</b><span className="block text-white/85">Datei und Inhalt liegen nur verschlüsselt auf dem Server.</span></span>
     </div>
   );
-  const tone = s.level === "hoch" ? "border-negative/30 bg-negative/8" : s.level === "mittel" ? "border-amber/30 bg-amber/8" : "border-card-line bg-surface";
+  const bg = s.level === "hoch" ? G.red : s.level === "mittel" ? G.amber : G.ink;
   const head = s.level === "hoch" ? "Sehr sensibel" : s.level === "mittel" ? "Sensibel" : "Unkritisch";
-  const color = s.level === "hoch" ? "text-negative-text" : s.level === "mittel" ? "text-amber" : "text-soft";
   return (
-    <div className={`flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 text-[13px] ${tone}`}>
-      {s.level === "gering" ? <ShieldCheck size={18} className="shrink-0 text-muted" /> : <ShieldAlert size={18} className={`shrink-0 ${color}`} />}
-      <span className="min-w-0 flex-1"><b className={color}>{head}</b><span className="block text-soft">{s.reasons.length ? `Enthält ${s.reasons.join(", ")} – nicht verschlüsselt.` : "Keine besonders schützenswerten Daten erkannt."}</span></span>
+    <div className={box} style={{ background: bg }}>
+      {s.level === "gering" ? <ShieldCheck size={20} className="shrink-0" /> : <ShieldAlert size={20} className="shrink-0" />}
+      <span className="min-w-0 flex-1"><b className="text-[14px]">{head}</b><span className="block text-white/85">{s.reasons.length ? `Enthält ${s.reasons.join(", ")} – nicht verschlüsselt.` : "Keine besonders schützenswerten Daten erkannt."}</span></span>
       {s.level !== "gering" && (vault && unlocked
-        ? <button type="button" onClick={onProtect} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas"><Lock size={14} /> Verschlüsseln</button>
-        : <Link href="/einstellungen/tresor" className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas"><Lock size={14} /> {vault ? "Tresor entsperren" : "Tresor einrichten"}</Link>)}
+        ? <button type="button" onClick={onProtect} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-white px-4 text-[13px] font-semibold text-[#111]"><Lock size={14} /> Verschlüsseln</button>
+        : <Link href="/einstellungen/tresor" className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-white px-4 text-[13px] font-semibold text-[#111]"><Lock size={14} /> {vault ? "Tresor entsperren" : "Tresor einrichten"}</Link>)}
     </div>
   );
 }

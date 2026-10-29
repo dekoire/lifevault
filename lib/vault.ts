@@ -15,7 +15,49 @@ const listeners = new Set<() => void>();
 export const vaultKey = () => key;
 export const onVaultChange = (fn: () => void) => { listeners.add(fn); return () => { listeners.delete(fn); }; };
 const emit = () => listeners.forEach((f) => f());
-export function lockVault() { key = null; emit(); }
+let timer: ReturnType<typeof setTimeout> | undefined;
+export function lockVault() { key = null; if (timer) clearTimeout(timer); void forget(); emit(); }
+
+/*
+ * „15 Minuten merken“: Der Schlüssel (nicht exportierbar) wird im IndexedDB dieses Browsers mit Ablaufzeit abgelegt,
+ * damit Neuladen nicht sofort sperrt. Das Passwort selbst wird nie gespeichert; nach Ablauf ist der Schlüssel weg.
+ */
+export const REMEMBER_MIN = 15;
+const DB = "lifevault-vault";
+function idb<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T | undefined> {
+  return new Promise((ok) => {
+    try {
+      const r = indexedDB.open(DB, 1);
+      r.onupgradeneeded = () => r.result.createObjectStore("k");
+      r.onerror = () => ok(undefined);
+      r.onsuccess = () => {
+        const tx = r.result.transaction("k", mode);
+        const q = fn(tx.objectStore("k"));
+        q.onsuccess = () => ok(q.result);
+        q.onerror = () => ok(undefined);
+      };
+    } catch { ok(undefined); }
+  });
+}
+const forget = () => idb("readwrite", (s) => s.delete("key"));
+function schedule(until: number) {
+  if (timer) clearTimeout(timer);
+  timer = setTimeout(() => lockVault(), Math.max(0, until - Date.now()));
+}
+/** Beim Start: gemerkten Schlüssel zurückholen, solange er nicht abgelaufen ist */
+export async function restoreVault() {
+  if (key || typeof indexedDB === "undefined") return;
+  const v = await idb<{ key: CryptoKey; until: number }>("readonly", (s) => s.get("key"));
+  if (!v?.key || v.until < Date.now()) { if (v) void forget(); return; }
+  key = v.key;
+  schedule(v.until);
+  emit();
+}
+async function remember(k: CryptoKey, minutes: number) {
+  const until = Date.now() + minutes * 60_000;
+  await idb("readwrite", (s) => s.put({ key: k, until }, "key"));
+  schedule(until);
+}
 
 async function derive(password: string, salt: Uint8Array) {
   const base = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
@@ -58,10 +100,12 @@ export async function createVault(password: string) {
 }
 
 /** Entsperren: Passwort prüfen (Prüfwert muss sich öffnen lassen) */
-export async function unlockVault(password: string, salt: string, verifier: Sealed) {
+export async function unlockVault(password: string, salt: string, verifier: Sealed, rememberMinutes = 0) {
   const k = await derive(password, unb64(salt));
   const v = await openJson<{ ok: string }>(verifier, k).catch(() => null);
   if (v?.ok !== "lifevault") throw new Error("Das Tresor-Passwort stimmt nicht.");
   key = k;
+  if (rememberMinutes > 0) await remember(k, rememberMinutes);
+  else { void forget(); if (timer) clearTimeout(timer); }
   emit();
 }

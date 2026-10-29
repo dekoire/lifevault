@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Eye, EyeOff, Loader2, LockKeyhole } from "lucide-react";
 import { useMe } from "@/lib/me";
-import { unlockVault } from "@/lib/vault";
+import { REMEMBER_MIN, unlockVault } from "@/lib/vault";
 
 /** Tresor entsperren – Box wie die PIN-Abfrage (Passwort bleibt im Gerät) */
 export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib dein Tresor-Passwort ein, um Inhalt und Original zu sehen.", title = "Verschlüsselt", compact = false }: { text?: string; title?: string; compact?: boolean }) {
@@ -12,12 +12,13 @@ export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib de
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [keep, setKeep] = useState(() => { try { return localStorage.getItem("lifevault:vault-keep") !== "0"; } catch { return true; } });
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!vault) return;
     setBusy(true);
     setError(undefined);
-    try { await unlockVault(pw, vault.salt, vault.verifier); } catch (err) { setError((err as Error).message); } finally { setBusy(false); }
+    try { try { localStorage.setItem("lifevault:vault-keep", keep ? "1" : "0"); } catch { /* egal */ } await unlockVault(pw, vault.salt, vault.verifier, keep ? REMEMBER_MIN : 0); } catch (err) { setError((err as Error).message); } finally { setBusy(false); }
   };
   return (
     <div className={`mx-auto w-full rounded-3xl border border-card-line bg-surface text-center shadow-card ${compact ? "p-5" : "max-w-md p-7"}`}>
@@ -32,8 +33,12 @@ export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib de
             <button type="button" onClick={() => setShow(!show)} aria-label={show ? "Passwort verbergen" : "Passwort zeigen"} className="absolute top-1/2 right-3 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-muted hover:text-fg">{show ? <EyeOff size={17} /> : <Eye size={17} />}</button>
           </label>
           <button type="submit" disabled={busy || !pw} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-500 text-[15px] font-semibold text-white disabled:opacity-50">{busy && <Loader2 size={16} className="animate-spin" />} Entsperren</button>
+          <label className="flex cursor-pointer items-center justify-center gap-2 text-[13px] text-soft">
+            <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} className="h-4 w-4 accent-brand-500" />
+            {REMEMBER_MIN} Minuten entsperrt lassen
+          </label>
           <p className="min-h-5 text-[13px] text-negative-text" role="alert">{error}</p>
-          <p className="text-[12px] text-muted">Das Passwort verlässt dein Gerät nicht. Der Tresor sperrt sich wieder, wenn du die App schließt.</p>
+          <p className="text-[12px] text-muted">Das Passwort verlässt dein Gerät nicht. {keep ? `Nach ${REMEMBER_MIN} Minuten sperrt sich der Tresor wieder (auch nach Neuladen).` : "Der Tresor sperrt sich beim Neuladen oder Schließen."}</p>
         </form>
       ) : (
         <Link href="/einstellungen/tresor" className="mt-5 inline-flex h-11 items-center rounded-full bg-brand-500 px-5 text-[14px] font-semibold text-white">Tresor einrichten</Link>

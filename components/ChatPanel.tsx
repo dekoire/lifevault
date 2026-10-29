@@ -8,6 +8,9 @@ import { useDetail } from "@/components/DetailPanel";
 import { EntityLink } from "@/components/EntityLink";
 import { SenderLogo } from "@/components/SenderLogo";
 import { useDocs } from "@/lib/docs";
+import { useMe } from "@/lib/me";
+import { openJson, vaultKey } from "@/lib/vault";
+import type { SecretPart } from "@/lib/types";
 import { useProjects } from "@/lib/projects";
 import { authFetch, supabase } from "@/lib/supabase";
 
@@ -313,9 +316,31 @@ export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu de
  * Chat-Logik: Frage senden, Antwort streamen, Verlauf in der Datenbank speichern (Tabelle chats).
  * docId: Chat zu einem Dokument (docText = entschlüsselter Inhalt bei verschlüsselten Dokumenten).
  */
+/** Fragen, die offensichtlich sensible (meist verschlüsselte) Unterlagen brauchen */
+const SENSITIVE_Q = /arzt|ärzt|befund|diagnos|krank|gesundheit|medikament|klinik|therapie|operation|\bop\b|labor|ausweis|reisepass|steuer|gehalt|lohn|netto|brutto|iban|konto|versicher|sozialversicher|verschlüssel|tresor/i;
+
+/** Verschlüsselte Dokumente für eine Antwort im Browser öffnen: Zusammenfassung + Fakten aller, Volltext der passendsten */
+async function decryptForChat(docs: { id: string; title: string | null; sender: string | null; doc_date: string | null; secret: { iv: string; ct: string } | null }[], question: string) {
+  const words = (question.toLowerCase().match(/[\p{L}\p{N}]{4,}/gu) ?? []);
+  const out: { id: string; title: string; text: string }[] = [];
+  for (const d of docs.slice(0, 40)) {
+    try {
+      const p = await openJson<SecretPart>(d.secret!);
+      const hay = `${d.title} ${d.sender} ${p.summary}`.toLowerCase();
+      const match = words.some((w) => hay.includes(w));
+      const facts = (p.key_facts ?? []).slice(0, 20).map((f) => `${f.label}: ${f.value}`).join("; ");
+      out.push({ id: d.id, title: d.title ?? "Dokument", text: `${d.sender ?? ""} · ${d.doc_date ?? ""}\n${p.summary ?? ""}\nFakten: ${facts}${match ? `\n${(p.full_text ?? "").slice(0, 6000)}` : ""}` });
+    } catch { /* nicht lesbar: auslassen */ }
+  }
+  return out;
+}
+
 export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; docId?: string; docText?: string; onSaved?: (id: string) => void }) {
   const { current } = useProjects();
-  const { upload } = useDocs();
+  const { upload, allDocs } = useDocs();
+  const { vault, unlocked } = useMe();
+  // Frage braucht verschlüsselte Inhalte, Tresor gesperrt: erst fragen, dann weiter
+  const [gate, setGate] = useState<{ q: string; base: Msg[] } | null>(null);
   const [depth, setDepthState] = useState<Depth>("normal");
   useEffect(() => { try { const d = localStorage.getItem("lifevault:depth"); if (d === "kurz" || d === "normal" || d === "gruendlich") setDepthState(d); } catch { /* egal */ } }, []);
   const setDepth = (d: Depth) => { setDepthState(d); try { localStorage.setItem("lifevault:depth", d); } catch { /* egal */ } };
@@ -355,9 +380,13 @@ export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; 
     }
   };
 
-  const send = async (q: string, base = msgs) => {
+  const send = async (q: string, base = msgs, opts: { skipGate?: boolean } = {}) => {
     const question = q.trim();
     if (!question || busy) return;
+    const encDocs = allDocs.filter((d) => d.encrypted && d.secret);
+    if (!docId && !opts.skipGate && vault && !vaultKey() && encDocs.length && SENSITIVE_Q.test(question)) { setGate({ q: question, base }); return; }
+    setGate(null);
+    const secretDocs = !docId && vaultKey() && encDocs.length ? await decryptForChat(encDocs, question) : undefined;
     const att = attachments.filter((a) => a.id).map((a) => ({ id: a.id!, name: a.name }));
     setAttachments([]);
     const next: Msg[] = [...base, { role: "user", content: question, ...(att.length ? { attachments: att } : {}) }];
@@ -367,7 +396,7 @@ export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; 
     abort.current = ctrl;
     let out = "";
     try {
-      const res = await authFetch("/api/chat", { method: "POST", body: JSON.stringify({ messages: next.map(({ role, content }) => ({ role, content })), docId, docText, projectId: current !== "all" ? current : undefined, depth, attachIds: att.map((a) => a.id) }), signal: ctrl.signal });
+      const res = await authFetch("/api/chat", { method: "POST", body: JSON.stringify({ messages: next.map(({ role, content }) => ({ role, content })), docId, docText, secretDocs, projectId: current !== "all" ? current : undefined, depth, attachIds: att.map((a) => a.id) }), signal: ctrl.signal });
       if (!res.ok || !res.body) throw new Error((await res.json().catch(() => ({}))).error ?? `Fehler ${res.status}`);
       const reader = res.body.getReader();
       const dec = new TextDecoder();
@@ -449,5 +478,8 @@ export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; 
     }
   };
 
-  return { msgs, busy, send, stop: () => abort.current?.abort(), reset, id, research, saveFound, depth, setDepth, attachments, attach, removeAttachment };
+  // nach dem Entsperren die zurückgehaltene Frage automatisch senden
+  useEffect(() => { if (gate && unlocked) void send(gate.q, gate.base, { skipGate: true }); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [unlocked]);
+  const skipGate = () => { if (gate) void send(gate.q, gate.base, { skipGate: true }); };
+  return { msgs, busy, send, stop: () => abort.current?.abort(), reset, id, research, saveFound, depth, setDepth, attachments, attach, removeAttachment, gate, skipGate, cancelGate: () => setGate(null) };
 }

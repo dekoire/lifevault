@@ -60,7 +60,7 @@ export async function POST(req: Request) {
   if (!auth) return unauthorized();
   await loadAiSettings(auth.sb);
   const { sb } = auth;
-  const body = (await req.json().catch(() => null)) as { messages?: { role: string; content: string }[]; docId?: string; docText?: string; projectId?: string; depth?: string; attachIds?: string[] } | null;
+  const body = (await req.json().catch(() => null)) as { messages?: { role: string; content: string }[]; docId?: string; docText?: string; secretDocs?: { id: string; title: string; text: string }[]; projectId?: string; depth?: string; attachIds?: string[] } | null;
   const history = (body?.messages ?? []).filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string").slice(-12);
   const last = [...history].reverse().find((m) => m.role === "user")?.content.slice(0, 2000) ?? "";
   if (!last.trim()) return Response.json({ error: "Leere Frage." }, { status: 400 });
@@ -88,7 +88,10 @@ export async function POST(req: Request) {
   const partners = buildPartners((all ?? []).map((d) => ({ ...d, status: "ready" }) as unknown as Doc)).slice(0, 80).map((p) => `- [${p.name}](/partner/${p.key})`).join("\n");
   const attachBlock = attached.length ? `## Gerade im Chat angehängt – darauf bezieht sich die Frage\n${attached.map((d) => `### [${d.title ?? "Neues Dokument"}](/d/${d.id})${d.status !== "ready" ? " (wird noch ausgelesen)" : ""}\n${d.summary ?? ""}\n${JSON.stringify(d.key_facts)}\nFristen: ${JSON.stringify(d.deadlines)}\n${(d.full_text ?? "").slice(0, 30000)}`).join("\n\n")}\n\n` : "";
   const focusBlock = focus ? `## Dieses Dokument steht im Mittelpunkt: [${focus.title}](/d/${focus.id})\n${focusText || "(Inhalt verschlüsselt – Tresor nicht entsperrt)"}\n\n` : "";
-  const context = `${attachBlock}${focusBlock}${todayLine()}\n\n## Alle Dokumente (${all?.length ?? 0})\n${overview || "(noch keine Dokumente)"}\n\n## Partner (Firmen, Vertragspartner, Händler)\n${partners || "(keine)"}\n\n## Volltext der passendsten Dokumente\n${details || "(keine Volltext-Treffer)"}`;
+  // verschlüsselte Dokumente: nur wenn der Browser sie für diese Antwort entschlüsselt mitschickt – hier nicht gespeichert
+  const secret = (Array.isArray(body?.secretDocs) ? body.secretDocs : []).filter((d) => typeof d?.id === "string" && /^[0-9a-f-]{36}$/i.test(d.id) && typeof d.text === "string").slice(0, 40);
+  const secretBlock = secret.length ? `## Verschlüsselte Dokumente (für diese Antwort im Browser entschlüsselt)\n${secret.map((d) => `### [${String(d.title).slice(0, 200)}](/d/${d.id})\n${d.text.slice(0, 8000)}`).join("\n\n")}\n\n` : "";
+  const context = `${attachBlock}${focusBlock}${secretBlock}${todayLine()}\n\n## Alle Dokumente (${all?.length ?? 0})\n${overview || "(noch keine Dokumente)"}\n\n## Partner (Firmen, Vertragspartner, Händler)\n${partners || "(keine)"}\n\n## Volltext der passendsten Dokumente\n${details || "(keine Volltext-Treffer)"}`;
 
   const messages: ModelMessage[] = history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content.slice(0, 8000) }));
   const style = depth === "kurz"

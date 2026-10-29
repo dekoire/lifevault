@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { onVaultChange, vaultKey, type Sealed } from "@/lib/vault";
+import { onVaultChange, restoreVault, vaultKey, type Sealed } from "@/lib/vault";
 
 export type DocSections = Record<"summary" | "info" | "facts" | "deadlines" | "amounts" | "tags" | "content" | "original" | "chat", boolean>;
 export type Settings = { mfa_required: boolean; doc_sections: DocSections };
@@ -25,7 +25,7 @@ export function MeProvider({ userId, children }: { userId: string; children: Rea
     setMe({ isAdmin: !!p.data?.is_admin, settings: s.data ? { mfa_required: s.data.mfa_required, doc_sections: { ...DEFAULT.doc_sections, ...(s.data.doc_sections as Partial<DocSections>) } } : DEFAULT, vault: (v.data as Vault) ?? null });
   }, [userId]);
   useEffect(() => { void reload(); }, [reload]);
-  useEffect(() => onVaultChange(() => setUnlocked(!!vaultKey())), []);
+  useEffect(() => { const off = onVaultChange(() => setUnlocked(!!vaultKey())); void restoreVault(); return off; }, []);
   return <Ctx.Provider value={{ ...me, unlocked, reload }}>{children}</Ctx.Provider>;
 }
 

@@ -5,6 +5,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, FileSearch, HeartPulse, History, MessageSquare, PanelLeftClose, PanelLeftOpen, Receipt, SquarePen, Trash2, X } from "lucide-react";
 import { Composer, MessageList, useChat } from "@/components/ChatPanel";
 import { LogoMark } from "@/components/Logo";
+import { VaultUnlock } from "@/components/VaultUnlock";
 import { useDocs } from "@/lib/docs";
 import { supabase, useSession } from "@/lib/supabase";
 import { AvatarMenu } from "@/components/AvatarMenu";
@@ -103,7 +104,7 @@ function Chat() {
               <p className="mt-1.5 text-[14px] text-muted">{ready ? `Ich kenne ${ready} ${ready === 1 ? "Dokument" : "Dokumente"} von dir und nenne dir immer die Quelle.` : "Lade zuerst ein paar Dokumente hoch – dann frag mich alles dazu."}</p>
               <div className="mt-6 grid w-full gap-2">
                 {SUGGESTIONS.map(({ icon: Icon, q }) => (
-                  <button key={q} type="button" onClick={() => void chat.send(q)} className="flex items-center gap-3 rounded-xl border border-card-line bg-surface px-4 py-3 text-left text-[14px] font-medium hover:bg-surface-2"><Icon size={17} className="shrink-0 text-brand-500" /> {q}</button>
+                  <button key={q} type="button" onClick={() => void chat.send(q)} className="flex items-center gap-3 rounded-xl bg-surface-2 px-4 py-3 text-left text-[14px] font-medium hover:bg-surface-3"><Icon size={17} className="shrink-0 text-brand-500" /> {q}</button>
                 ))}
               </div>
               {!ready && <Link href="/" className="mt-4 text-[14px] font-semibold text-selected">Dokumente hochladen</Link>}
@@ -114,6 +115,18 @@ function Chat() {
         </div>
 
         <div className={`fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-canvas via-canvas to-canvas/0 px-3 pt-6 pb-3 lg:bottom-0 lg:pb-6 ${side ? "lg:left-[calc(var(--side,15rem)+18rem)]" : "lg:left-[var(--side,15rem)]"}`}>
+          {chat.gate && (
+            <div className="mx-auto mb-3 max-w-3xl">
+              <div className="rounded-3xl border border-card-line bg-surface p-4 shadow-card">
+                <p className="mb-3 text-[13.5px] text-soft">Für <b className="text-fg">„{chat.gate.q}“</b> brauche ich wahrscheinlich verschlüsselte Unterlagen. Entsperre den Tresor – oder frag ohne sie.</p>
+                <VaultUnlock compact title="Tresor entsperren" text="Danach geht deine Frage automatisch los. Die Inhalte werden nur für diese Antwort im Browser entschlüsselt." />
+                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  <button type="button" onClick={chat.skipGate} className="inline-flex h-9 items-center rounded-full border border-card-line px-4 text-[13px] font-semibold hover:bg-surface-2">Ohne verschlüsselte Dokumente fragen</button>
+                  <button type="button" onClick={chat.cancelGate} className="inline-flex h-9 items-center rounded-full px-4 text-[13px] font-semibold text-muted hover:text-fg">Abbrechen</button>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="mx-auto max-w-3xl"><Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} onFiles={(f) => void chat.attach(f)} attachments={chat.attachments} onRemoveAttachment={chat.removeAttachment} depth={chat.depth} onDepth={chat.setDepth} /></div>
         </div>
       </div>
