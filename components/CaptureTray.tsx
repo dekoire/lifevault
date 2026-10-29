@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, FileText, FileUp, Files, Camera, Loader2, Send, Trash2, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, FileText, FileUp, Files, Camera, Loader2, ScanLine, Send, Trash2, X } from "lucide-react";
 import { PDFDocument } from "pdf-lib";
 import { UploadTarget } from "@/components/ProjectSwitcher";
 import { useDocs } from "@/lib/docs";
+import { scanPhoto, type ScanQuality } from "@/lib/scan";
 
-type Item = { id: string; file: File; url?: string };
+type Item = { id: string; file: File; url?: string; orig?: File; quality?: ScanQuality; scanning?: boolean };
 const isImage = (f: File) => f.type.startsWith("image/");
 const isPdf = (f: File) => f.type === "application/pdf" || /\.pdf$/i.test(f.name);
 
@@ -56,9 +57,26 @@ export function useCaptureTray() {
   // Vorschaubilder wieder freigeben
   useEffect(() => () => items.forEach((i) => i.url && URL.revokeObjectURL(i.url)), []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Scan-Modus: Fotos geradeziehen und als Schwarz-Weiß-Scan aufhellen (gemerkt)
+  const [scan, setScan] = useState(true);
+  useEffect(() => { try { setScan(localStorage.getItem("lifevault:scan") !== "0"); } catch { /* egal */ } }, []);
+  const process = (it: Item) => {
+    setItems((cur) => cur.map((x) => (x.id === it.id ? { ...x, scanning: true } : x)));
+    void scanPhoto(it.orig ?? it.file).then((r) => setItems((cur) => cur.map((x) => (x.id === it.id ? { ...x, orig: x.orig ?? x.file, file: r.file, url: r.url, quality: r.quality, scanning: false } : x))))
+      .catch(() => setItems((cur) => cur.map((x) => (x.id === it.id ? { ...x, scanning: false } : x))));
+  };
+  const toggleScan = () => {
+    const on = !scan;
+    setScan(on);
+    try { localStorage.setItem("lifevault:scan", on ? "1" : "0"); } catch { /* egal */ }
+    if (on) items.filter((i) => isImage(i.orig ?? i.file)).forEach(process);
+    else setItems((cur) => cur.map((x) => (x.orig ? { ...x, file: x.orig, url: URL.createObjectURL(x.orig), orig: undefined } : x)));
+  };
   const add = (list: File[]) => {
     if (!list.length) return;
-    setItems((cur) => [...cur, ...list.map((file) => ({ id: crypto.randomUUID(), file, url: isImage(file) ? URL.createObjectURL(file) : undefined }))]);
+    const fresh = list.map((file) => ({ id: crypto.randomUUID(), file, url: isImage(file) ? URL.createObjectURL(file) : undefined }));
+    setItems((cur) => [...cur, ...fresh]);
+    if (scan) fresh.filter((i) => isImage(i.file)).forEach(process);
     setError(undefined);
     setOpen(true);
   };
@@ -119,6 +137,12 @@ export function useCaptureTray() {
                       <span className="flex h-full flex-col items-center justify-center gap-1.5 p-2 text-center"><FileText size={26} className="text-soft" /><span className="line-clamp-3 text-[11px] font-medium break-all text-soft">{it.file.name}</span></span>
                     )}
                     <span className="absolute top-1.5 left-1.5 grid h-6 min-w-6 place-items-center rounded-full bg-fg px-1.5 text-[11.5px] font-bold text-canvas">{i + 1}</span>
+                    {it.scanning && <span className="absolute inset-0 grid place-items-center bg-black/30 text-white"><Loader2 size={22} className="animate-spin" /></span>}
+                    {it.quality && !it.scanning && (
+                      <span title={it.quality.note} className={`absolute inset-x-1.5 top-9 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold text-white ${it.quality.ok ? "bg-positive" : "bg-amber"}`}>
+                        {it.quality.ok ? <Check size={11} strokeWidth={3} /> : <AlertTriangle size={11} />}<span className="truncate">{it.quality.ok ? "Gut eingerahmt" : it.quality.note}</span>
+                      </span>
+                    )}
                     <button type="button" onClick={() => remove(it.id)} aria-label={`Seite ${i + 1} entfernen`} className="absolute top-1.5 right-1.5 grid h-7 w-7 place-items-center rounded-full bg-surface/90 text-fg shadow-sm"><Trash2 size={14} /></button>
                     {items.length > 1 && (
                       <span className="absolute inset-x-1.5 bottom-1.5 flex justify-between">
@@ -136,7 +160,11 @@ export function useCaptureTray() {
                 </li>
               </ol>
 
-              <button type="button" onClick={() => files.current?.click()} className="mt-3 inline-flex h-10 items-center gap-2 rounded-full border border-card-line px-4 text-[13.5px] font-semibold hover:bg-surface-2"><FileUp size={16} /> Fotos oder PDFs auswählen</button>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button type="button" onClick={() => files.current?.click()} className="inline-flex h-10 items-center gap-2 rounded-full border border-card-line px-4 text-[13.5px] font-semibold hover:bg-surface-2"><FileUp size={16} /> Fotos oder PDFs auswählen</button>
+                <button type="button" role="switch" aria-checked={scan} onClick={toggleScan} title="Fotos geradeziehen und als Schwarz-Weiß-Scan aufhellen" className={`inline-flex h-10 items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold ${scan ? "bg-brand-500 text-white" : "border border-card-line text-soft hover:bg-surface-2"}`}><ScanLine size={16} /> Scan-Modus {scan ? "an" : "aus"}</button>
+              </div>
+              {scan && <p className="mt-1.5 text-[12px] text-muted">Fotos werden geradegezogen und wie ein Scan aufgehellt (schwarz-weiß, gut zum Drucken). Tipp: Blatt auf dunklen Untergrund legen.</p>}
 
               {canCombine && (
                 <fieldset className="mt-5">
