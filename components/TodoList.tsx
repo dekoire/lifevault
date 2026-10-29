@@ -71,7 +71,7 @@ export function TodoList({ docs }: { docs: Doc[] }) {
                 </span>
                 <span className="shrink-0 text-right">
                   {t.payment?.amount !== undefined && <b className="tnum block text-[13.5px]">{fmtMoney(t.payment.amount, t.payment.currency)}</b>}
-                  <span className={`block text-[12px] font-semibold whitespace-nowrap ${overdue || soon ? "text-negative-text" : "text-muted"}`}>{overdue || soon ? dueLabel(t.days) : `bis ${fmtDate(t.date)}`}</span>
+                  <span className={`inline-block rounded-full border bg-surface px-2.5 py-0.5 text-[12px] font-semibold whitespace-nowrap ${overdue || soon ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>{overdue || soon ? dueLabel(t.days) : `bis ${fmtDate(t.date)}`}</span>
                 </span>
                 <ChevronRight size={16} className="shrink-0 text-muted max-sm:hidden" />
               </button>
