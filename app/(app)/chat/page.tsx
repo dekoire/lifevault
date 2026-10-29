@@ -96,7 +96,7 @@ function Chat() {
           </div>
         </header>
 
-        <div className="mx-auto w-full max-w-3xl flex-1 px-4 pb-48 lg:pb-40">
+        <div className="mx-auto w-full max-w-3xl flex-1 px-4 pb-[calc(16rem+env(safe-area-inset-bottom))] lg:pb-48">
           {empty ? (
             <div className="flex flex-col items-center pt-[10vh] text-center">
               <LogoMark size={52} />
@@ -110,7 +110,7 @@ function Chat() {
               {!ready && <Link href="/" className="mt-4 text-[14px] font-semibold text-selected">Dokumente hochladen</Link>}
             </div>
           ) : (
-            <div className="pt-4"><MessageList msgs={chat.msgs} busy={chat.busy} onAsk={(q) => void chat.send(q)} onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} /><div ref={end} /></div>
+            <div className="pt-4"><MessageList msgs={chat.msgs} busy={chat.busy} onAsk={(q) => void chat.send(q)} onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} />{/* Abstand zum Eingabefeld: beim Mitscrollen bleibt das Ende der Antwort darüber sichtbar */}<div ref={end} className="scroll-mb-[calc(15rem+env(safe-area-inset-bottom))] lg:scroll-mb-44" /></div>
           )}
         </div>
 
