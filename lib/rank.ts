@@ -31,7 +31,7 @@ const full = (d: RankRow, today: string) => `${short(d)} | Bereich: ${d.cluster 
  * Bewertet `targets` (Wichtigkeit, Rolle, Bezug zur Grundlage) im Zusammenhang aller Dokumente desselben Partners (`group`).
  * Von Hand gesetzte Wichtigkeit bleibt; Rolle und Bezug werden immer aktualisiert. Gibt die Anzahl gespeicherter Dokumente zurück.
  */
-export async function rankDocs(sb: SupabaseClient, targets: RankRow[], group: RankRow[], withPartner: boolean): Promise<number> {
+export async function rankDocs(sb: SupabaseClient, targets: RankRow[], group: RankRow[], withPartner: boolean, userId: string): Promise<number> {
   if (!targets.length) return 0;
   const today = new Date().toISOString().slice(0, 10);
   const ids = new Set(group.map((d) => d.id));
@@ -59,7 +59,7 @@ export async function rankDocs(sb: SupabaseClient, targets: RankRow[], group: Ra
         patch.importance_reason = x?.reason?.slice(0, 200) ?? null;
       }
       if (!x && d.importance !== null) continue;
-      const { error } = await sb.from("documents").update(patch).eq("id", d.id);
+      const { error } = await sb.from("documents").update(patch).eq("id", d.id).eq("user_id", userId);
       if (!error) saved++;
     }
   }
@@ -67,8 +67,8 @@ export async function rankDocs(sb: SupabaseClient, targets: RankRow[], group: Ra
 }
 
 /** Alle fertigen Dokumente (nur Metadaten), nach Partner gruppiert; ohne Absender unter "" */
-export async function loadGroups(sb: SupabaseClient) {
-  const { data } = await sb.from("documents").select(RANK_COLS).eq("status", "ready").is("merged_into", null).order("received_at", { ascending: false }).limit(3000);
+export async function loadGroups(sb: SupabaseClient, userId: string) {
+  const { data } = await sb.from("documents").select(RANK_COLS).eq("user_id", userId).eq("status", "ready").is("merged_into", null).order("received_at", { ascending: false }).limit(3000);
   const groups = new Map<string, RankRow[]>();
   for (const d of (data ?? []) as RankRow[]) {
     const k = d.sender ? partnerKey(d.sender) : "";
@@ -81,11 +81,11 @@ export async function loadGroups(sb: SupabaseClient) {
  * Nach dem Auslesen: das neue Dokument bewerten und seinen Partner neu verknüpfen
  * (ältere Rechnungen bekommen z. B. den neuen Vertrag als Grundlage).
  */
-export async function rankAfterUpload(sb: SupabaseClient, id: string) {
-  const groups = await loadGroups(sb);
+export async function rankAfterUpload(sb: SupabaseClient, id: string, userId: string) {
+  const groups = await loadGroups(sb, userId);
   const [key, group] = [...groups.entries()].find(([, g]) => g.some((d) => d.id === id)) ?? [];
   if (!group) return;
   const me = group.find((d) => d.id === id)!;
   const targets = key ? [me, ...group.filter((d) => d.id !== id && (d.importance === null || (!d.basis_id && d.partner_role !== "grundlage"))).slice(0, 29)] : [me];
-  await rankDocs(sb, targets, group, !!key);
+  await rankDocs(sb, targets, group, !!key, userId);
 }

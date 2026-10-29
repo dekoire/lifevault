@@ -4,26 +4,13 @@
  * Mails und Anhänge gehen nicht über unseren Server – nur Absender, Betreff, Vorschau und Dateinamen an die KI-Vorprüfung.
  */
 import PostalMime from "postal-mime";
-import { PDFDocument, StandardFonts, rgb, type PDFFont } from "pdf-lib";
 
 export type MailAttachment = { name: string; mime: string; size: number; load: () => Promise<Blob> };
 /** bodyText: Mailtext als Text – für Belege, die nur in der Mail stehen (z. B. Apple, PayPal), ohne PDF im Anhang */
 export type MailItem = { id: string; source: string; from: string; subject: string; date: string; snippet: string; attachments: MailAttachment[]; bodyText?: string };
 
-// ---------- Anhänge vorsortieren (ohne KI) ----------
-const DOC_MIME = /^(application\/pdf|image\/(jpeg|png|heic|heif|webp)|application\/(msword|vnd\.openxmlformats-officedocument\.[a-z.]+|vnd\.ms-excel|vnd\.ms-powerpoint))$/i;
-const DOC_EXT = /\.(pdf|jpe?g|png|heic|heif|webp|docx?|xlsx?|pptx?)$/i;
-const JUNK = /^(image\d*|logo|banner|signature|unnamed|icon|spacer|facebook|twitter|instagram|linkedin|outlook)[\w-]*\.(png|jpe?g|gif)$/i;
-const MIME_BY_EXT: Record<string, string> = { pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", heic: "image/heic", heif: "image/heif", webp: "image/webp", doc: "application/msword", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", xls: "application/vnd.ms-excel", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ppt: "application/vnd.ms-powerpoint", pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation" };
-
-/** Kandidat: Dokument-Typ, nicht winzig (Logos/Signaturen), nicht offensichtlich Deko */
-export function isCandidate(a: { name: string; mime: string; size: number; inline?: boolean }) {
-  if (!DOC_MIME.test(a.mime) && !DOC_EXT.test(a.name)) return false;
-  const image = /^image\//i.test(a.mime) || /\.(jpe?g|png|webp|heic|heif)$/i.test(a.name);
-  if (image && (a.size < 40_000 || JUNK.test(a.name) || a.inline)) return false;
-  return a.size > 2_000 && a.size < 20 * 1024 * 1024;
-}
-export const fixMime = (name: string, mime: string) => (mime && mime !== "application/octet-stream" ? mime : MIME_BY_EXT[name.split(".").pop()?.toLowerCase() ?? ""] ?? mime);
+import { fixMime, isCandidate } from "@/lib/mailcore";
+export { fixMime, isCandidate, mailBodyPdf } from "@/lib/mailcore";
 
 // ---------- Gmail ----------
 type TokenClient = { requestAccessToken: (o?: { prompt?: string; login_hint?: string }) => void };
@@ -193,61 +180,3 @@ export function htmlToText(html: string): string {
 /** Mailtext für den Tresor: HTML bevorzugt, sonst Text; gekürzt */
 export const mailText = (html: string, text: string) => ((html ? htmlToText(html) : "") || text.replace(/\r/g, "").trim()).slice(0, 60_000);
 
-/** Zeichen, die die Standardschrift nicht kann, ersetzen (sonst bricht pdf-lib ab) */
-function printable(font: PDFFont, s: string, cache: Map<string, string>) {
-  const swap: Record<string, string> = { "\u2009": " ", "\u202f": " ", "\u2012": "-", "\u2013": "–", "\u2212": "-", "\u2192": "->", "\u2022": "•", "\u2026": "…" };
-  return [...s].map((ch) => {
-    if (cache.has(ch)) return cache.get(ch)!;
-    let out = swap[ch] ?? ch;
-    try { font.encodeText(out); } catch { out = ch.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); try { font.encodeText(out); } catch { out = ""; } }
-    cache.set(ch, out);
-    return out;
-  }).join("");
-}
-
-/** Mail (Absender, Betreff, Datum, Text) als PDF – damit Belege ohne Anhang wie jedes andere Dokument ausgelesen und abgelegt werden */
-export async function mailBodyPdf(m: Pick<MailItem, "from" | "subject" | "date" | "bodyText">): Promise<File> {
-  const pdf = await PDFDocument.create();
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const cache = new Map<string, string>(), cacheB = new Map<string, string>();
-  const W = 595, H = 842, M = 50, size = 10, lh = 14;
-  pdf.setTitle(m.subject || "E-Mail");
-  let page = pdf.addPage([W, H]);
-  let y = H - M;
-  const line = (t: string, f = font, s = size, color = rgb(0.1, 0.1, 0.1)) => {
-    const c = f === bold ? cacheB : cache;
-    // Zeile umbrechen, damit nichts über den Rand läuft
-    const words = printable(f, t, c).split(" ");
-    let cur = "";
-    const flush = () => {
-      if (y < M) { page = pdf.addPage([W, H]); y = H - M; }
-      page.drawText(cur, { x: M, y, size: s, font: f, color });
-      y -= s === size ? lh : s * 1.4;
-      cur = "";
-    };
-    for (const w of words) {
-      // sehr lange Wörter (Links) hart trennen
-      for (let part = w; part.length; ) {
-        const next = cur ? `${cur} ${part}` : part;
-        if (f.widthOfTextAtSize(next, s) <= W - 2 * M) { cur = next; part = ""; continue; }
-        if (cur) { flush(); continue; }
-        let n = part.length;
-        while (n > 1 && f.widthOfTextAtSize(part.slice(0, n), s) > W - 2 * M) n--;
-        cur = part.slice(0, n); part = part.slice(n); flush();
-      }
-    }
-    if (cur || !t) flush();
-  };
-  line(m.subject || "(ohne Betreff)", bold, 14);
-  y -= 4;
-  line(`Von: ${m.from}`, font, 9, rgb(0.4, 0.4, 0.4));
-  if (m.date) line(`Datum: ${new Date(m.date).toLocaleString("de-DE")}`, font, 9, rgb(0.4, 0.4, 0.4));
-  line("Aus dem E-Mail-Text übernommen (die Mail hatte keinen Dokument-Anhang).", font, 9, rgb(0.4, 0.4, 0.4));
-  y -= 10;
-  for (const l of (m.bodyText ?? "").split("\n")) line(l);
-  const bytes = await pdf.save();
-  const sender = m.from.replace(/<.*>/, "").replace(/["']/g, "").trim() || m.from.replace(/.*@/, "").replace(/>.*/, "");
-  const name = `${sender} – ${m.subject || "E-Mail"}`.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 150);
-  return new File([bytes as BlobPart], `${name}.pdf`, { type: "application/pdf" });
-}
