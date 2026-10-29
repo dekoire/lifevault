@@ -22,6 +22,7 @@ import { ProjectSwitcher, UploadTarget } from "@/components/ProjectSwitcher";
 import { UploadProgress } from "@/components/UploadProgress";
 import { DetailHost } from "@/components/DetailPanel";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { Avatar, AvatarMenu, nameFromEmail } from "@/components/AvatarMenu";
 import { supabase, useSession } from "@/lib/supabase";
 
@@ -95,6 +96,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
     <div className="min-h-dvh bg-page">
       {inputs}
       {exporting && <ExportSheet onClose={() => setExporting(false)} />}
+      {!chat && <PullToRefresh color="#6d4aff" />}
       <UploadProgress />
       <JobToasts />
       <DraftHost />

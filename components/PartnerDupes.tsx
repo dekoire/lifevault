@@ -4,27 +4,98 @@ import { ArrowRight, Check, GitMerge, History, Loader2, PencilLine, Undo2, Users
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD } from "@/components/ui";
 import { fmtDate, useDocs } from "@/lib/docs";
-import { findPartnerDuplicates, partnerPairKeys, type PartnerGroup } from "@/lib/partnerDupes";
+import { addDecision, undoDecision, useDecisions } from "@/lib/decisions";
+import { startJob, updateJob } from "@/lib/jobs";
+import { AUTO, findPartnerDuplicates, partnerPairKeys, type PartnerGroup } from "@/lib/partnerDupes";
 import { buildPartners, partnerKey } from "@/lib/partners";
 import { supabase } from "@/lib/supabase";
 import type { Doc } from "@/lib/types";
 
-const KEY = "lifevault:not-same-partner";
-const load = (): string[] => { try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; } };
+// sehr wahrscheinlich gleich (≥ 85 %): ohne Rückfrage zusammenführen – einmal je Gruppe, rückgängig im Verlauf
+const autoRunning = new Set<string>();
+async function autoMerge(groups: PartnerGroup[]) {
+  const done: string[] = [];
+  for (const g of groups) {
+    if (autoRunning.has(g.key)) continue;
+    autoRunning.add(g.key);
+    const target = g.partners[0];
+    const others = g.partners.slice(1);
+    const entries = others.flatMap((p) => p.docs.map((d) => ({ doc_id: d.id, sender: d.sender, sender_domain: d.sender_domain })));
+    if (!entries.length) continue;
+    const { data: log } = await supabase.from("partner_merges").insert({ target_name: target.name, target_domain: target.domain, kind: "auto", entries }).select("id").single();
+    const { error } = await supabase.from("documents").update({ sender: target.name, ...(target.domain ? { sender_domain: target.domain } : {}) }).in("id", entries.map((e) => e.doc_id));
+    if (error) { if (log) await supabase.from("partner_merges").delete().eq("id", log.id); continue; }
+    done.push(`${others.map((p) => p.name).join(", ")} → ${target.name}`);
+  }
+  if (done.length) {
+    const id = startJob({ kind: "info", title: done.length === 1 ? "Partner automatisch zusammengeführt" : `${done.length} Partner automatisch zusammengeführt`, detail: done.join(" · ") });
+    updateJob(id, { state: "done" });
+  }
+  return done.length;
+}
 
 export function usePartnerDuplicates(docs: Doc[]) {
-  const [dismissed, setDismissed] = useState<string[]>([]);
-  useEffect(() => setDismissed(load()), []);
-  const groups = useMemo(() => findPartnerDuplicates(buildPartners(docs), dismissed), [docs, dismissed]);
-  const notSame = (keys: string[]) => setDismissed((cur) => { const n = [...new Set([...cur, ...keys])]; try { localStorage.setItem(KEY, JSON.stringify(n)); } catch { /* egal */ } return n; });
+  const { refresh } = useDocs();
+  const { loaded, pairs } = useDecisions();
+  const all = useMemo(() => findPartnerDuplicates(buildPartners(docs), pairs("distinct")), [docs, pairs]);
+  const auto = all.filter((g) => g.score >= AUTO);
+  const groups = all.filter((g) => g.score < AUTO);
+  const autoKey = auto.map((g) => g.key).join(";");
+  useEffect(() => {
+    if (!loaded || !auto.length) return;
+    void autoMerge(auto).then((n) => { if (n) void refresh(); });
+  }, [loaded, autoKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const notSame = (g: PartnerGroup) => void addDecision("distinct", partnerPairKeys(g), g.partners.map((p) => p.name).join(" ≠ "));
   return { groups, notSame };
 }
 
-/** Gleiche Partner unter verschiedenen Namen: auswählen, Namen festlegen, zusammenführen (Dokumente bekommen den gewählten Absender) */
+/**
+ * Gleiche Partner unter verschiedenen Namen – zwei Reiter: „Offen“ (fragen, ab 50 % Wahrscheinlichkeit) und
+ * „Entschieden“ (zusammengeführt, automatisch zusammengeführt, als verschieden markiert – alles rückgängig machbar).
+ */
 export function PartnerMerge({ docs }: { docs: Doc[] }) {
   const { groups, notSame } = usePartnerDuplicates(docs);
-  if (!groups.length) return <p className={`${CARD} p-5 text-center text-[14px] text-muted`}>Keine doppelten Partner gefunden. 👍</p>;
-  return <div className="space-y-3">{groups.map((g) => <Group key={g.key} g={g} onDismiss={() => notSame(partnerPairKeys(g))} />)}</div>;
+  const { list } = useDecisions();
+  const [tab, setTab] = useState<"open" | "done">("open");
+  const distinctN = list.filter((d) => d.kind === "distinct").length;
+  const pill = (on: boolean) => `h-9 rounded-full px-4 text-[13px] font-semibold transition-colors ${on ? "bg-fg text-canvas" : "bg-surface-3 text-soft hover:text-fg"}`;
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1.5">
+        <button type="button" onClick={() => setTab("open")} aria-pressed={tab === "open"} className={pill(tab === "open")}>Offen {groups.length > 0 && <span className="tnum ml-1 opacity-70">{groups.length}</span>}</button>
+        <button type="button" onClick={() => setTab("done")} aria-pressed={tab === "done"} className={pill(tab === "done")}>Entschieden</button>
+      </div>
+      {tab === "open" ? (
+        groups.length ? <div className="space-y-3">{groups.map((g) => <Group key={g.key} g={g} onDismiss={() => notSame(g)} />)}</div>
+          : <p className={`${CARD} p-5 text-center text-[14px] text-muted`}>Nichts offen. Sehr ähnliche Namen führen wir selbst zusammen – das steht unter „Entschieden“. 👍</p>
+      ) : (
+        <div className="space-y-3">
+          <MergeHistory />
+          {distinctN > 0 && <DistinctList kind="distinct" title="Als verschieden markiert" />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** „Verschieden“-Entscheidungen: Partner bzw. Dokumente, die nicht mehr vorgeschlagen werden – „Doch prüfen“ holt sie zurück */
+export function DistinctList({ kind, title }: { kind: "distinct" | "distinct_docs"; title: string }) {
+  const { list } = useDecisions();
+  const mine = list.filter((d) => d.kind === kind);
+  if (!mine.length) return null;
+  return (
+    <section className={`${CARD} overflow-hidden`}>
+      <h2 className="flex items-center gap-2 px-4 pt-3.5 pb-2 text-[16px] font-semibold"><X size={16} /> {title}</h2>
+      <ul className="divide-y divide-line border-t border-line">
+        {mine.map((d) => (
+          <li key={d.id} className="flex items-center gap-3 px-4 py-3">
+            <span className="min-w-0 flex-1 text-[13px]"><b className="block truncate font-semibold">{d.target_name}</b><span className="block text-[12px] text-muted">{fmtDate(d.created_at)} entschieden · wird nicht mehr gefragt</span></span>
+            <button type="button" onClick={() => void undoDecision(d.id)} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold hover:bg-surface-2"><Undo2 size={13} /> Doch prüfen</button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 function Group({ g, onDismiss }: { g: PartnerGroup; onDismiss: () => void }) {
@@ -56,7 +127,7 @@ function Group({ g, onDismiss }: { g: PartnerGroup; onDismiss: () => void }) {
       <div className="px-4 pt-4">
         <p className="text-[15px] font-semibold">Ist das derselbe Partner?</p>
         <p className="mt-0.5 text-[12.5px] text-muted">
-          <span className={`mr-1.5 rounded-full px-2 py-px text-[11px] font-semibold ${g.sure ? "bg-fg text-canvas" : "border border-card-line text-soft"}`}>{g.sure ? "sehr wahrscheinlich" : "vielleicht"}</span>
+          <span className={`mr-1.5 rounded-full px-2 py-px text-[11px] font-semibold ${g.score >= 0.7 ? "bg-fg text-canvas" : "border border-card-line text-soft"}`}>{Math.round(g.score * 100)} % wahrscheinlich</span>
           {g.reasons.join(" · ")}
         </p>
       </div>
@@ -116,7 +187,7 @@ export function MergeHistory({ pkey, compact }: { pkey?: string; compact?: boole
   const { refresh } = useDocs();
   const [list, setList] = useState<MergeLog[]>();
   const [busy, setBusy] = useState<string>();
-  const load = () => void supabase.from("partner_merges").select("id,target_name,kind,entries,created_at,undone_at").order("created_at", { ascending: false }).limit(100).then(({ data }) => setList((data as MergeLog[]) ?? []));
+  const load = () => void supabase.from("partner_merges").select("id,target_name,kind,entries,created_at,undone_at").in("kind", ["merge", "rename", "auto"]).order("created_at", { ascending: false }).limit(100).then(({ data }) => setList((data as MergeLog[]) ?? []));
   useEffect(load, []);
   const mine = (list ?? []).filter((m) => !pkey || partnerKey(m.target_name) === pkey || m.entries.some((e) => e.sender && partnerKey(e.sender) === pkey));
   if (!mine.length) return null;
@@ -146,7 +217,7 @@ export function MergeHistory({ pkey, compact }: { pkey?: string; compact?: boole
               <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-2">{m.kind === "rename" ? <PencilLine size={15} /> : <GitMerge size={15} />}</span>
               <span className="min-w-0 flex-1 text-[13px]">
                 <span className="block"><b className="font-semibold">{names.map((n) => `„${n}“ (${count(n)})`).join(", ")}</b> → <b className="font-semibold">„{m.target_name}“</b></span>
-                <span className="block text-[12px] text-muted">{fmtDate(m.created_at)} {m.kind === "rename" ? "umbenannt" : "zusammengeführt"}{m.undone_at ? ` · am ${fmtDate(m.undone_at)} rückgängig gemacht` : ""}</span>
+                <span className="block text-[12px] text-muted">{fmtDate(m.created_at)} {m.kind === "rename" ? "umbenannt" : m.kind === "auto" ? "automatisch zusammengeführt (sehr wahrscheinlich gleich)" : "zusammengeführt"}{m.undone_at ? ` · am ${fmtDate(m.undone_at)} rückgängig gemacht` : ""}</span>
               </span>
               {!m.undone_at && <button type="button" disabled={busy === m.id} onClick={() => void undo(m)} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold hover:bg-surface-2 disabled:opacity-50">{busy === m.id ? <Loader2 size={13} className="animate-spin" /> : <Undo2 size={13} />} Rückgängig</button>}
             </li>

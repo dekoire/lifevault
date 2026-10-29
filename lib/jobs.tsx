@@ -10,7 +10,7 @@ import type { Doc } from "@/lib/types";
  * Hintergrund-Aufgaben (Export, Mail-Abruf) mit Fortschritt – angezeigt unten rechts als lila Karte.
  * Fertige Exporte bleiben in diesem Browser gespeichert (IndexedDB, die letzten 20) und stehen unter Downloads.
  */
-export type Job = { id: string; kind: "export" | "mail"; title: string; detail?: string; done: number; total: number; state: "running" | "done" | "error"; downloadId?: string; password?: string };
+export type Job = { id: string; kind: "export" | "mail" | "info"; title: string; detail?: string; done: number; total: number; state: "running" | "done" | "error"; downloadId?: string; password?: string };
 
 let jobs: Job[] = [];
 const subs = new Set<() => void>();

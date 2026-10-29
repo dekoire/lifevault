@@ -1,5 +1,5 @@
 "use client";
-import { AlertCircle, Check, Copy, Download, KeyRound, Loader2, Mail, X } from "lucide-react";
+import { AlertCircle, Check, Copy, Download, GitMerge, KeyRound, Loader2, Mail, X } from "lucide-react";
 import { dismissJob, listDownloads, saveFile, shareExport, useJobs } from "@/lib/jobs";
 
 /** Laufende Hintergrund-Aufgaben unten rechts: lila Karte mit Symbol, Text und Ladebalken */
@@ -11,7 +11,7 @@ export function JobToasts() {
   return (
     <div className="pointer-events-none fixed right-4 bottom-24 z-40 flex w-[min(22rem,calc(100vw-2rem))] flex-col gap-2 lg:bottom-6">
       {jobs.map((j) => {
-        const Icon = j.kind === "mail" ? Mail : Download;
+        const Icon = j.kind === "mail" ? Mail : j.kind === "info" ? GitMerge : Download;
         const pct = j.total ? Math.round((j.done / j.total) * 100) : 0;
         return (
           <div key={j.id} role="status" className="sheet-up pointer-events-auto overflow-hidden rounded-2xl text-white shadow-[0_12px_32px_rgba(85,48,201,.35)]" style={{ background: "linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%)" }}>

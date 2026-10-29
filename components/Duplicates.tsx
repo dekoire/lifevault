@@ -6,22 +6,21 @@ import { useDetail } from "@/components/DetailPanel";
 import { Thumb } from "@/components/ChatWidgets";
 import { CARD } from "@/components/ui";
 import { usePartnerDuplicates } from "@/components/PartnerDupes";
+import { addDecision, useDecisions } from "@/lib/decisions";
 import { SenderLogo } from "@/components/SenderLogo";
 import { caseIds, explain, findDuplicates, pairKeys, type DupGroup } from "@/lib/dupes";
 import { clusterOf } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
 import type { Doc } from "@/lib/types";
 
-const KEY = "lifevault:not-dupes";
-const load = (): string[] => { try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; } };
 const size = (b: number) => (b > 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1).replace(".", ",")} MB` : `${Math.round(b / 1024)} KB`);
 
 /** gemerkte „sind verschieden“-Paare + gefundene Gruppen */
 export function useDuplicates(docs: Doc[]) {
-  const [dismissed, setDismissed] = useState<string[]>([]);
-  useEffect(() => setDismissed(load()), []);
-  const groups = useMemo(() => findDuplicates(docs, dismissed), [docs, dismissed]);
-  const notDupes = (g: DupGroup) => setDismissed((cur) => { const n = [...new Set([...cur, ...pairKeys(g)])]; try { localStorage.setItem(KEY, JSON.stringify(n)); } catch { /* egal */ } return n; });
+  // Entscheidungen „nicht doppelt“ geräteübergreifend gespeichert – einmal entschieden, nie wieder gefragt
+  const { pairs } = useDecisions();
+  const groups = useMemo(() => findDuplicates(docs, pairs("distinct_docs")), [docs, pairs]);
+  const notDupes = (g: DupGroup) => void addDecision("distinct_docs", pairKeys(g), g.docs.map((d) => d.title ?? d.file_name).slice(0, 3).join(" ≠ "));
   return { groups, notDupes };
 }
 

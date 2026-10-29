@@ -171,3 +171,6 @@ a, button, [role="button"], summary, input, select, textarea {
 }
 /* Logos/Bilder laden weich */
 img { transition: opacity 0.25s var(--ease-out); }
+
+/* eigenes Neuladen per Herunterziehen (PullToRefresh) statt des Browser-Neuladens */
+html { overscroll-behavior-y: contain; }
