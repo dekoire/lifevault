@@ -8,6 +8,7 @@ import { SenderLogo } from "@/components/SenderLogo";
 import { CLUSTERS } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
 import { buildPartners } from "@/lib/partners";
+import { importanceOf } from "@/lib/importance";
 
 type Hit = { key: string; icon: React.ReactNode; title: string; sub: string; go: () => void };
 
@@ -43,7 +44,10 @@ export function GlobalSearch({ compact = false, button = true }: { compact?: boo
   const hits = useMemo<Hit[]>(() => {
     if (!term) return [];
     const done = (fn: () => void) => () => { setOpen(false); setQ(""); fn(); };
-    const ds = docs.filter((d) => [d.title, d.file_name, d.sender, d.doc_type, d.summary, ...(d.tags ?? []), ...(d.labels ?? []), ...(d.key_facts ?? []).map((f) => `${f.label} ${f.value}`)].some((v) => v?.toLowerCase().includes(term))).slice(0, 7)
+    // Rang: Treffer im Titel/Absender zuerst, dann nach Wichtigkeit; Archiviertes nach hinten
+    const score = (d: (typeof docs)[number]) => ([d.title, d.sender].some((v) => v?.toLowerCase().includes(term)) ? 4 : 0) + importanceOf(d) - (d.archived ? 3 : 0);
+    const ds = docs.filter((d) => [d.title, d.file_name, d.sender, d.doc_type, d.summary, ...(d.tags ?? []), ...(d.labels ?? []), ...(d.key_facts ?? []).map((f) => `${f.label} ${f.value}`)].some((v) => v?.toLowerCase().includes(term)))
+      .sort((a, b) => score(b) - score(a)).slice(0, 7)
       .map((d) => ({ key: `d${d.id}`, icon: <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={32} />, title: d.title ?? d.file_name, sub: [d.sender, fmtDate(d.doc_date ?? d.received_at)].filter(Boolean).join(" · "), go: done(() => (detail ? detail({ kind: "doc", id: d.id }) : router.push(`/d/${d.id}`))) }));
     const ps = buildPartners(docs).filter((p) => p.name.toLowerCase().includes(term) || p.ids.some((i) => i.value.toLowerCase().includes(term))).slice(0, 4)
       .map((p) => ({ key: `p${p.key}`, icon: <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={32} />, title: p.name, sub: `Partner · ${p.docs.length} Dokumente`, go: done(() => (detail ? detail({ kind: "partner", key: p.key }) : router.push(`/partner/${p.key}`))) }));

@@ -4,6 +4,7 @@ import { clusterOf } from "@/lib/clusters";
 import { routeQuestion } from "@/lib/route";
 import { buildPartners } from "@/lib/partners";
 import { unauthorized, userClient } from "@/lib/server";
+import { guessImportance, roleLabel } from "@/lib/importance";
 import type { Doc } from "@/lib/types";
 
 export const maxDuration = 300;
@@ -79,6 +80,11 @@ Höchstens eine solche Zeile, nur wenn es wirklich hilft. Keine Namen, Adressen 
 
 Bei rechtlichen Fragen: allgemeine Information, keine Rechtsberatung – sag das in einem kurzen Halbsatz bei den Tipps.
 VORHANDEN IST VORHANDEN: Steht ein Dokument in „Passende Dokumente“ oder „Weitere Dokumente“ (Kurzliste mit Titel) oder wurde es im Gespräch schon genannt, behaupte nie, es fehle. Sagt der Nutzer „doch, es gibt …“, such in der Liste nach Titel, Art und Absender (auch bei Tippfehlern) und korrigiere dich. Ist ein passendes Dokument nur in der Kurzliste, nenne es mit Link – bei der nächsten Frage liegt dir sein Inhalt vor.
+WICHTIGKEIT & ZUSAMMENHANG: Jedes Dokument hat eine Wichtigkeit (1–5, 5 = unverzichtbar) und eine Rolle beim Partner (Grundlage = Vertrag/Police/Arbeitsvertrag; Änderung; laufend = Rechnungen/Abrechnungen; Schriftverkehr; Nebensache). „gehört zu“ verbindet ein Dokument mit seiner Grundlage.
+- Bei mehreren passenden Dokumenten stützt du dich zuerst auf die wichtigeren; Nebensachen (Wichtigkeit 1) nur, wenn ausdrücklich gefragt.
+- Fragen zu Bedingungen, Laufzeit, Kündigung, Leistungen → zuerst die Grundlage des Partners, dann spätere Änderungen (die neueste gilt).
+- Fragen zu Beträgen, Verlauf, Zahlungen → die laufenden Dokumente, die zu dieser Grundlage gehören.
+- Erkläre Zusammenhänge innerhalb eines Partners kurz („die Rechnung gehört zu deinem Mobilfunkvertrag vom …“).
 Gesundheitsdaten behandelst du sachlich und vertraulich; bei medizinischen Fragen ersetzt du keinen Arzt.`;
 
 const words = (q: string) => [...new Set(q.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? [])].slice(0, 12);
@@ -118,24 +124,40 @@ export async function POST(req: Request) {
   const hits = rawHits.filter((h) => !parts.has(h.id));
   // nur das gewählte Projekt (falls eines gewählt ist)
   const projectId = typeof body?.projectId === "string" && /^[0-9a-f-]{36}$/i.test(body.projectId) ? body.projectId : undefined;
-  let dq = sb.from("documents").select("id,title,cluster,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,tags,archived,encrypted").eq("status", "ready").is("merged_into", null);
-  if (projectId) dq = dq.eq("project_id", projectId);
+  const COLS = "id,title,cluster,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,tags,archived,encrypted";
+  const listAll = (cols: string) => {
+    let dq = sb.from("documents").select(cols).eq("status", "ready").is("merged_into", null);
+    if (projectId) dq = dq.eq("project_id", projectId);
+    return dq.order("received_at", { ascending: false }).limit(1500);
+  };
   // alle Dokumente (nicht nur die neuesten): ausführlich nur, was zur Frage passt (Bereich, Art, Partner, Treffer, im Gespräch genannt),
   // der Rest als Kurzliste – so geht nichts verloren, und es bleibt schnell und günstig, auch bei vielen Dokumenten
-  const { data: all } = await dq.order("received_at", { ascending: false }).limit(1500);
+  type Row = { id: string; title: string | null; cluster: string | null; doc_type: string | null; sender: string | null; doc_date: string | null; received_at: string; summary: string | null; key_facts: unknown; deadlines: unknown; amounts: unknown; tags: string[]; archived: boolean; encrypted: boolean; importance?: number | null; importance_reason?: string | null; partner_role?: string | null; basis_id?: string | null };
+  // mit Wichtigkeit und Bezug; fehlt die Spalte noch (Migration 0013), ohne
+  let { data: all, error: allErr } = await listAll(`${COLS},importance,importance_reason,partner_role,basis_id`).returns<Row[]>();
+  if (allErr) ({ data: all } = await listAll(COLS).returns<Row[]>());
+  const byId = new Map((all ?? []).map((d) => [d.id, d]));
   const route = routeQuestion(recentUser.join(" "), all ?? []);
   const hitIds = new Set(hits.map((h) => h.id));
   const today = new Date().toISOString().slice(0, 10);
   const open = (d: { deadlines: unknown }) => (d.deadlines as { date: string }[]).some((x) => x.date >= today);
   const wanted = (d: NonNullable<typeof all>[number], i: number) => hitIds.has(d.id) || route.ids.has(d.id) || (route.general && (i < 40 || open(d)));
-  const rich = (all ?? []).filter(wanted).slice(0, depth === "gruendlich" ? 120 : 70);
+  // Treffer und Gefragtes zuerst, dann die wichtigeren – so fallen bei vielen Dokumenten die Nebensachen raus, nicht die Verträge
+  const imp = (d: Row) => d.importance ?? guessImportance(d);
+  const rich = (all ?? []).filter(wanted).map((d, i) => ({ d, i, s: (hitIds.has(d.id) ? 10 : 0) + (route.ids.has(d.id) ? 5 : 0) + imp(d) }))
+    .sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.d).slice(0, depth === "gruendlich" ? 120 : 70);
   const richIds = new Set(rich.map((d) => d.id));
-  const line = (d: NonNullable<typeof all>[number]) => `- [${d.title}](/d/${d.id}) · ${clusterOf(d.cluster).label} · ${d.doc_type ?? ""} · ${d.sender ?? ""} · ${d.doc_date ?? d.received_at.slice(0, 10)}${d.archived ? " · ARCHIVIERT (gilt nicht mehr)" : ""}${d.encrypted ? " · verschlüsselt (Inhalt nicht lesbar)" : ""}`;
+  const basisOf = (d: Row) => (d.basis_id && byId.get(d.basis_id) ? ` · gehört zu [${byId.get(d.basis_id)!.title}](/d/${d.basis_id})` : "");
+  const line = (d: Row) => `- [${d.title}](/d/${d.id}) · ${clusterOf(d.cluster).label} · ${d.doc_type ?? ""} · ${d.sender ?? ""} · ${d.doc_date ?? d.received_at.slice(0, 10)} · Wichtigkeit ${imp(d)}/5${d.importance_reason ? ` (${d.importance_reason})` : ""}${d.partner_role ? ` · Rolle: ${roleLabel(d.partner_role)}` : ""}${basisOf(d)}${d.archived ? " · ARCHIVIERT (gilt nicht mehr)" : ""}${d.encrypted ? " · verschlüsselt (Inhalt nicht lesbar)" : ""}`;
   const overview = rich.map((d) => `${line(d)}\n  ${(d.summary ?? "").slice(0, 260)}\n  Fakten: ${(d.key_facts as { label: string; value: string }[]).slice(0, d.archived ? 3 : 10).map((f) => `${f.label}: ${f.value}`).join("; ")}${(d.deadlines as { date: string; what: string }[]).length ? `\n  Fristen: ${(d.deadlines as { date: string; what: string }[]).map((x) => `${x.date} ${x.what}`).join("; ")}` : ""}`).join("\n");
-  const index = (all ?? []).filter((d) => !richIds.has(d.id)).map((d) => `- [${d.title}](/d/${d.id}) · ${d.doc_type ?? ""} · ${d.sender ?? ""} · ${d.doc_date ?? d.received_at.slice(0, 10)}${d.archived ? " · archiviert" : ""}`).join("\n");
+  const index = (all ?? []).filter((d) => !richIds.has(d.id)).map((d) => `- [${d.title}](/d/${d.id}) · ${d.doc_type ?? ""} · ${d.sender ?? ""} · ${d.doc_date ?? d.received_at.slice(0, 10)} · W${imp(d)}${d.partner_role === "grundlage" ? " · Grundlage" : ""}${d.archived ? " · archiviert" : ""}`).join("\n");
   const details = hits.slice(0, depth === "gruendlich" ? 8 : depth === "kurz" ? 3 : 5).map((d) => `### [${d.title}](/d/${d.id})\n${(d.full_text ?? "").slice(0, depth === "gruendlich" ? 25000 : 15000)}`).join("\n\n");
   // Partnerliste mit Schlüsseln, damit Firmen im Text klickbar verlinkt werden
-  const partners = buildPartners((all ?? []).map((d) => ({ ...d, status: "ready" }) as unknown as Doc)).slice(0, 80).map((p) => `- [${p.name}](/partner/${p.key})`).join("\n");
+  // je Partner seine Grundlagen (Vertrag, Police …) und wie viele Dokumente daran hängen
+  const partners = buildPartners((all ?? []).map((d) => ({ ...d, status: "ready" }) as unknown as Doc)).slice(0, 80).map((p) => {
+    const basis = p.docs.filter((d) => d.partner_role === "grundlage").slice(0, 4).map((b) => `[${b.title}](/d/${b.id})${b.archived ? " (archiviert)" : ""} – ${p.docs.filter((d) => d.basis_id === b.id).length} zugehörig`);
+    return `- [${p.name}](/partner/${p.key}) · ${p.docs.length} Dok.${basis.length ? ` · Grundlage: ${basis.join("; ")}` : ""}`;
+  }).join("\n");
   const attachBlock = attached.length ? `## Gerade im Chat angehängt – darauf bezieht sich die Frage\n${attached.map((d) => `### [${d.title ?? "Neues Dokument"}](/d/${d.id})${d.status !== "ready" ? " (wird noch ausgelesen)" : ""}\n${d.summary ?? ""}\n${JSON.stringify(d.key_facts)}\nFristen: ${JSON.stringify(d.deadlines)}\n${(d.full_text ?? "").slice(0, 30000)}`).join("\n\n")}\n\n` : "";
   const focusBlock = focus ? `## Dieses Dokument steht im Mittelpunkt: [${focus.title}](/d/${focus.id})\n${focusText || "(Inhalt verschlüsselt – Tresor nicht entsperrt)"}\n\n` : "";
   // verschlüsselte Dokumente: nur wenn der Browser sie für diese Antwort entschlüsselt mitschickt – hier nicht gespeichert

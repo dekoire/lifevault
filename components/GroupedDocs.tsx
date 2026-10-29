@@ -15,6 +15,7 @@ import { groupOf, LABEL_GROUPS } from "@/lib/labels";
 import { useMe } from "@/lib/me";
 import { buildPartners, partnerKey } from "@/lib/partners";
 import { guessPurpose, PURPOSES } from "@/lib/topics";
+import { IMPORTANCE, importanceOf } from "@/lib/importance";
 import type { Doc } from "@/lib/types";
 
 /**
@@ -27,10 +28,10 @@ type Sub = "" | "sender" | "topic" | "kind";
 const SUBS: { value: Sub; label: string }[] = [{ value: "", label: "Nicht unterteilen" }, { value: "sender", label: "Absender" }, { value: "topic", label: "Thema" }, { value: "kind", label: "Art" }];
 const dateOf = (d: Doc) => d.doc_date ?? d.received_at.slice(0, 10);
 type Range = "all" | "year" | "12m";
-type Filter = { kind: string; purpose: string; topic: string; label: string; sender: string; range: Range; year: string; encOnly: boolean };
-const NONE: Filter = { kind: "", purpose: "", topic: "", label: "", sender: "", range: "all", year: "", encOnly: false };
-type SortBy = "new" | "old" | "sender" | "title";
-const SORTS: { value: SortBy; label: string }[] = [{ value: "old", label: "Älteste zuerst" }, { value: "sender", label: "Absender A–Z" }, { value: "title", label: "Titel A–Z" }];
+type Filter = { kind: string; purpose: string; topic: string; label: string; sender: string; range: Range; year: string; encOnly: boolean; imp: string };
+const NONE: Filter = { kind: "", purpose: "", topic: "", label: "", sender: "", range: "all", year: "", encOnly: false, imp: "" };
+type SortBy = "new" | "old" | "sender" | "title" | "important";
+const SORTS: { value: SortBy; label: string }[] = [{ value: "important", label: "Wichtigste zuerst" }, { value: "old", label: "Älteste zuerst" }, { value: "sender", label: "Absender A–Z" }, { value: "title", label: "Titel A–Z" }];
 
 export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" | "list" }) {
   const { docs: visible } = useDocs();
@@ -74,6 +75,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
     (skip === "sender" || !f.sender || senderOf(d) === f.sender) &&
     (skip === "range" || !from || dateOf(d) >= from) &&
     (skip === "year" || !f.year || dateOf(d).startsWith(f.year)) &&
+    (skip === "imp" || !f.imp || importanceOf(d) >= Number(f.imp)) &&
     (!f.encOnly || d.encrypted) &&
     (!term || `${d.title ?? ""} ${d.file_name} ${d.sender ?? ""} ${d.doc_type ?? ""} ${d.topic ?? ""} ${(d.tags ?? []).join(" ")} ${(d.labels ?? []).join(" ")}`.toLowerCase().includes(term));
   const list = docs.filter((d) => match(d));
@@ -87,7 +89,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   const sections = useMemo(() => {
     const years = new Map<string, Doc[]>();
     for (const d of list) years.set(dateOf(d).slice(0, 4), [...(years.get(dateOf(d).slice(0, 4)) ?? []), d]);
-    const cmp = (a: Doc, b: Doc) => sortBy === "old" ? dateOf(a).localeCompare(dateOf(b)) : sortBy === "sender" ? (a.sender ?? "￿").localeCompare(b.sender ?? "￿", "de") || dateOf(b).localeCompare(dateOf(a)) : sortBy === "title" ? (a.title ?? a.file_name).localeCompare(b.title ?? b.file_name, "de") : dateOf(b).localeCompare(dateOf(a));
+    const cmp = (a: Doc, b: Doc) => sortBy === "old" ? dateOf(a).localeCompare(dateOf(b)) : sortBy === "sender" ? (a.sender ?? "￿").localeCompare(b.sender ?? "￿", "de") || dateOf(b).localeCompare(dateOf(a)) : sortBy === "title" ? (a.title ?? a.file_name).localeCompare(b.title ?? b.file_name, "de") : sortBy === "important" ? importanceOf(b) - importanceOf(a) || dateOf(b).localeCompare(dateOf(a)) : dateOf(b).localeCompare(dateOf(a));
     return [...years.entries()].sort((a, b) => (sortBy === "old" ? a[0].localeCompare(b[0]) : b[0].localeCompare(a[0]))).map(([year, ds]) => {
       ds.sort(cmp);
       const groups = new Map<string, Doc[]>();
@@ -111,7 +113,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   const labelN = new Map<string, number>();
   for (const d of docs) if (match(d, "label")) for (const t of d.labels ?? []) labelN.set(t, (labelN.get(t) ?? 0) + 1);
   const yearN = countBy("year", (d) => dateOf(d).slice(0, 4));
-  const active = Number(!!f.kind) + Number(!!f.year) + Number(!!f.label) + Number(!!f.purpose) + Number(!!f.topic) + Number(!!f.sender) + Number(f.range !== "all") + Number(f.encOnly);
+  const active = Number(!!f.kind) + Number(!!f.year) + Number(!!f.label) + Number(!!f.purpose) + Number(!!f.topic) + Number(!!f.sender) + Number(f.range !== "all") + Number(f.encOnly) + Number(!!f.imp);
   const lockedN = unlocked ? 0 : docs.filter((d) => picked.has(d.id) && d.encrypted).length;
   const rows = (ds: Doc[]) => picking
     ? <div className="divide-y divide-line">{ds.map((d) => (
@@ -138,6 +140,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
         {kindOpts.length > 1 && <FilterSelect label="Art" value={f.kind} onChange={(v) => set({ kind: v })} options={kindOpts} />}
         {topicOpts.length > 1 && <FilterSelect label="Thema" value={f.topic} onChange={(v) => set({ topic: v })} options={topicOpts} />}
         {labelN.size > 0 && <LabelPick value={f.label} onChange={(v) => set({ label: v })} counts={labelN} />}
+        {docs.some((d) => d.importance != null) && <FilterSelect label="Wichtigkeit" value={f.imp} onChange={(v) => set({ imp: v })} options={IMPORTANCE.filter((x) => x.value > 1).map((x) => ({ value: String(x.value), label: `ab ${x.label} (${docs.filter((d) => match(d, "imp") && importanceOf(d) >= x.value).length})` }))} empty="Alle" />}
         {purposeOpts.length > 1 && <FilterSelect label="Status" value={f.purpose} onChange={(v) => set({ purpose: v })} options={purposeOpts} />}
         <FilterSelect label="Zeitraum" value={f.range === "all" ? "" : f.range} onChange={(v) => set({ range: (v || "all") as Range })} options={[{ value: "year", label: "Dieses Jahr" }, { value: "12m", label: "Letzte 12 Monate" }]} />
         {docs.some((d) => d.encrypted) && <FilterToggle label="Nur verschlüsselte" on={f.encOnly} onChange={(v) => set({ encOnly: v })} />}
@@ -151,6 +154,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
             f.topic && { k: "topic", text: f.topic },
             f.label && { k: "label", text: f.label, color: groupOf(f.label)?.color },
             f.purpose && { k: "purpose", text: PURPOSES.find((p) => p.id === f.purpose)?.label ?? f.purpose },
+            f.imp && { k: "imp", text: `ab ${IMPORTANCE.find((x) => String(x.value) === f.imp)?.label ?? f.imp}` },
             f.range !== "all" && { k: "range", text: f.range === "year" ? "Dieses Jahr" : "Letzte 12 Monate" },
             f.encOnly && { k: "encOnly", text: "Nur verschlüsselte" },
           ].filter((c): c is { k: keyof Filter; text: string; color?: string } => !!c).map((c) => (
