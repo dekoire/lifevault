@@ -83,3 +83,6 @@ body {
   .typing-dot, .text-shimmer, .sheet-up { animation: none; }
   .text-shimmer { color: var(--color-muted); background: none; }
 }
+
+/* nie seitlich wischen: lange Inhalte brechen um statt die Seite zu verbreitern */
+html, body { overflow-x: clip; }

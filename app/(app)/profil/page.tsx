@@ -63,7 +63,7 @@ export default function ProfilPage() {
           <ul className="grid divide-y divide-line md:grid-cols-2 md:divide-y-0">
             {person.map((f) => (
               <li key={f.id} className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 border-line px-5 py-2.5 text-[14px] md:border-b md:odd:border-r">
-                <span className="text-muted">{f.label}</span>
+                <span className="min-w-0 break-words hyphens-auto text-muted" lang="de">{f.label}</span>
                 <span className="min-w-0 space-y-1">
                   {[...f.current, ...(showEarlier ? f.earlier : [])].map((v, i) => (
                     <span key={i} className={`block ${i >= f.current.length ? "opacity-55" : ""}`}>

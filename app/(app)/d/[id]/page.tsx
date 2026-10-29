@@ -142,7 +142,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
       {doc.archived && doc.archived_reason && <p className="mb-4 rounded-xl bg-surface-3 px-4 py-3 text-[13px] text-soft"><b>Archiviert:</b> {doc.archived_reason}</p>}
       {doc.encrypted && !unlocked && <div className="mb-4"><VaultUnlock /></div>}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] lg:items-start">
         {/* links: Daten */}
         <div className="space-y-3">
           {show.summary && content?.summary && <section className={`${CARD} p-4`}><p className="text-[15px] leading-6">{content.summary}</p></section>}

@@ -37,7 +37,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
           <Link href={`/chat?q=${encodeURIComponent(`Was habe ich alles mit ${p.name}? Verträge, Nummern, Kosten, Fristen.`)}`} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas"><MessageSquare size={15} /> Fragen</Link>
         </>}
       />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
         <div className="space-y-4">
           {p.isShop ? (
             <section className={`${CARD} grid grid-cols-3 divide-x divide-line`}>
@@ -52,8 +52,8 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
                   const old = latestByLabel.get(i.label.toLowerCase()) !== i.value;
                   return (
                     <li key={n} className={`grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 px-5 py-2.5 text-[14px] ${old ? "opacity-55" : ""}`}>
-                      <span className="text-muted">{i.label}{old && <span className="ml-1.5 rounded-full border border-card-line px-1.5 text-[10px]">früher</span>}</span>
-                      <span>
+                      <span className="min-w-0 break-words hyphens-auto text-muted" lang="de">{i.label}{old && <span className="ml-1.5 rounded-full border border-card-line px-1.5 text-[10px]">früher</span>}</span>
+                      <span className="min-w-0">
                         <CopyValue value={i.value} />
                         <Link href={`/d/${i.docId}`} className="block truncate text-[11px] text-muted hover:text-selected">aus {i.docTitle} · {fmtDate(i.date)}</Link>
                       </span>

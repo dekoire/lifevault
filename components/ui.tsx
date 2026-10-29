@@ -45,7 +45,7 @@ export function KeyValueTable({ rows }: { rows: { label: string; value: React.Re
     <dl className="divide-y divide-line">
       {rows.map((r, i) => (
         <div key={i} className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 px-4 py-2.5 text-[14px]">
-          <dt className="text-muted">{r.label}</dt>
+          <dt className="min-w-0 break-words hyphens-auto text-muted" lang="de">{r.label}</dt>
           <dd className="font-medium break-words">{r.value}</dd>
         </div>
       ))}
