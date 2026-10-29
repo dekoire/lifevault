@@ -85,7 +85,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
         </div>
         {!mini && <div className="mb-3"><ProjectSwitcher /></div>}
         <nav className="grid gap-1">
-          {NAV.map(({ href, label, icon: Icon, match }) => {
+          {NAV.filter((n) => n.href !== "/einstellungen").map(({ href, label, icon: Icon, match }) => {
             const on = match(path);
             return <Link key={href} href={href} aria-current={on ? "page" : undefined} title={mini ? label : undefined} className={`flex h-11 items-center gap-2.5 rounded-xl text-[14px] font-medium transition-colors ${mini ? "justify-center" : "px-3"} ${on ? "bg-fg text-canvas" : "text-soft hover:bg-surface-2 hover:text-fg"}`}><Icon size={18} strokeWidth={1.8} />{!mini && label}</Link>;
           })}

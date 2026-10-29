@@ -1,10 +1,9 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { CalendarClock, ChevronRight, FileText, Layers, ListChecks, Lock, Search, Sparkles, UserRound } from "lucide-react";
+import { CalendarClock, ChevronRight, FileText, Layers, ListChecks, Lock, Search, Sparkles } from "lucide-react";
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
-import { UploadCard } from "@/components/UploadButtons";
 import { PageHeader } from "@/components/ui";
 import { SenderLogo } from "@/components/SenderLogo";
 import { buildPartners } from "@/lib/partners";
@@ -39,6 +38,8 @@ export default function Home() {
   const daysTo = (iso: string) => Math.round((Date.parse(iso) - Date.parse(today)) / 86_400_000);
 
   const archived = docs.filter((d) => d.archived).length;
+  // rechte Spalte nur, wenn es etwas Wichtiges gibt (Fristen, Verschlüsselung)
+  const side = deadlines.length > 0 || pendingProtect > 0;
   const deadlineCard = deadlines.length > 0 && (
     <section className={CARD}>
       <h2 className="flex items-center gap-2 px-4 pt-4 pb-1 text-[16px] font-semibold"><CalendarClock size={18} /> Nächste Fristen</h2>
@@ -62,14 +63,14 @@ export default function Home() {
   return (
     <div>
       <PageHeader title={currentProject?.name ?? "Deine Unterlagen"} subtitle={loading ? " " : `${ready.length} Dokumente in ${counts.size} Bereichen${archived ? ` · ${archived} archiviert` : ""}`} />
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
+      <div className={`grid grid-cols-1 gap-5 lg:items-start ${side ? "lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]" : ""}`}>
         <div className="min-w-0 space-y-5">
           {/* Kennzahlen: was bisher gesammelt ist */}
           <section className={`${CARD} grid grid-cols-2 sm:grid-cols-4 [&>*:nth-child(odd)]:border-r [&>*:nth-child(-n+2)]:border-b sm:[&>*]:border-b-0 sm:[&>*:not(:last-child)]:border-r`}>
             {kpis.map(({ icon: Icon, value, label, sub }) => (
               <div key={label} className="border-line p-4">
                 <span className="flex items-center gap-1.5 text-[12px] font-medium text-muted"><Icon size={14} /> {label}</span>
-                <span className="tnum mt-1 block text-[26px] leading-8 font-[650] tracking-tight">{loading ? "–" : value.toLocaleString("de-DE")}</span>
+                <span className="tnum mt-1 block text-[26px] leading-8 font-[650] tracking-tight text-brand-500">{loading ? "–" : value.toLocaleString("de-DE")}</span>
                 <span className="block text-[12px] text-muted">{sub}</span>
               </div>
             ))}
@@ -84,7 +85,6 @@ export default function Home() {
             </section>
           ) : (
             <>
-              <div className="lg:hidden"><UploadCard /></div>
               <div className="lg:hidden">{deadlineCard}</div>
               {partners.length > 0 && (
                 <section>
@@ -108,7 +108,7 @@ export default function Home() {
                     const n = counts.get(c.id) ?? 0;
                     return (
                       <Link key={c.id} href={`/c/${c.id}`} className={`${CARD} flex flex-col gap-3 p-4 transition hover:border-brand-500/40 active:scale-[.98] ${n ? "" : "opacity-60"}`}>
-                        <span className="flex items-start justify-between gap-2"><ClusterIcon id={c.id} size={40} tone="plain" /><span className={`tnum inline-grid h-7 min-w-7 place-items-center rounded-full px-2 text-[12px] font-bold ${n ? "bg-brand-500 text-white" : "border border-card-line text-muted"}`}>{n}</span></span>
+                        <span className="flex items-start justify-between gap-2"><ClusterIcon id={c.id} size={40} tone="plain" /><span className={`tnum inline-grid h-7 min-w-7 place-items-center rounded-full px-2 text-[12px] font-bold ${n ? "border border-card-line bg-surface-2 text-fg" : "border border-card-line text-muted"}`}>{n}</span></span>
                         <span>
                           <span className="block text-[15px] leading-5 font-semibold">{c.label}</span>
                           <span className="mt-0.5 line-clamp-2 block text-[12px] leading-4 text-muted">{c.hint}</span>
@@ -128,9 +128,8 @@ export default function Home() {
           )}
         </div>
 
-        {/* Desktop: rechte Spalte mit Hochladen, Fristen, Hinweisen */}
-        <aside className="hidden space-y-5 lg:sticky lg:top-6 lg:block">
-          <UploadCard />
+        {/* Desktop: rechte Spalte mit Fristen, Hinweisen und Profil */}
+        {side && <aside className="hidden space-y-5 lg:sticky lg:top-6 lg:block">
           {pendingProtect > 0 && (
             <Link href="/einstellungen/tresor" className={`${CARD} flex items-center gap-3 p-4`}>
               <span className="grid h-10 w-10 place-items-center rounded-full bg-fg text-canvas"><Lock size={18} /></span>
@@ -138,12 +137,7 @@ export default function Home() {
             </Link>
           )}
           {deadlineCard}
-          <Link href="/profil" className={`${CARD} flex items-center gap-3 p-4 hover:border-brand-500/40`}>
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-fg text-canvas"><UserRound size={18} /></span>
-            <span className="min-w-0 flex-1 text-[13px]"><b className="block text-[14px]">Dein Profil</b><span className="text-muted">Was aktuell gilt: Arbeit, Wohnen, Versicherungen</span></span>
-            <ChevronRight size={16} className="text-muted" />
-          </Link>
-        </aside>
+        </aside>}
       </div>
     </div>
   );
