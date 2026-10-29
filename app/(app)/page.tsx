@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { CalendarClock, ChevronRight, Search, Sparkles } from "lucide-react";
+import { CalendarClock, ChevronRight, FileText, Layers, ListChecks, Search, Sparkles } from "lucide-react";
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
 import { UploadCard } from "@/components/UploadButtons";
@@ -22,11 +22,30 @@ export default function Home() {
   const term = q.trim().toLowerCase();
   const found = term ? docs.filter((d) => [d.title, d.file_name, d.sender, d.summary, d.doc_type, ...(d.tags ?? []), ...(d.key_facts ?? []).map((f) => `${f.label} ${f.value}`)].some((v) => v?.toLowerCase().includes(term))) : [];
   const recent = docs.slice(0, 8);
+  const ready = docs.filter((d) => d.status === "ready");
+  const month = today.slice(0, 7);
+  const kpis = [
+    { icon: FileText, value: ready.length, label: "Dokumente", sub: `+${docs.filter((d) => d.received_at.startsWith(month)).length} diesen Monat` },
+    { icon: Layers, value: counts.size, label: "Bereiche", sub: `von ${CLUSTERS.length}` },
+    { icon: ListChecks, value: ready.reduce((a, d) => a + (d.key_facts?.length ?? 0), 0), label: "Key-Fakten", sub: "herausgeschrieben" },
+    { icon: CalendarClock, value: docs.reduce((a, d) => a + (d.deadlines ?? []).filter((x) => x.date >= today).length, 0), label: "Fristen", sub: "stehen an" },
+  ];
   const daysTo = (iso: string) => Math.round((Date.parse(iso) - Date.parse(today)) / 86_400_000);
 
   return (
     <div className="space-y-5">
       <h1 className="text-[28px] leading-9 font-[650] tracking-tight">Deine Unterlagen</h1>
+
+      {/* Kennzahlen: was bisher gesammelt ist */}
+      <section className={`${CARD} grid grid-cols-2 divide-line sm:grid-cols-4 [&>*:nth-child(odd)]:border-r [&>*:nth-child(-n+2)]:border-b sm:[&>*]:border-b-0 sm:[&>*:not(:last-child)]:border-r border-line`}>
+        {kpis.map(({ icon: Icon, value, label, sub }) => (
+          <div key={label} className="border-line p-4">
+            <span className="flex items-center gap-1.5 text-[12px] font-medium text-muted"><Icon size={14} /> {label}</span>
+            <span className="tnum mt-1 block text-[26px] leading-8 font-[650] tracking-tight">{loading ? "–" : value.toLocaleString("de-DE")}</span>
+            <span className="block text-[12px] text-muted">{sub}</span>
+          </div>
+        ))}
+      </section>
 
       <label className="flex h-12 items-center gap-2.5 rounded-full border border-card-line bg-surface px-4 shadow-card focus-within:border-brand-500">
         <Search size={18} className="text-muted" />
@@ -65,21 +84,22 @@ export default function Home() {
 
           <section>
             <h2 className="mb-3 text-[17px] font-semibold">Bereiche</h2>
-            {counts.size === 0 && !loading ? (
-              <p className={`${CARD} p-5 text-[14px] text-muted`}>Noch nichts abgelegt. Fotografiere ein Dokument oder lade ein PDF hoch – Lifevault sortiert es automatisch in den passenden Bereich.</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-                {CLUSTERS.filter((c) => counts.get(c.id)).map((c) => (
-                  <Link key={c.id} href={`/c/${c.id}`} className={`${CARD} flex flex-col gap-3 p-4 transition hover:-translate-y-0.5 active:scale-[.98]`}>
-                    <ClusterIcon id={c.id} size={40} />
+            {counts.size === 0 && !loading && <p className="mb-3 text-[14px] text-muted">Noch nichts abgelegt. Fotografiere ein Dokument oder lade ein PDF hoch – Lifevault sortiert es automatisch in einen dieser Bereiche.</p>}
+            {/* alle Bereiche: belegte zuerst, leere blass mit Beschreibung, was hineingehört */}
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+              {[...CLUSTERS].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0)).map((c) => {
+                const n = counts.get(c.id) ?? 0;
+                return (
+                  <Link key={c.id} href={`/c/${c.id}`} className={`${CARD} flex flex-col gap-3 p-4 transition hover:-translate-y-0.5 active:scale-[.98] ${n ? "" : "opacity-60"}`}>
+                    <span className="flex items-start justify-between gap-2"><ClusterIcon id={c.id} size={40} /><span className="tnum rounded-full bg-surface-3 px-2 py-0.5 text-[12px] font-semibold text-soft">{n}</span></span>
                     <span>
                       <span className="block text-[15px] leading-5 font-semibold">{c.label}</span>
-                      <span className="tnum mt-0.5 block text-[13px] text-muted">{counts.get(c.id)} {counts.get(c.id) === 1 ? "Dokument" : "Dokumente"}</span>
+                      <span className="mt-0.5 line-clamp-2 block text-[12px] leading-4 text-muted">{c.hint}</span>
                     </span>
                   </Link>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
           </section>
 
           {recent.length > 0 && (

@@ -35,6 +35,23 @@ export function Markdown({ text }: { text: string }) {
           const Tag = ordered ? "ol" : "ul";
           return <Tag key={bi} className={`space-y-1 pl-5 ${ordered ? "list-decimal" : "list-disc"} marker:text-muted`}>{lines.map((l, li) => <li key={li}>{inline(l.replace(/^\s*([-*•]|\d+\.)\s+/, ""), `${bi}-${li}`)}</li>)}</Tag>;
         }
+        // Tabelle: | a | b | mit Trennzeile
+        if (lines.length >= 2 && lines.every((l) => l.trim().startsWith("|")) && /^\s*\|?\s*:?-{2,}/.test(lines[1])) {
+          const cells = (l: string) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+          const head = cells(lines[0]);
+          return (
+            <div key={bi} className="no-scrollbar -mx-1 overflow-x-auto px-1">
+              <table className="w-full min-w-max overflow-hidden rounded-2xl border border-card-line text-[14px]">
+                <thead className="bg-surface-2"><tr>{head.map((c, ci) => <th key={ci} className="px-3 py-2 text-left font-semibold">{inline(c, `${bi}-h${ci}`)}</th>)}</tr></thead>
+                <tbody className="divide-y divide-line">{lines.slice(2).map((l, ri) => <tr key={ri}>{cells(l).map((c, ci) => <td key={ci} className="px-3 py-2 align-top">{inline(c, `${bi}-${ri}-${ci}`)}</td>)}</tr>)}</tbody>
+              </table>
+            </div>
+          );
+        }
+        // Überschrift mit folgendem Inhalt im selben Block
+        if (/^#{1,4}\s+/.test(lines[0] ?? "") && lines.length > 1) {
+          return <div key={bi} className="space-y-2"><h3 className="pt-1 text-[16px] font-semibold">{inline(lines[0].replace(/^#{1,4}\s+/, ""), `${bi}-h`)}</h3><Markdown text={lines.slice(1).join("\n")} /></div>;
+        }
         const h = /^#{1,4}\s+(.*)$/.exec(b.trim());
         if (h && lines.length === 1) return <h3 key={bi} className="pt-1 text-[16px] font-semibold">{inline(h[1], `${bi}`)}</h3>;
         return <p key={bi}>{lines.map((l, li) => <Fragment key={li}>{li > 0 && <br />}{inline(l.replace(/^#{1,4}\s+/, ""), `${bi}-${li}`)}</Fragment>)}</p>;

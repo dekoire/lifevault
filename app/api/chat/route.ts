@@ -8,8 +8,13 @@ export const maxDuration = 300;
 
 const SYSTEM = `Du bist Lifevault, der persönliche Assistent für die Unterlagen deines Nutzers (Deutsch, du-Form).
 Antworte nur auf Basis der mitgelieferten Dokumente. Steht etwas nicht drin, sag das ehrlich und nenne, welches Dokument fehlen könnte.
-Nenne immer die Quelle als Link im Format [Titel](/d/ID) – genau die ID aus der Liste.
-Sei konkret: Zahlen, Fristen, Namen. Kurze Absätze, Listen wo hilfreich, **fett** für das Wichtigste.
+
+Antworte immer strukturiert in genau dieser Form (Markdown):
+1. Erste Zeile: die direkte Antwort in einem Satz, **fett**.
+2. Danach „### Details“ mit einer Stichpunktliste (je Punkt **Begriff:** Wert). Bei Vergleichen oder mehreren Dokumenten stattdessen eine Tabelle (| Spalte | Spalte |).
+3. Wenn es etwas zu tun gibt: „### Nächste Schritte“ mit kurzer, nummerierter Liste (mit Fristen).
+4. Zum Schluss „### Quellen“ mit einer Liste der verwendeten Dokumente als Link [Titel](/d/ID) – genau die ID aus der Liste.
+Keine Einleitung, keine Wiederholung der Frage. Zahlen, Fristen und Namen konkret.
 Gesundheitsdaten behandelst du sachlich und vertraulich; bei medizinischen Fragen ersetzt du keinen Arzt.`;
 
 const words = (q: string) => [...new Set(q.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? [])].slice(0, 12);

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { ArrowUp, ChevronLeft, FileSearch, HeartPulse, Receipt, SquarePen, Square } from "lucide-react";
+import { ClusterIcon } from "@/components/ClusterIcon";
 import { LogoMark } from "@/components/Logo";
 import { Markdown } from "@/components/Markdown";
 import { useDocs } from "@/lib/docs";
@@ -15,6 +16,27 @@ const SUGGESTIONS = [
   { icon: FileSearch, q: "Was steht in meinem Arbeitsvertrag zu Urlaub und Kündigung?" },
   { icon: HeartPulse, q: "Fasse meine letzten Arztbefunde zusammen." },
 ];
+
+/** Quellen unter einer Antwort: verlinkte Dokumente als Kacheln mit Bereichs-Symbol */
+function Sources({ text }: { text: string }) {
+  const { docs } = useDocs();
+  const ids = [...new Set([...text.matchAll(/\(\/d\/([0-9a-f-]{36})\)/gi)].map((m) => m[1]))];
+  const list = ids.map((id) => docs.find((d) => d.id === id)).filter((d): d is NonNullable<typeof d> => !!d);
+  if (!list.length) return null;
+  return (
+    <div className="mt-4">
+      <div className="mb-2 text-[12px] font-semibold tracking-wide text-muted uppercase">Quellen</div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {list.map((d) => (
+          <Link key={d.id} href={`/d/${d.id}`} className="flex items-center gap-3 rounded-2xl border border-card-line bg-surface px-3 py-2.5 hover:bg-surface-2">
+            <ClusterIcon id={d.cluster} size={34} />
+            <span className="min-w-0"><span className="block truncate text-[14px] font-semibold">{d.title ?? d.file_name}</span><span className="block truncate text-[12px] text-muted">{[d.sender, d.doc_date].filter(Boolean).join(" · ")}</span></span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /** Chat wie bei Finastry: leer mit Logo und Vorschlägen, Antworten mit Quellen, Eingabe unten */
 export default function ChatPage() {
@@ -116,7 +138,7 @@ function Chat() {
                 <div key={i} className="flex gap-3">
                   <span className="mt-0.5 shrink-0"><LogoMark size={26} /></span>
                   <div className="min-w-0 flex-1">
-                    {m.content ? <Markdown text={m.content} /> : (
+                    {m.content ? <><Markdown text={m.content.replace(/\n#{1,4}\s*Quellen[\s\S]*$/i, "")} /><Sources text={m.content} /></> : (
                       <div className="flex min-h-8 items-center gap-2.5" role="status" aria-live="polite">
                         <span className="flex h-3 items-center gap-1" aria-hidden>{[0, 1, 2].map((k) => <span key={k} className="typing-dot h-1.5 w-1.5 rounded-full bg-brand-500" style={{ animationDelay: `${k * 0.15}s` }} />)}</span>
                         <span className="text-shimmer text-[14px] font-medium">Durchsuche deine Unterlagen</span>
