@@ -101,6 +101,8 @@ body {
 
 /* nie seitlich wischen: lange Inhalte brechen um statt die Seite zu verbreitern */
 html, body { overflow-x: clip; }
+/* Desktop etwas kompakter: Inhalt einheitlich ~8 % kleiner (Schrift, Abstände, Kacheln) */
+@media (min-width: 1024px) { .app-scale { zoom: 0.92; } }
 
 /* Seitenpanel von rechts */
 @keyframes panel-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }

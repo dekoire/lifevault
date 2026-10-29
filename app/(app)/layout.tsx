@@ -129,7 +129,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       )}
       {/* Desktop: oben rechts Hinzufügen und Avatar */}
       {!chat && (
-        <div className="relative z-20 hidden h-16 items-center gap-3 bg-page px-8 lg:ml-[var(--side,15rem)] lg:flex">
+        <div className="relative z-20 hidden h-16 items-center gap-3 bg-page px-12 lg:ml-[var(--side,15rem)] lg:flex xl:px-16 2xl:px-20">
           <GlobalSearch />
           <span className="flex-1" />
           {path === "/" && <button type="button" onClick={() => setExporting(true)} aria-label="Exportieren" title="Exportieren" className="inline-flex h-10 items-center gap-2 rounded-full border border-card-line bg-surface px-4 text-[14px] font-semibold text-fg transition-colors hover:bg-surface-2"><Download size={17} /> Export</button>}
@@ -138,7 +138,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
         </div>
       )}
       <main className={`lg:pl-[var(--side,15rem)] ${chat ? "" : "pb-28 lg:pb-12"}`}>
-        {chat ? children : <div key={path} className="page-in mx-auto max-w-[90rem] px-4 pt-5 md:px-6 lg:pt-6 xl:px-8">{children}</div>}
+        {chat ? children : <div key={path} className="page-in app-scale mx-auto max-w-[88rem] px-4 pt-5 md:px-6 lg:px-12 lg:pt-6 xl:px-16 2xl:px-20">{children}</div>}
       </main>
 
       {/* Handy: untere Leiste ohne Schatten – Start, +, Fragen */}
