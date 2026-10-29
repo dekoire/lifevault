@@ -214,7 +214,15 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
       </div>
 
       {doc.status === "processing" && <div className={`${CARD} mb-4 p-4`}><span className="flex items-center gap-2.5"><span className="flex gap-1">{[0, 1, 2].map((i) => <span key={i} className="typing-dot h-1.5 w-1.5 rounded-full bg-fg" style={{ animationDelay: `${i * 0.15}s` }} />)}</span><span className="text-shimmer text-[14px] font-medium">Wird ausgelesen und sortiert …</span></span></div>}
-      {doc.status === "error" && <p className="mb-4 rounded-xl bg-negative/10 p-4 text-[14px] text-negative-text">{doc.error}</p>}
+      {doc.status === "error" && <div className="mb-4 rounded-xl bg-negative/10 p-4 text-[14px] text-negative-text">
+        {doc.error}
+        {/Passwort/.test(doc.error ?? "") && (
+          <form onSubmit={(e) => { e.preventDefault(); const pw = new FormData(e.currentTarget).get("pw"); if (typeof pw === "string" && pw) void run(() => reprocess(doc.id, pw)); }} className="mt-2.5 flex gap-2">
+            <input name="pw" type="text" autoComplete="off" placeholder="PDF-Passwort, z. B. Geburtsdatum TTMMJJJJ" data-own-focus className="h-10 min-w-0 flex-1 rounded-full border border-card-line bg-surface px-4 text-[14px] text-fg outline-none focus:border-line-strong" />
+            <button type="submit" disabled={busy} className="h-10 shrink-0 rounded-full bg-fg px-4 text-[13.5px] font-semibold text-canvas disabled:opacity-50">Öffnen</button>
+          </form>
+        )}
+      </div>}
       {doc.archived && doc.archived_reason && <p className="mb-4 rounded-xl bg-surface-3 px-4 py-3 text-[13px] text-soft"><b>Archiviert:</b> {doc.archived_reason}</p>}
       {newer && (
         <p className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-amber/30 bg-amber/5 px-4 py-3 text-[13px]">

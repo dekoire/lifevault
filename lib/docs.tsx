@@ -11,7 +11,7 @@ import { removeThumbs } from "@/lib/thumbs";
 import { LIST_COLS, type Doc } from "@/lib/types";
 
 export type BatchItem = { key: string; name: string; id?: string; state: "uploading" | "saved" | "failed"; error?: string };
-type Ctx = { batch: BatchItem[]; clearBatch: () => void; docs: Doc[]; allDocs: Doc[]; partsOf: (id: string) => Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null; silent?: boolean; noSplit?: boolean }) => Promise<string[]>; pendingProtect: number; reprocess: (id: string) => Promise<void>; splitDoc: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
+type Ctx = { batch: BatchItem[]; clearBatch: () => void; docs: Doc[]; allDocs: Doc[]; partsOf: (id: string) => Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null; silent?: boolean; noSplit?: boolean }) => Promise<string[]>; pendingProtect: number; reprocess: (id: string, password?: string) => Promise<void>; splitDoc: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
 const DocsCtx = createContext<Ctx | null>(null);
 
 const OK = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
@@ -90,9 +90,9 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
 
   // Auslesen; enthält eine PDF mehrere Briefe, kommen die Teile zurück und werden einzeln ausgelesen
   // split: true = jetzt trennen, false = nie trennen (z. B. bewusst zusammengeführt), undefined = automatisch
-  const process = async (id: string, split?: boolean): Promise<void> => {
+  const process = async (id: string, split?: boolean, password?: string): Promise<void> => {
     try {
-      const res = await queued(() => authFetch("/api/process", { method: "POST", body: JSON.stringify({ id, ...(split !== undefined ? { split } : {}) }) }));
+      const res = await queued(() => authFetch("/api/process", { method: "POST", body: JSON.stringify({ id, ...(split !== undefined ? { split } : {}), ...(password ? { password } : {}) }) }));
       const json = (await res.json().catch(() => ({}))) as { split?: string[] };
       await refresh();
       if (json.split?.length) for (let i = 0; i < json.split.length; i += 2) await Promise.all(json.split.slice(i, i + 2).map((x) => process(x)));
@@ -190,7 +190,7 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unlocked, toProtect.map((d) => d.id).join()]);
 
-  const reprocess = useCallback(async (id: string) => {
+  const reprocess = useCallback(async (id: string, password?: string) => {
     const d = docs.find((x) => x.id === id);
     await supabase.from("documents").update({ status: "processing", error: null }).eq("id", id);
     await refresh();
@@ -199,7 +199,7 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
       const plain = await openBytes(await downloadFile(d.file_path));
       await processEncrypted(d, plain).catch(async (e) => { await supabase.from("documents").update({ status: "error", error: (e as Error).message }).eq("id", id); });
       await refresh();
-    } else await process(id);
+    } else await process(id, password ? false : undefined, password);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh, docs]);
 

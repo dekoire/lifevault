@@ -1,7 +1,7 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import { aiFor, loadAiSettings } from "@/lib/ai";
-import { extract, FILE_TYPES, slicePdf, splitPlan, TEXT_TYPES, toColumns, type Extracted } from "@/lib/extract";
+import { extract, FILE_TYPES, PdfLocked, slicePdf, splitPlan, TEXT_TYPES, toColumns, type Extracted } from "@/lib/extract";
 import { unauthorized, userClient } from "@/lib/server";
 import { OFFICE_TYPES } from "@/lib/office";
 
@@ -43,7 +43,8 @@ export async function POST(req: Request) {
   if (!auth) return unauthorized();
   await loadAiSettings(auth.sb);
   const { sb } = auth;
-  const body = (await req.json().catch(() => null)) as { id?: unknown; data?: unknown; mediaType?: unknown; split?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { id?: unknown; data?: unknown; mediaType?: unknown; split?: unknown; password?: unknown } | null;
+  const password = typeof body?.password === "string" && body.password.length <= 200 ? body.password : undefined;
   const id = typeof body?.id === "string" ? body.id : "";
   if (!/^[0-9a-f-]{36}$/i.test(id)) return Response.json({ error: "Ungültige Anfrage." }, { status: 400 });
   const inline = typeof body?.data === "string";
@@ -100,7 +101,10 @@ export async function POST(req: Request) {
 
   try {
     // bei Überlast/Aussetzer einmal erneut versuchen
-    const o = await extract({ data, mediaType }).catch(async (e) => { console.error("process retry", (e as Error).message); await new Promise((r) => setTimeout(r, 4000)); return extract({ data, mediaType }); });
+    const o = await extract({ data, mediaType, password }).catch(async (e) => {
+      if (e instanceof PdfLocked) throw e;
+      console.error("process retry", (e as Error).message); await new Promise((r) => setTimeout(r, 4000)); return extract({ data, mediaType, password });
+    });
     if (!o) return fail("Das Dokument konnte nicht gelesen werden.");
     const { meta, content } = toColumns(o);
     // von Hand gesetzte Einordnung beim erneuten Auslesen nicht überschreiben
@@ -115,6 +119,7 @@ export async function POST(req: Request) {
     await archiveCheck(sb, id, o).catch((e) => console.error("archive", (e as Error).message));
     return Response.json({ ok: true });
   } catch (e) {
+    if (e instanceof PdfLocked) return fail(`${e.message} Gib das Passwort ein, dann wird sie ausgelesen.`);
     console.error("process", (e as Error).message);
     return fail("Das Auslesen hat nicht geklappt. Bitte später erneut versuchen.");
   }

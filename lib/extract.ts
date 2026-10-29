@@ -48,12 +48,16 @@ ${TOPIC_PROMPT}
 ${LABEL_PROMPT}`;
 
 /** Textebene einer PDF lesen (ohne KI); leer bei gescannten PDFs ohne Text */
-export async function pdfText(data: Uint8Array): Promise<string> {
+/** PDF mit Öffnungs-Passwort (z. B. Check24/Versicherer: Geburtsdatum) – ohne Passwort nicht lesbar */
+export class PdfLocked extends Error { constructor(public wrong = false) { super(wrong ? "Das PDF-Passwort stimmt nicht." : "Diese PDF ist mit einem Passwort geschützt."); } }
+
+export async function pdfText(data: Uint8Array, password?: string): Promise<string> {
   try {
-    const pdf = await getDocumentProxy(new Uint8Array(data));
+    const pdf = await getDocumentProxy(new Uint8Array(data), password ? { password } : {});
     const { text } = await extractText(pdf, { mergePages: false });
     return (text as string[]).map((t, i) => `--- Seite ${i + 1} ---\n${t.trim()}`).join("\n\n").trim();
-  } catch {
+  } catch (e) {
+    if ((e as Error).name === "PasswordException") throw new PdfLocked(!!password);
     return "";
   }
 }
@@ -62,15 +66,16 @@ export async function pdfText(data: Uint8Array): Promise<string> {
 const MetaSchema = Schema.omit({ fullText: true });
 
 /** Dokument (Datei oder Text) mit der KI auslesen */
-export async function extract(input: { data: Uint8Array; mediaType: string }): Promise<Extracted | undefined> {
+export async function extract(input: { data: Uint8Array; mediaType: string; password?: string }): Promise<Extracted | undefined> {
   // PDFs mit Textebene: Volltext direkt lesen – die KI muss ihn nicht abschreiben (lange Dokumente sprengten sonst das Ausgabelimit)
   if (input.mediaType === "application/pdf") {
-    const raw = await pdfText(input.data);
+    const raw = await pdfText(input.data, input.password);
     const letters = raw.replace(/--- Seite \d+ ---/g, "").replace(/\s+/g, "").length;
-    if (letters > 400) {
+    if (letters > 400 || (input.password && letters > 0)) {
       const pages = await PDFDocument.load(input.data, { ignoreEncryption: true }).then((p) => p.getPageCount()).catch(() => 0);
       // kurze PDFs sieht die KI selbst (Tabellen, Layout); längere nur als Text – Seitenbilder kosten ein Vielfaches
-      const content: ModelMessage["content"] = pages > 0 && pages <= 6
+      // mit Passwort geschützte PDFs kann die KI nicht selbst öffnen – dann nur den Text
+      const content: ModelMessage["content"] = !input.password && pages > 0 && pages <= 6
         ? [{ type: "file", data: input.data, mediaType: "application/pdf" }, { type: "text", text: "Lies dieses Dokument aus und strukturiere es. Den Volltext brauchst du nicht zurückzugeben." }]
         : [{ type: "text", text: `Lies dieses Dokument aus und strukturiere es. Den Volltext brauchst du nicht zurückzugeben.\n\n---\n${raw.slice(0, 120_000)}` }];
       const r = await generateText({
