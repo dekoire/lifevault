@@ -13,7 +13,7 @@ import { chrono, fmtDate, fmtMoney, isUrgent, useDocs } from "@/lib/docs";
 import { useProjects } from "@/lib/projects";
 import { Clamp } from "@/components/Clamp";
 import { DocLabels } from "@/components/Labels";
-import { DocImportance } from "@/components/Importance";
+import { ImportanceChips, RelationNote } from "@/components/Importance";
 import { DocPayment } from "@/components/DocActions";
 import { relatedPayDocs } from "@/lib/related";
 import { explainDoc, groupRank } from "@/lib/doctypes";
@@ -205,9 +205,11 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
               <Link href={`/c/${c.id}`} className="inline-flex h-7 items-center rounded-full px-2.5 text-[12px] font-semibold border border-card-line text-fg">{c.label}</Link>
               {doc.archived ? <span className="inline-flex h-7 items-center gap-1 rounded-full border border-card-line px-2.5 text-[12px] font-semibold text-soft" title={doc.archived_reason ?? ""}><Archive size={12} /> Archiviert</span> : doc.status === "ready" && <span className="inline-flex h-7 items-center rounded-full bg-positive/10 px-2.5 text-[12px] font-semibold text-positive-text">Aktuell</span>}
               {doc.encrypted && <span className="inline-flex h-7 items-center gap-1 rounded-full border border-card-line px-2.5 text-[12px] font-semibold text-fg"><Lock size={12} /> Verschlüsselt</span>}
+              {/* eine Zeile: Bereich, Status, Wichtigkeit, Rolle, Tags – alle gleich hoch */}
+              <ImportanceChips doc={doc} onChange={setDoc} />
+              <DocLabels inline doc={doc} onChange={setDoc} />
             </div>
-            <div className="mt-1.5"><DocLabels inline doc={doc} onChange={setDoc} /></div>
-            {doc.status === "ready" && <div className="mt-2"><DocImportance doc={doc} onChange={setDoc} /></div>}
+            <RelationNote doc={doc} className="mt-2" />
           </div>
         </div>
         <div className="flex shrink-0 gap-1.5">
@@ -307,7 +309,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
           {show.original && fileUrl && (
             <section className={`${CARD} overflow-hidden`}>
               <SensitiveBadge flat doc={doc} unlocked={unlocked} onProtect={() => void run(() => protectDoc(doc))} />
-              {image ? <img src={fileUrl} alt={doc.title ?? doc.file_name} className="max-h-[60vh] w-full bg-black object-contain" /> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={fileUrl} mime={doc.mime_type} name={doc.file_name} /> : doc.mime_type === "application/pdf" ? <PdfPages url={fileUrl} card={isCardDoc(doc)} bare /> : <iframe src={fileUrl} title="Original" className="h-[60vh] w-full bg-surface-2" />}
+              {image ? <img src={fileUrl} alt={doc.title ?? doc.file_name} className="max-h-[60vh] w-full bg-surface-2 object-contain p-3" /> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={fileUrl} mime={doc.mime_type} name={doc.file_name} /> : doc.mime_type === "application/pdf" ? <PdfPages url={fileUrl} card={isCardDoc(doc)} bare /> : <iframe src={fileUrl} title="Original" className="h-[60vh] w-full bg-surface-2" />}
             </section>
           )}
           <MergedParts doc={doc} onSplit={() => router.push("/")} />
