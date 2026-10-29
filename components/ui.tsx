@@ -31,7 +31,7 @@ export function Section({ title, icon, count, open, onToggle, children }: { titl
       <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-2.5 px-4 py-3.5 text-left">
         {icon && <span className="text-muted">{icon}</span>}
         <span className="flex-1 text-[15px] font-semibold">{title}</span>
-        {count !== undefined && <span className="tnum rounded-full bg-surface-3 px-2 py-0.5 text-[12px] font-semibold text-soft">{count}</span>}
+        {count !== undefined && <span className="tnum rounded-full border border-card-line px-2 py-0.5 text-[12px] font-semibold text-soft">{count}</span>}
         <ChevronDown size={18} className={`text-muted transition ${open ? "rotate-180" : ""}`} />
       </button>
       {open && <div className="border-t border-line">{children}</div>}
@@ -58,11 +58,11 @@ export function TileMenu({ tiles }: { tiles: { href: string; title: string; text
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {tiles.map((t) => (
-        <a key={t.href} href={t.href} className="group flex items-center gap-4 rounded-2xl border border-card-line bg-surface px-5 py-5 transition hover:bg-surface-2">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-lavender text-selected">{t.icon}</span>
+        <Link key={t.href} href={t.href} className="group flex items-center gap-4 rounded-2xl border border-card-line bg-surface px-5 py-5 transition hover:bg-surface-2">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-card-line bg-surface text-fg">{t.icon}</span>
           <span className="min-w-0 flex-1"><span className="block font-semibold">{t.title}</span><span className="block text-sm text-muted">{t.text}</span></span>
           <span className="shrink-0 text-muted transition group-hover:translate-x-0.5">›</span>
-        </a>
+        </Link>
       ))}
     </div>
   );

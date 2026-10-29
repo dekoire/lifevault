@@ -81,7 +81,7 @@ function Steps({ step, split }: { step: Step; split: boolean }) {
         return (
           <li key={label} className="relative flex flex-col items-center gap-1.5 text-center">
             {i > 0 && <span aria-hidden className={`absolute top-3.5 right-1/2 h-0.5 w-full ${state === "done" ? "bg-positive" : "bg-line"}`} />}
-            <span className={`relative grid h-7 w-7 place-items-center rounded-full ${state === "done" ? "bg-positive text-white" : state === "active" ? "bg-lavender text-selected" : state === "fail" ? "bg-negative/10 text-negative-text" : "bg-surface-3 text-muted"}`}>
+            <span className={`relative grid h-7 w-7 place-items-center rounded-full ${state === "done" ? "bg-positive text-white" : state === "active" ? "border border-card-line bg-surface text-fg" : state === "fail" ? "bg-negative/10 text-negative-text" : "bg-surface-3 text-muted"}`}>
               {state === "done" ? <Check size={14} strokeWidth={2.6} /> : state === "active" ? <Loader2 size={14} className="animate-spin" /> : <Icon size={14} />}
             </span>
             <span className={`text-[11px] font-semibold ${state === "active" ? "text-shimmer" : state === "todo" ? "text-muted" : state === "fail" ? "text-negative-text" : ""}`}>{label}</span>
@@ -100,7 +100,7 @@ function Preview({ d, onOpen }: { d: Doc; onOpen: () => void }) {
       <span className="min-w-0 flex-1">
         <b className="line-clamp-2 text-[14px] leading-5">{d.title ?? d.file_name}</b>
         <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[12px] text-muted">
-          <span className="rounded-full px-2 py-px font-semibold" style={{ color: c.color, background: `color-mix(in srgb, ${c.color} 12%, transparent)` }}>{c.label}</span>
+          <span className="rounded-full px-2 py-px font-semibold border border-card-line text-fg">{c.label}</span>
           {fmtDate(d.doc_date ?? d.received_at)}{d.sender ? ` · ${d.sender}` : ""}
         </span>
         {d.summary && <span className="mt-1 line-clamp-2 block text-[12px] leading-4 text-soft">{d.summary}</span>}

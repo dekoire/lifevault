@@ -15,8 +15,8 @@ const ICONS: Record<string, LucideIcon> = { person: UserRound, arbeit: Briefcase
 /** Lebensprofil: was gilt aktuell, was war früher – aus den Dokumenten, mit Quellen */
 export default function ProfilPage() {
   const session = useSession();
-  const { docs, allDocs } = useDocs();
-  const person = useMemo(() => buildPerson(allDocs), [allDocs]);
+  const { docs } = useDocs();
+  const person = useMemo(() => buildPerson(docs), [docs]);
   const [showEarlier, setShowEarlier] = useState(false);
   const [profile, setProfile] = useState<LifeProfile | null>();
   const [busy, setBusy] = useState(false);
@@ -82,7 +82,7 @@ export default function ProfilPage() {
         <div className="grid h-40 place-items-center"><Loader2 className="animate-spin text-muted" /></div>
       ) : !profile ? (
         <section className={`${CARD} p-8 text-center`}>
-          <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-lavender text-selected"><UserRound size={26} /></span>
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-card-line bg-surface text-fg"><UserRound size={26} /></span>
           <h2 className="mt-4 text-[18px] font-semibold">Noch kein Profil</h2>
           <p className="mx-auto mt-1 max-w-md text-[14px] text-muted">Die KI liest deine {ready} Dokumente und stellt zusammen: Arbeitgeber, Wohnung, Versicherungen, laufende Verträge, Fahrzeug – und was früher war.</p>
         </section>
@@ -100,7 +100,7 @@ export default function ProfilPage() {
               const Icon = ICONS[s.id] ?? UserRound;
               return (
                 <section key={s.id} className={`${CARD} overflow-hidden ${s.id === "offen" ? "lg:col-span-2" : ""}`}>
-                  <h2 className="flex items-center gap-2.5 px-5 pt-4 pb-2 text-[16px] font-semibold"><span className={`grid h-8 w-8 place-items-center rounded-full ${s.id === "offen" ? "bg-negative/10 text-negative-text" : "bg-lavender text-selected"}`}><Icon size={16} /></span>{s.title}</h2>
+                  <h2 className="flex items-center gap-2.5 px-5 pt-4 pb-2 text-[16px] font-semibold"><span className={`grid h-8 w-8 place-items-center rounded-full border border-card-line bg-surface ${s.id === "offen" ? "text-negative-text" : "text-fg"}`}><Icon size={16} /></span>{s.title}</h2>
                   <ul className="divide-y divide-line">
                     {items.map((it, i) => (
                       <li key={i} className={`grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 px-5 py-3 text-[14px] ${it.status === "früher" ? "opacity-60" : ""}`}>
@@ -109,7 +109,7 @@ export default function ProfilPage() {
                           <b className="font-semibold">{it.value}</b>
                           {it.status === "früher" && <span className="ml-1.5 rounded-full border border-card-line px-2 py-0.5 text-[11px] text-soft">früher</span>}
                           {it.detail && <span className="block text-[12px] text-muted">{it.detail}</span>}
-                          {it.docIds.length > 0 && <span className="mt-1 flex flex-wrap gap-1">{it.docIds.slice(0, 3).map((id) => titleOf(id) && <Link key={id} href={`/d/${id}`} className="max-w-[14rem] truncate rounded-full bg-lavender px-2 py-0.5 text-[11px] font-medium text-selected hover:underline">{titleOf(id)}</Link>)}</span>}
+                          {it.docIds.length > 0 && <span className="mt-1 flex flex-wrap gap-1">{it.docIds.slice(0, 3).map((id) => titleOf(id) && <Link key={id} href={`/d/${id}`} className="max-w-[14rem] truncate rounded-full border border-card-line px-2 py-0.5 text-[11px] font-medium text-fg hover:underline">{titleOf(id)}</Link>)}</span>}
                         </span>
                       </li>
                     ))}

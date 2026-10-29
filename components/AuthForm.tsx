@@ -69,7 +69,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           </label>
         )}
         {error && <p role="alert" className="rounded-xl bg-negative/10 px-3.5 py-2.5 text-sm text-negative-text">{error}</p>}
-        {info && <p role="status" className="rounded-xl bg-lavender px-3.5 py-2.5 text-sm text-selected">{info}</p>}
+        {info && <p role="status" className="rounded-xl border border-card-line px-3.5 py-2.5 text-sm text-fg">{info}</p>}
         <button type="submit" disabled={busy} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-500 text-[15px] font-semibold text-white shadow-[0_8px_24px_rgba(109,74,255,.3)] transition hover:bg-brand-600 disabled:opacity-70">
           {busy && <Loader2 size={18} className="animate-spin" />} {login ? "Anmelden" : "Konto erstellen"}
         </button>

@@ -24,7 +24,7 @@ export default function Landing() {
     <>
       <section className="grid items-center gap-10 py-14 md:py-20 lg:grid-cols-[1.05fr_1fr]">
         <div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-lavender px-3 py-1 text-[13px] font-semibold text-selected"><Lock size={14} /> Dein persönlicher Dokumenten-Tresor</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-card-line bg-surface px-3 py-1 text-[13px] font-semibold text-fg"><Lock size={14} /> Dein persönlicher Dokumenten-Tresor</span>
           <h1 className="mt-5 text-[40px] leading-[46px] font-[680] tracking-tight md:text-[54px] md:leading-[60px]">Alle Unterlagen.<br /><span className="text-brand-500">Ein Tresor.</span></h1>
           <p className="mt-5 max-w-xl text-[17px] leading-7 text-soft">Verträge, Rechnungen, Arztbriefe, Gehaltsabrechnungen, Belege: einfach hochladen. Lifevault sortiert alles, schreibt die wichtigen Fakten heraus und beantwortet dir jede Frage dazu.</p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -38,7 +38,7 @@ export default function Landing() {
       <section className="grid gap-4 md:grid-cols-3">
         {STEPS.map(({ icon: Icon, t, d }, i) => (
           <div key={t} className="rounded-2xl border border-card-line bg-surface p-6">
-            <span className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-full bg-lavender text-selected"><Icon size={20} /></span><span className="text-[13px] font-semibold text-muted">Schritt {i + 1}</span></span>
+            <span className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-full border border-card-line bg-surface text-fg"><Icon size={20} /></span><span className="text-[13px] font-semibold text-muted">Schritt {i + 1}</span></span>
             <h3 className="mt-4 text-[18px] font-semibold">{t}</h3>
             <p className="mt-1 text-[15px] leading-6 text-muted">{d}</p>
           </div>

@@ -35,7 +35,7 @@ export function Sources({ text }: { text: string }) {
 export function Typing({ label = "Durchsuche deine Unterlagen" }: { label?: string }) {
   return (
     <div className="flex min-h-8 items-center gap-2.5" role="status" aria-live="polite">
-      <span className="flex h-3 items-center gap-1" aria-hidden>{[0, 1, 2].map((k) => <span key={k} className="typing-dot h-1.5 w-1.5 rounded-full bg-brand-500" style={{ animationDelay: `${k * 0.15}s` }} />)}</span>
+      <span className="flex h-3 items-center gap-1" aria-hidden>{[0, 1, 2].map((k) => <span key={k} className="typing-dot h-1.5 w-1.5 rounded-full bg-fg" style={{ animationDelay: `${k * 0.15}s` }} />)}</span>
       <span className="text-shimmer text-[14px] font-medium">{label}</span>
     </div>
   );

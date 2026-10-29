@@ -45,7 +45,7 @@ function Users() {
           <tbody className="divide-y divide-line">
             {rows.map((p) => (
               <tr key={p.id}>
-                <td className="px-5 py-3 font-medium">{p.email}{p.id === session?.user.id && <span className="ml-2 rounded-full bg-surface-3 px-2 py-0.5 text-[11px] text-soft">du</span>}</td>
+                <td className="px-5 py-3 font-medium">{p.email}{p.id === session?.user.id && <span className="ml-2 rounded-full border border-card-line px-2 py-0.5 text-[11px] text-soft">du</span>}</td>
                 <td className="px-3 py-3 text-muted">{when(p.created_at)}</td>
                 <td className="px-3 py-3 text-muted">{when(p.last_sign_in_at)}</td>
                 <td className="px-5 py-3"><span className="flex justify-end"><Switch on={p.is_admin} onChange={(v) => void setAdmin(p, v)} label={`Admin ${p.email}`} disabled={p.id === session?.user.id} /></span></td>

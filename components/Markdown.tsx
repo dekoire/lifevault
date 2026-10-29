@@ -15,7 +15,7 @@ function inline(text: string, key: string) {
     else {
       const [, label, href] = /\[([^\]]+)\]\(([^)]+)\)/.exec(t)!;
       parts.push(href.startsWith("/")
-        ? <Link key={`${key}-${i++}`} href={href} className="inline-flex items-center rounded-md bg-lavender px-1.5 font-semibold text-selected hover:underline">{label}</Link>
+        ? <Link key={`${key}-${i++}`} href={href} className="inline-flex items-center rounded-md border border-card-line px-1.5 font-semibold text-fg hover:bg-surface-2">{label}</Link>
         : /^https?:\/\//.test(href) ? <a key={`${key}-${i++}`} href={href} target="_blank" rel="noreferrer" className="font-semibold text-selected underline">{label}</a> : label);
     }
     last = m.index + t.length;

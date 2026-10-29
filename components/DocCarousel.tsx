@@ -41,7 +41,7 @@ export function DocCarousel({ docs }: { docs: Doc[] }) {
                 <b className="line-clamp-2 text-[15px] leading-5">{d.title ?? d.file_name}</b>
                 <span className="block truncate text-[12px] text-muted">{fmtDate(dateOf(d))}{d.sender ? ` · ${d.sender}` : ""}</span>
               </span>
-              {d.encrypted && <Lock size={14} className="shrink-0 text-selected" />}
+              {d.encrypted && <Lock size={14} className="shrink-0 text-fg" />}
             </span>
             {d.status === "processing" ? <p className="mt-3 text-[13px] text-muted">Wird ausgelesen …</p> : (
               <>

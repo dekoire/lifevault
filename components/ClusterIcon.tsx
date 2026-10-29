@@ -7,13 +7,13 @@ const ICONS: Record<string, LucideIcon> = {
   persoenlich: IdCard, sonstiges: Folder,
 };
 
-/** Cluster-Symbol in getönter Kachel (Farbe je Cluster) */
+/** Bereichs-Symbol: schwarz auf weiß mit Rahmen */
 export function ClusterIcon({ id, size = 40 }: { id?: string | null; size?: number }) {
   const c = clusterOf(id);
   const Icon = ICONS[c.id] ?? Folder;
   return (
-    <span className="grid shrink-0 place-items-center rounded-xl" style={{ width: size, height: size, color: c.color, background: `color-mix(in srgb, ${c.color} 12%, transparent)` }}>
-      <Icon size={Math.round(size * 0.48)} strokeWidth={1.9} />
+    <span className="grid shrink-0 place-items-center rounded-full border border-card-line bg-surface text-fg" style={{ width: size, height: size }}>
+      <Icon size={Math.round(size * 0.46)} strokeWidth={1.7} />
     </span>
   );
 }
