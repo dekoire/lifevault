@@ -1,8 +1,11 @@
 "use client";
 import { DocLabels } from "@/components/Labels";
+import { DocAdvice } from "@/components/Advice";
+import { openDraft } from "@/components/DraftSheet";
+import { DRAFT_PURPOSES, suggestedPurposes } from "@/lib/drafts";
 import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarClock, Download, ExternalLink, Lock, Maximize2, X } from "lucide-react";
+import { ArrowLeft, CalendarClock, Download, ExternalLink, Lock, Maximize2, PenLine, X } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
 import { Clamp } from "@/components/Clamp";
 import { caseIds } from "@/lib/dupes";
@@ -98,6 +101,11 @@ function DocDetail({ id, open, close, back = false }: { id: string; open: (d: De
       </div>
       <Classify doc={doc} onChange={(d) => setDoc(d)} />
       <DocLabels doc={doc} onChange={(d) => setDoc(d)} />
+      <DocAdvice id={doc.id} />
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="mr-1 text-[12px] font-semibold text-muted">Schreiben</span>
+        {suggestedPurposes(doc).slice(0, 4).map((p) => <button key={p} type="button" onClick={() => openDraft(doc, p)} className="inline-flex h-8 items-center gap-1 rounded-full border border-card-line px-3 text-[12.5px] font-semibold hover:bg-surface-2"><PenLine size={12} /> {DRAFT_PURPOSES.find((x) => x.id === p)!.label}</button>)}
+      </div>
       {!doc.encrypted && <DocActions doc={doc} url={url} fullText={doc.full_text} related={related} />}
       <div className="flex gap-2">
         <Link href={`/d/${doc.id}`} onClick={close} className={`${BTN} bg-brand-500 text-white hover:bg-brand-600`}><Maximize2 size={15} /> Groß öffnen</Link>

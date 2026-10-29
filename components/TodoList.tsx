@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CalendarClock, Check, ChevronDown, ChevronRight, ClipboardPen, Clock, Euro, FileSignature, ListTodo, Scale, Tag } from "lucide-react";
+import { AlertTriangle, CalendarClock, Check, ChevronDown, ClipboardPen, Clock, Euro, FileSignature, ListTodo, PenLine, Scale, Tag } from "lucide-react";
 import { useDetail } from "@/components/DetailPanel";
+import { openDraft } from "@/components/DraftSheet";
+import type { DraftPurpose } from "@/lib/drafts";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD } from "@/components/ui";
 import { dueLabel, todoKind, todos, type TodoKind } from "@/lib/actions";
@@ -30,6 +32,8 @@ export const KIND: Record<TodoKind, { label: string; icon: typeof Euro; cls: str
   termin: { label: "Termin", icon: CalendarClock, cls: "text-fg" },
   frist: { label: "Frist", icon: Clock, cls: "text-fg" },
 };
+/** passendes Schreiben je Art der Aufgabe */
+const DRAFT_FOR: Record<TodoKind, DraftPurpose> = { zahlung: "stundung", widerspruch: "widerspruch", vertrag: "kuendigung", angebot: "rueckfrage", formular: "rueckfrage", termin: "rueckfrage", frist: "rueckfrage" };
 const load = (): string[] => { try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; } };
 
 /** „Zu erledigen“: Fristen mit Handlungsbedarf, überfällige rot; Klick öffnet Details (Überweisung, Kontakt) rechts */
@@ -57,7 +61,7 @@ export function TodoList({ docs }: { docs: Doc[] }) {
   const current = list.filter((t) => status.includes(statusOf(t)));
   const shown = current.slice(0, all ? 50 : 6);
 
-  const GRID = "md:grid md:grid-cols-[1.75rem_minmax(0,1fr)_8.5rem_6.5rem_10.5rem_1rem] md:items-center md:gap-4";
+  const GRID = "md:grid md:grid-cols-[1.75rem_minmax(0,1fr)_8.5rem_6.5rem_10.5rem_2rem] md:items-center md:gap-4";
   const HEAD = "text-[12px] font-semibold tracking-wide text-muted uppercase";
 
   return (
@@ -120,8 +124,8 @@ export function TodoList({ docs }: { docs: Doc[] }) {
                 <span className="hidden items-center gap-1.5 text-[13px] font-medium text-fg md:inline-flex"><K.icon size={14} strokeWidth={2} className="shrink-0" />{K.label}</span>
                 <span className="tnum hidden text-right text-[13.5px] font-semibold md:block">{amount ?? <span className="text-muted">–</span>}</span>
                 <span className="hidden shrink-0 text-right md:block">{due}</span>
-                <ChevronRight size={16} className="shrink-0 text-muted max-sm:hidden" />
               </button>
+              <button type="button" onClick={() => openDraft(t.doc, DRAFT_FOR[t.kind])} aria-label="Schreiben vorbereiten" title="Mail oder Brief vorbereiten" className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-soft hover:bg-surface-2 hover:text-fg"><PenLine size={15} /></button>
             </li>
           );
         })}

@@ -10,7 +10,7 @@ import { useEdgeFade } from "@/lib/edgefade";
 import { openJson } from "@/lib/vault";
 
 /** Dokumente als Karten zum Wischen, zeitlich sortiert (links älter, rechts neuer) – startet beim neuesten */
-export function DocCarousel({ docs }: { docs: Doc[] }) {
+export function DocCarousel({ docs, grid = false }: { docs: Doc[]; grid?: boolean }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const fade = useEdgeFade<HTMLDivElement>();
   const setRef = useCallback((el: HTMLDivElement | null) => { ref.current = el; fade(el); }, [fade]);
@@ -28,6 +28,8 @@ export function DocCarousel({ docs }: { docs: Doc[] }) {
   const go = (dir: number) => ref.current?.scrollBy({ left: dir * (card() + 12), behavior: "smooth" });
   const cur = docs[Math.max(0, index)];
   if (!docs.length) return null;
+  // untereinander als Raster (Bereichsseiten), sonst zum Wischen
+  if (grid) return <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{docs.map((d) => <DocCard key={d.id} d={d} wide />)}</div>;
   return (
     <section>
       <div className="mb-2.5 flex items-center justify-between">
@@ -38,8 +40,16 @@ export function DocCarousel({ docs }: { docs: Doc[] }) {
         </span>
       </div>
       <div ref={setRef} onScroll={onScroll} className="fade-x -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [scrollbar-width:none] md:mx-0 md:px-0">
-        {docs.map((d) => (
-          <Link key={d.id} href={`/d/${d.id}`} className="flex w-[84%] shrink-0 snap-center flex-col rounded-2xl border border-card-line bg-surface p-4 transition hover:border-brand-500/40 sm:w-[340px] sm:snap-start">
+        {docs.map((d) => <DocCard key={d.id} d={d} />)}
+      </div>
+    </section>
+  );
+}
+
+/** Eine Dokument-Karte: Logo, Titel, Kurzfassung, wichtigste Angaben */
+function DocCard({ d, wide = false }: { d: Doc; wide?: boolean }) {
+  return (
+          <Link href={`/d/${d.id}`} className={`flex flex-col ${wide ? "w-full" : "w-[84%] shrink-0 snap-center sm:w-[340px] sm:snap-start"} rounded-2xl border border-card-line bg-surface p-4 transition hover:border-brand-500/40`}>
             <span className="flex items-center gap-3">
               <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} urgent={isUrgent(d)} size={40} />
               <span className="min-w-0 flex-1">
@@ -60,9 +70,6 @@ export function DocCarousel({ docs }: { docs: Doc[] }) {
               </>
             )}
           </Link>
-        ))}
-      </div>
-    </section>
   );
 }
 

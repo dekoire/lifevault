@@ -6,6 +6,7 @@ import { CalendarClock, ChevronRight, FileText, Layers, ListChecks, Lock, Search
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
 import { TodoList } from "@/components/TodoList";
+import { AdviceList } from "@/components/Advice";
 import { MergeSuggestions } from "@/components/MergeSuggestions";
 import { CardWallet } from "@/components/CardWallet";
 import { RecentTable } from "@/components/RecentTable";
@@ -117,6 +118,7 @@ export default function Home() {
               <MergeSuggestions />
               <CardWallet title="Wichtige Karten" compact />
               <TodoList docs={docs} />
+              <AdviceList />
               {recent.length > 0 && (
                 <section className={`${CARD} overflow-hidden`}>
                   <h2 className="px-4 pt-4 pb-3 text-[16px] font-semibold">Zuletzt hinzugefügt</h2>

@@ -37,12 +37,12 @@ export function MergedParts({ doc, onSplit }: { doc: Doc; onSplit?: () => void }
       <div className="flex flex-wrap items-center gap-2 border-t border-line px-4 py-3">
         {ask ? (
           <>
-            <span className="w-full text-[12.5px] text-soft">Das zusammengeführte PDF wird gelöscht, die {parts.length} Teile sind danach wieder einzeln da.</span>
-            <button type="button" disabled={busy} onClick={() => void split()} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas disabled:opacity-60">{busy ? <Loader2 size={14} className="animate-spin" /> : <Scissors size={14} />} Ja, wieder trennen</button>
+            <span className="w-full text-[12.5px] text-soft">Die {parts.length} Dokumente werden wieder getrennt abgelegt – jedes für sich, das gemeinsame PDF entfällt.</span>
+            <button type="button" disabled={busy} onClick={() => void split()} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas disabled:opacity-60">{busy ? <Loader2 size={14} className="animate-spin" /> : <Scissors size={14} />} Ja, Dokumente trennen</button>
             <button type="button" disabled={busy} onClick={() => setAsk(false)} className="inline-flex h-9 items-center px-3 text-[13px] font-semibold text-muted hover:text-fg">Abbrechen</button>
           </>
         ) : (
-          <button type="button" onClick={() => setAsk(true)} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-card-line px-4 text-[13px] font-semibold hover:bg-surface-2"><Scissors size={14} /> Wieder trennen</button>
+          <button type="button" onClick={() => setAsk(true)} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-card-line px-4 text-[13px] font-semibold hover:bg-surface-2"><Scissors size={14} /> Dokumente trennen</button>
         )}
       </div>
     </section>

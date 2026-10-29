@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ExportSheet } from "@/components/ExportSheet";
 import { JobToasts } from "@/components/JobToasts";
+import { DraftHost } from "@/components/DraftSheet";
 import { DownloadsMenu } from "@/components/settings/Downloads";
 import { useCallback, useEffect, useState } from "react";
 import { Building2, Camera, FolderOutput, PanelLeftClose, PanelLeftOpen, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
@@ -95,6 +96,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       {exporting && <ExportSheet onClose={() => setExporting(false)} />}
       <UploadProgress />
       <JobToasts />
+      <DraftHost />
       {/* Desktop: Seitenleiste wie bei Finastry */}
       <aside className={`fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-card-line bg-surface py-5 transition-[width] duration-200 lg:flex ${mini ? "w-[4.5rem] px-2.5" : "w-60 px-3"}`}>
         <div className={`mb-5 flex items-center ${mini ? "flex-col gap-3" : "justify-between pl-2"}`}>

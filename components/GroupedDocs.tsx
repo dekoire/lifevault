@@ -112,11 +112,13 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
       ))}</div>
     : view === "list"
     ? <div className="divide-y divide-line">{ds.map((d) => <DocRow key={d.id} d={d} />)}</div>
-    : <div className="px-4 pt-3 pb-4"><DocCarousel docs={chrono(ds)} /></div>;
+    : <DocCarousel docs={ds} grid />;
+  // Liste in einer Kachel, Karten frei im Raster
+  const block = (ds: Doc[]) => (picking || view === "list" ? <div className={`${CARD} overflow-hidden`}>{rows(ds)}</div> : rows(ds));
 
   if (!docs.length) return <p className={`${CARD} p-6 text-center text-[14px] text-muted`}>Noch keine Dokumente in diesem Bereich.</p>;
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Steuerung schlicht: Suche + „Filter“; alles Weitere als Auswahlfelder im Seitenpanel rechts */}
       <FilterBar q={q} onQ={setQ} placeholder="In diesem Bereich suchen" actions={<button type="button" onClick={() => (picking ? stopPicking() : setPicking(true))} aria-pressed={picking} className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-[14px] font-semibold ${picking ? "border-brand-500 bg-brand-500 text-white" : "border-card-line bg-surface text-fg hover:bg-surface-2"}`}><Download size={16} /> Export</button>} activeCount={active} onReset={() => setF(NONE)} count={`${list.length} von ${docs.length} Dokumenten`}>
         <FilterSelect label="Je Jahr unterteilen nach" value={sub} onChange={(v) => pickSub(v as Sub)} options={SUBS.slice(1)} empty="Nicht unterteilen" />
@@ -140,31 +142,33 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
       {sections.map((s) => {
         const isOpen = !closed.includes(s.year) || !!term;
         return (
-          <section key={s.year} className={`${CARD} overflow-hidden`}>
-            <div className="flex items-center bg-surface-3">
-              {picking && <button type="button" onClick={() => pickMany(s.docs.map((d) => d.id), stateOf(s.docs.map((d) => d.id), picked) !== "on")} aria-label={`${s.year} auswählen`} className="py-3 pl-4"><Box state={stateOf(s.docs.map((d) => d.id), picked)} /></button>}
-              <button type="button" aria-expanded={isOpen} onClick={() => setClosed((c) => (c.includes(s.year) ? c.filter((x) => x !== s.year) : [...c, s.year]))} className="flex min-w-0 flex-1 items-center gap-2.5 px-4 py-3 text-left hover:shadow-[inset_0_0_0_999px_rgba(0,0,0,0.035)]">
-              <Placeholder icon={CalendarDays} size={30} />
-              <span className="tnum min-w-0 flex-1 truncate text-[17px] font-semibold">{s.year}</span>
-              {s.open > 0 && <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-negative/10 px-2 py-0.5 text-[11.5px] font-semibold text-negative-text"><AlertTriangle size={11} /> {s.open} offen</span>}
-              <span className="tnum shrink-0 rounded-full bg-surface-2 px-2 py-px text-[12px] font-semibold text-soft">{s.docs.length}</span>
-              <ChevronDown size={17} className={`shrink-0 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
-            </button>
+          <section key={s.year} className="space-y-3">
+            {/* schlichte Überschrift: Jahr links, feine Linie, Anzahl, auf-/zuklappen */}
+            <div className="flex items-center gap-3">
+              {picking && <button type="button" onClick={() => pickMany(s.docs.map((d) => d.id), stateOf(s.docs.map((d) => d.id), picked) !== "on")} aria-label={`${s.year} auswählen`}><Box state={stateOf(s.docs.map((d) => d.id), picked)} /></button>}
+              <button type="button" aria-expanded={isOpen} onClick={() => setClosed((c) => (c.includes(s.year) ? c.filter((x) => x !== s.year) : [...c, s.year]))} className="group flex min-w-0 flex-1 items-center gap-3 text-left">
+                <span className="tnum text-[16px] font-semibold">{s.year}</span>
+                {s.open > 0 && <span className="text-[12px] font-semibold text-negative-text">{s.open} offen</span>}
+                <span className="h-px flex-1 bg-line" />
+                <span className="tnum text-[12px] text-muted">{s.docs.length}</span>
+                <ChevronDown size={15} className={`shrink-0 text-muted transition-transform group-hover:text-fg ${isOpen ? "rotate-180" : ""}`} />
+              </button>
             </div>
-            {isOpen && (
-              <div className="border-t border-line">
-                {sub ? s.groups.map((g) => (
-                  <div key={g.key} className="border-b border-line last:border-b-0">
-                    <div className="flex items-center gap-2.5 border-y border-line bg-surface-2 px-4 py-2 text-[13.5px] font-semibold text-fg">
-                      {g.partner ? <SenderLogo domain={g.partner.domain} sender={g.partner.name} cluster={g.partner.cluster} size={24} /> : <Placeholder icon={sub === "sender" ? Building2 : Tag} size={24} />}
-                      <span className="min-w-0 flex-1 truncate">{g.label}</span>
-                      <span className="tnum text-[12px] text-muted">{g.docs.length}</span>
+            {isOpen && (sub ? (
+              <div className="space-y-4">
+                {s.groups.map((g) => (
+                  <div key={g.key} className="space-y-2">
+                    <div className="flex items-center gap-2 pl-0.5">
+                      {g.partner && <SenderLogo domain={g.partner.domain} sender={g.partner.name} cluster={g.partner.cluster} size={18} />}
+                      <span className="truncate text-[13px] font-semibold text-soft">{g.label}</span>
+                      <span className="h-px flex-1 bg-line/70" />
+                      <span className="tnum text-[11.5px] text-muted">{g.docs.length}</span>
                     </div>
-                    {rows(g.docs)}
+                    {block(g.docs)}
                   </div>
-                )) : rows(s.docs)}
+                ))}
               </div>
-            )}
+            ) : block(s.docs))}
           </section>
         );
       })}
