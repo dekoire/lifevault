@@ -8,6 +8,7 @@ import { MfaChallenge, MfaEnroll } from "@/components/Mfa";
 import { useCaptureTray } from "@/components/CaptureTray";
 import { DocsProvider, useDocs } from "@/lib/docs";
 import { NotifySync } from "@/lib/notify";
+import { InboxAutoSync } from "@/lib/inbox";
 import { LockGate } from "@/lib/applock";
 import { MeProvider, useMe } from "@/lib/me";
 import { ProjectsProvider } from "@/lib/projects";
@@ -60,7 +61,7 @@ type Nav = { href: string; label: string; icon: LucideIcon; match: (p: string) =
 /** Erinnerungen (Mitteilungen) aktuell halten */
 function QueueSync() {
   const { allDocs } = useDocs();
-  return <NotifySync docs={allDocs} />;
+  return <><NotifySync docs={allDocs} /><InboxAutoSync /></>;
 }
 
 function Shell({ email, children }: { email: string; children: React.ReactNode }) {

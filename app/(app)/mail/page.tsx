@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, FileUp, Inbox, Loader2, Mail, Paperclip, RefreshCw, Sparkles, X } from "lucide-react";
+import { InboxCard } from "@/components/settings/InboxCard";
 import { BackLink, CARD, PageHeader } from "@/components/ui";
 import { fmtDate, useDocs } from "@/lib/docs";
 import { GMAIL_CLIENT_ID, gmailMessage, gmailProfile, gmailSearch, gmailToken, importName, parseMailFiles, pool, type MailItem } from "@/lib/mail";
@@ -165,6 +166,8 @@ export default function MailPage() {
       <BackLink href="/einstellungen" label="Einstellungen" />
       <PageHeader title="E-Mail-Import" subtitle="Rechnungen, Angebote, Verträge & Co. aus deinem Postfach holen – eine günstige KI sortiert vor" />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <InboxCard mode={mode} from={from} to={to} />
+
         {/* Zeitraum */}
         <section className={`${CARD} p-5 lg:col-span-2`}>
           <h2 className="text-[15px] font-semibold">Zeitraum</h2>
@@ -180,7 +183,7 @@ export default function MailPage() {
               </span>
             )}
           </div>
-          <p className="mt-2 text-[12.5px] text-muted">{mode === "since" ? "Holt alles seit dem letzten Abruf je Postfach. Beim ersten Mal: die letzten 90 Tage. Schon geprüfte Mails werden übersprungen." : "Durchsucht genau diesen Zeitraum. Schon geprüfte Mails werden übersprungen."}</p>
+          <p className="mt-2 text-[12.5px] text-muted">{mode === "since" ? "Gilt für alle Quellen. Holt alles seit dem letzten Abruf je Postfach. Beim ersten Mal: die letzten 90 Tage. Schon geprüfte Mails werden übersprungen." : "Durchsucht genau diesen Zeitraum. Schon geprüfte Mails werden übersprungen."}</p>
         </section>
 
         {/* Gmail */}
