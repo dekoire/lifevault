@@ -5,6 +5,7 @@ import { CalendarClock, ChevronRight, FileText, Layers, ListChecks, Lock, Search
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
 import { TodoList } from "@/components/TodoList";
+import { MergeSuggestions } from "@/components/MergeSuggestions";
 import { RecentTable } from "@/components/RecentTable";
 import { DuplicateHint } from "@/components/Duplicates";
 import { todos } from "@/lib/actions";
@@ -105,6 +106,7 @@ export default function Home() {
                 </div>
               </section>
               <DuplicateHint docs={docs} />
+              <MergeSuggestions />
               <TodoList docs={docs} />
               {recent.length > 0 && (
                 <section className={`${CARD} overflow-hidden`}>

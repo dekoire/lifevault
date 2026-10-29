@@ -281,12 +281,12 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
         {/* rechts: Original und Chat */}
         <div className="space-y-3 lg:sticky lg:top-6">
           <SensitiveBadge doc={doc} unlocked={unlocked} onProtect={() => void run(() => protectDoc(doc))} />
-          {!doc.encrypted && <WebSourceCard doc={doc} onChanged={() => void refresh()} />}
           {show.original && fileUrl && (
             <section className={`${CARD} overflow-hidden`}>
               {image ? <img src={fileUrl} alt={doc.title ?? doc.file_name} className="max-h-[60vh] w-full bg-surface-2 object-contain" /> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={fileUrl} mime={doc.mime_type} name={doc.file_name} /> : <iframe src={fileUrl} title="Original" className="h-[60vh] w-full bg-surface-2" />}
             </section>
           )}
+          {!doc.encrypted && <WebSourceCard doc={doc} onChanged={() => void refresh()} />}
           {show.chat && (
             <section className={`${CARD} p-4`}>
               <h2 className="mb-3 text-[15px] font-semibold">Frag zu diesem Dokument</h2>
