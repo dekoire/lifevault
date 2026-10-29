@@ -45,6 +45,6 @@ export async function POST(req: Request) {
     return Response.json(r.output);
   } catch (e) {
     console.error("draft", (e as Error).message);
-    return Response.json({ error: "Das Vorformulieren hat gerade nicht geklappt. Bitte noch einmal versuchen." }, { status: 502 });
+    return Response.json({ error: "Das Vorformulieren hat gerade nicht geklappt. Bitte noch einmal versuchen.", detail: (e as Error).message.slice(0, 300) }, { status: 502 });
   }
 }

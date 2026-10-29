@@ -44,6 +44,6 @@ export async function POST(req: Request) {
     return Response.json({ items, at: new Date().toISOString() });
   } catch (e) {
     console.error("advice", (e as Error).message);
-    return Response.json({ error: "Empfehlungen konnten gerade nicht erstellt werden." }, { status: 502 });
+    return Response.json({ error: "Empfehlungen konnten gerade nicht erstellt werden.", detail: (e as Error).message.slice(0, 300) }, { status: 502 });
   }
 }
