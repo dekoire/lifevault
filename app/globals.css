@@ -95,3 +95,19 @@ html, body { overflow-x: clip; }
 @keyframes progress-run { from { left: -50%; } to { left: 100%; } }
 .progress-run { animation: progress-run 1.3s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .progress-run { animation: none; left: 0; width: 100%; opacity: .35; } }
+
+/* Seitenpanel wie bei Finastry: von unten (Handy), von rechts (Desktop) */
+@keyframes sheet-fade { from { background-color: transparent; } }
+@keyframes sheet-fade-out { to { background-color: transparent; } }
+@keyframes sheet-up { from { transform: translateY(100%); } }
+@keyframes sheet-down { to { transform: translateY(100%); } }
+@keyframes sheet-in-right { from { transform: translateX(100%); } }
+@keyframes sheet-out-right { to { transform: translateX(100%); } }
+.sheet-backdrop { animation: sheet-fade 0.22s ease-out both; }
+.sheet-backdrop[data-closing] { animation: sheet-fade-out 0.2s ease-in both; }
+.sheet-panel { animation: sheet-up 0.34s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.sheet-panel[data-closing] { animation: sheet-down 0.2s ease-in both; }
+@media (min-width: 1024px) {
+  .sheet-panel { animation-name: sheet-in-right; }
+  .sheet-panel[data-closing] { animation-name: sheet-out-right; }
+}

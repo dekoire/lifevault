@@ -1,10 +1,10 @@
 "use client";
 import Link from "next/link";
 import { use, useMemo, useState } from "react";
-import { ArrowRight, CalendarClock, ExternalLink, GitBranch, Hash, History, MessageSquare, ShoppingBag } from "lucide-react";
+import { ArrowRight, CalendarClock, ExternalLink, GitBranch, Hash, History, MessageSquare, PanelRight, ShoppingBag } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
 import { DocTable } from "@/components/DocTable";
-import { PartnerInfo } from "@/components/PartnerInfo";
+import { PartnerSheet } from "@/components/PartnerInfo";
 import { SenderLogo } from "@/components/SenderLogo";
 import { BackLink, CARD, PageHeader } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
@@ -21,6 +21,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
   const link = byPartner.get(key);
   // angeklickte Kennung → rechts nur Dokumente, die sie enthalten
   const [pick, setPick] = useState<PartnerId | null>(null);
+  const [info, setInfo] = useState(false);
   const restrict = useMemo(() => {
     if (!pick || !p) return null;
     const ids = docsWithValue(p.docs, pick.value);
@@ -45,6 +46,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
         title={p.name}
         subtitle={<>{clusterOf(p.cluster).label} · {p.docs.length} {p.docs.length === 1 ? "Dokument" : "Dokumente"} · {fmtDate(p.first)}{p.first !== p.last ? ` – ${fmtDate(p.last)}` : ""}{(!p.active || link?.entry.status === "früher") && " · früher"}</>}
         action={<>
+          <button type="button" onClick={() => setInfo(true)} className="inline-flex h-10 items-center gap-1.5 rounded-full border border-card-line bg-surface px-4 text-[13px] font-semibold hover:bg-surface-2"><PanelRight size={15} /> Kontakt & Infos</button>
           <Link href={`/chat?q=${encodeURIComponent(`Was habe ich alles mit ${p.name}? Verträge, Nummern, Kosten, Fristen.`)}`} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas"><MessageSquare size={15} /> Fragen</Link>
         </>}
       />
@@ -59,9 +61,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
           {(link.entry.note || link.next?.note) && <span className="basis-full text-[12.5px] text-muted">{link.next?.note ?? link.entry.note}</span>}
         </section>
       )}
-      {/* rechts: neueste Angaben (Kontakt, Adresse, Bankverbindung, Kennungen); am Handy oben */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
-      <div className="order-2 xl:order-1"><div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
         <div className="space-y-4">
           {p.isShop ? (
             <section className={`${CARD} grid grid-cols-3 divide-x divide-line`}>
@@ -109,9 +109,8 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
           <h2 className="text-[16px] font-semibold">Dokumente</h2>
           <DocTable docs={p.docs} sender={false} archiveToggle={false} restrict={restrict} onClearRestrict={() => setPick(null)} />
         </section>
-      </div></div>
-      <div className="order-1 xl:sticky xl:top-20 xl:order-2"><PartnerInfo p={p} /></div>
       </div>
+      {info && <PartnerSheet p={p} onClose={() => setInfo(false)} />}
     </div>
   );
 }

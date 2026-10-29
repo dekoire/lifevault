@@ -34,6 +34,8 @@ export function buildPerson(docs: Doc[]): PersonField[] {
     const seen = new Set<string>();
     for (const d of ready) for (const k of d.key_facts ?? []) {
       if (!f.re.test(k.label.trim()) || !k.value?.trim()) continue;
+      // Steuer-ID hat 11 Ziffern – Gläubiger-ID (SEPA) und USt-IdNr. („DE…“) sind es nicht
+      if (f.id === "taxid" && (/gläubiger|creditor|ust|umsatzsteuer/i.test(k.label) || k.value.replace(/\s/g, "").replace(/\D/g, "").length !== 11 || /[a-z]/i.test(k.value))) continue;
       if (f.personalOnly && !k.personal && !/persönlich|personal|mitarbeiter|versichert|patient/i.test(k.group ?? "")) continue;
       if (seen.has(norm(k.value))) continue;
       seen.add(norm(k.value));

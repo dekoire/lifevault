@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarClock, Download, ExternalLink, Lock, Maximize2, X } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
 import { DocActions } from "@/components/DocActions";
-import { PartnerInfo } from "@/components/PartnerInfo";
+import { PartnerFacts } from "@/components/PartnerInfo";
 import { OfficePreview } from "@/components/OfficePreview";
 import { officeKind } from "@/lib/office";
 import { DocRow } from "@/components/DocRow";
@@ -139,7 +139,7 @@ function PartnerDetail({ pkey, open, close }: { pkey: string; open: (d: Detail) 
         <Link href={`/partner/${p.key}`} onClick={close} className={`${BTN} bg-brand-500 text-white hover:bg-brand-600`}><Maximize2 size={15} /> Groß öffnen</Link>
         {p.domain && <a href={`https://${p.domain}`} target="_blank" rel="noopener noreferrer" className={`${BTN} border border-card-line hover:bg-surface-2`}><ExternalLink size={15} /> Website</a>}
       </div>
-      <PartnerInfo p={p} />
+      <PartnerFacts p={p} />
       {p.ids.length > 6 && (
         <div className="rounded-xl border border-card-line">
           <p className="px-3 pt-2.5 text-[13px] font-semibold">Alle Kennungen & Nummern</p>
