@@ -15,7 +15,7 @@ export function TopicBackfill() {
     const needTopic = ready.some((d) => !d.topic);
     // importance === undefined: Spalte fehlt noch (Migration 0013) – dann nicht nachholen
     const needRank = ready.some((d) => d.importance === null);
-    if (ran.current || (!needTopic && !needRank)) return;
+    if (ran.current || !ready.length) return;
     ran.current = true;
     void (async () => {
       const loop = async (url: string, max: number) => {
@@ -26,6 +26,8 @@ export function TopicBackfill() {
       };
       if (needTopic) await loop("/api/classify", 6);
       if (needRank) await loop("/api/rank", 10);
+      // Alterung: alte Rechnungen, überholte Änderungen, Info-Post aussortieren (ohne KI)
+      await authFetch("/api/age", { method: "POST" }).catch(() => undefined);
       await refresh();
     })();
   }, [allDocs, refresh]);
