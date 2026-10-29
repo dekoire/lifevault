@@ -3,6 +3,8 @@ import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarClock, Download, ExternalLink, Lock, Maximize2, X } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
+import { Clamp } from "@/components/Clamp";
+import { caseIds } from "@/lib/dupes";
 import { DocActions } from "@/components/DocActions";
 import { PartnerFacts } from "@/components/PartnerInfo";
 import { OfficePreview } from "@/components/OfficePreview";
@@ -70,6 +72,15 @@ function DocDetail({ id, open, close }: { id: string; open: (d: Detail) => void;
   if (!doc) return <p className="p-6 text-[14px] text-muted">Dokument nicht gefunden.</p>;
   const c = clusterOf(doc.cluster);
   const image = doc.mime_type.startsWith("image/");
+  // andere Schreiben zum selben Zahlungs-Vorgang (gleicher Absender, Rechnung/Mahnung, nah beieinander)
+  // anderes Aktenzeichen/Rechnungsnummer = anderer Vorgang
+  const mine = caseIds(doc);
+  const otherCase = (x: Doc) => caseIds(x).some((c) => mine.some((m) => m.kind === c.kind && m.value.replace(/\W/g, "") !== c.value.replace(/\W/g, "")));
+  const PAYDOC = /rechnung|mahnung|zahlungserinnerung|forderung|abschlag|bescheid|kosten/i;
+  const dOf = (x: Doc) => Date.parse(x.doc_date ?? x.received_at);
+  const related = doc.sender && PAYDOC.test(`${doc.doc_type} ${doc.title}`)
+    ? allDocs.filter((x) => x.id !== doc.id && x.sender && partnerKey(x.sender) === partnerKey(doc.sender!) && PAYDOC.test(`${x.doc_type} ${x.title}`) && Math.abs(dOf(x) - dOf(doc)) < 200 * 86_400_000 && !otherCase(x)).sort((a, b) => dOf(b) - dOf(a))
+    : [];
   const download = async () => {
     const { data } = await supabase.storage.from("documents").createSignedUrl(doc.file_path, 60, { download: doc.file_name });
     if (data) location.href = data.signedUrl;
@@ -87,7 +98,7 @@ function DocDetail({ id, open, close }: { id: string; open: (d: Detail) => void;
           </p>
         </div>
       </div>
-      {!doc.encrypted && <DocActions doc={doc} url={url} fullText={doc.full_text} />}
+      {!doc.encrypted && <DocActions doc={doc} url={url} fullText={doc.full_text} related={related} />}
       <div className="flex gap-2">
         <Link href={`/d/${doc.id}`} onClick={close} className={`${BTN} bg-brand-500 text-white hover:bg-brand-600`}><Maximize2 size={15} /> Groß öffnen</Link>
         {!doc.encrypted && !doc.file_path.startsWith("inbox/") && <button type="button" onClick={() => void download()} className={`${BTN} border border-card-line hover:bg-surface-2`}><Download size={15} /> Original</button>}
@@ -96,10 +107,10 @@ function DocDetail({ id, open, close }: { id: string; open: (d: Detail) => void;
         <p className="flex items-center gap-2 rounded-xl border border-card-line p-3 text-[13px] text-soft"><Lock size={15} /> Verschlüsselt – Inhalt siehst du in der großen Ansicht nach dem Entsperren.</p>
       ) : (
         <>
-          {doc.summary && <p className="text-[14px] leading-6">{doc.summary}</p>}
+          {doc.summary && <Clamp lines={3} className="text-[14px] leading-6 text-soft">{doc.summary}</Clamp>}
           {url && (
             <div className="overflow-hidden rounded-xl border border-card-line bg-surface-2">
-              {image ? <img src={url} alt={doc.title ?? ""} className="max-h-80 w-full object-contain" /> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={url} mime={doc.mime_type} name={doc.file_name} compact /> : <iframe src={`${url}#toolbar=0&view=FitH`} title="Vorschau" className="h-80 w-full" />}
+              {image ? <a href={`/d/${doc.id}`} onClick={close} className="block"><img src={url} alt={doc.title ?? ""} className="mx-auto block h-64 w-full object-contain p-2 sm:h-72" /></a> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={url} mime={doc.mime_type} name={doc.file_name} compact /> : <iframe src={`${url}#toolbar=0&view=FitH`} title="Vorschau" className="h-80 w-full" />}
             </div>
           )}
           {doc.deadlines?.length > 0 && (

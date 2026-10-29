@@ -24,8 +24,7 @@ export function paymentOf(d: Doc): Payment | undefined {
   const bankF = near.find((f) => /bank|kreditinstitut/i.test(f.label));
   const recipient = near.find((f) => /empfänger|kontoinhaber|begünstigt/i.test(f.label) && !f.personal)?.value ?? d.sender ?? undefined;
   const reference = near.find((f) => /verwendungszweck|referenz|zahlungsreferenz|bei zahlung/i.test(f.label))?.value;
-  const amountF = facts.find((f) => /gesamtbetrag|zu zahlen|zahlbetrag|offen|forderung|rechnungsbetrag|betrag/i.test(f.label) && money(f.value));
-  const amount = (amountF && money(amountF.value)) ?? d.amounts?.find((a) => /gesamt|offen|zahl|betrag/i.test(a.label))?.value;
+  const amount = openTotal(d);
   return {
     recipient: recipient?.slice(0, 70),
     iban: IBAN.exec(ibanFact.value.toUpperCase())![0].replace(/\s/g, ""),
@@ -36,6 +35,19 @@ export function paymentOf(d: Doc): Payment | undefined {
     currency: "EUR",
   };
 }
+
+/** Was ist insgesamt offen? Bevorzugt „offener Gesamtbetrag / Rückstand / zu zahlen“ (größter Wert), nicht einzelne Posten oder Gebühren */
+const TOTAL = /offen|rückstand|gesamtbetrag|gesamtforderung|zu zahlen|zahlbetrag|gesamt.*zahl|endbetrag|rechnungsbetrag|forderung/i;
+const NOT_TOTAL = /kosten (der )?unterbrechung|wiederherstellung|einsatz|gebühr|zins|ratenhöhe|abschlag fällig|mwst|ust|netto/i;
+export function openTotal(d: Pick<Doc, "key_facts" | "amounts">): number | undefined {
+  const cands: number[] = [];
+  for (const a of d.amounts ?? []) if (TOTAL.test(a.label) && !NOT_TOTAL.test(a.label) && a.value > 0) cands.push(a.value);
+  for (const f of d.key_facts ?? []) { const v = money(f.value); if (v && TOTAL.test(f.label) && !NOT_TOTAL.test(f.label)) cands.push(v); }
+  if (cands.length) return Math.max(...cands);
+  const any = (d.key_facts ?? []).find((f) => /betrag/i.test(f.label) && !NOT_TOTAL.test(f.label) && money(f.value));
+  return any ? money(any.value) : undefined;
+}
+const PAY_ITEM = /zahl|fällig|überweis|abschlag|rechnung|gebühr|beitrag|forderung|mahn/i;
 
 /** IBAN in Vierergruppen */
 export const fmtIban = (iban: string) => iban.replace(/(.{4})/g, "$1 ").trim();
@@ -63,7 +75,7 @@ export function contactOf(d: Doc, fullText?: string | null): Contact {
 const ACTION = /zahl|fällig|überweis|rücksend|zurücksend|einreich|kündig|widerspruch|termin|vorstellung|kontrolle|untersuchung|anmeld|abmeld|melden|antrag|vorlegen|beantragen|verlängern|erneuern|abgeben|frist/i;
 const INFO = /inkrafttreten|beginn der|gültig(keit)? ab|gültigkeit|in kraft|tätigkeit|ausgestellt|erstellt am/i;
 
-export type Todo = { doc: Doc; date: string; what: string; more: number; days: number; payment?: Payment };
+export type Todo = { doc: Doc; date: string; what: string; more: number; days: number; payment?: Payment; total?: number; items?: { date: string; what: string }[]; letters?: Doc[] };
 
 export function todos(docs: Doc[], today: string, opts: { pastDays?: number; aheadDays?: number } = {}): Todo[] {
   const past = opts.pastDays ?? 730, ahead = opts.aheadDays ?? 120;
@@ -76,8 +88,33 @@ export function todos(docs: Doc[], today: string, opts: { pastDays?: number; ahe
     // je Dokument eine Zeile: die nächste anstehende Frist, sonst die zuletzt verpasste
     const upcoming = list.filter((x) => day(x.date) >= 0).sort((a, b) => a.date.localeCompare(b.date));
     const pick = upcoming[0] ?? [...list].sort((a, b) => b.date.localeCompare(a.date))[0];
-    out.push({ doc: d, date: pick.date, what: pick.what, more: list.length - 1, days: day(pick.date), payment: paymentOf(d) });
+    const total = openTotal(d);
+    const payItems = list.filter((x) => PAY_ITEM.test(x.what));
+    // mehrere Zahlungsposten mit Gesamtbetrag (z. B. Mahnung): eine Zeile „offen insgesamt“ statt der letzten Einzelgebühr
+    if (total && payItems.length >= 2) {
+      const due = payItems.filter((x) => day(x.date) >= 0).sort((a, b) => a.date.localeCompare(b.date))[0] ?? [...payItems].sort((a, b) => b.date.localeCompare(a.date))[0];
+      out.push({ doc: d, date: due.date, what: `Offen insgesamt ${total.toLocaleString("de-DE", { style: "currency", currency: "EUR" })} zahlen`, more: list.length - payItems.length, days: day(due.date), payment: paymentOf(d), total, items: payItems });
+      continue;
+    }
+    out.push({ doc: d, date: pick.date, what: pick.what, more: list.length - 1, days: day(pick.date), payment: paymentOf(d), total: PAY_ITEM.test(pick.what) ? total : undefined });
   }
+  // gleiche Sache, mehrere Schreiben (Rechnung → Erinnerung → Mahnung): nur das neueste zeigen, die älteren hängen daran
+  const key = (t: Todo) => (t.doc.sender ? `${t.doc.sender.toLowerCase().replace(/[^a-z0-9äöü]+/g, " ").trim().split(" ").slice(0, 2).join(" ")}` : t.doc.id);
+  const isPay = (t: Todo) => !!(t.total || t.payment) && PAY_ITEM.test(`${t.what} ${t.doc.doc_type ?? ""} ${t.doc.title ?? ""}`);
+  const groups = new Map<string, Todo[]>();
+  for (const t of out) if (isPay(t)) groups.set(key(t), [...(groups.get(key(t)) ?? []), t]);
+  const drop = new Set<Todo>();
+  for (const g of groups.values()) {
+    if (g.length < 2) continue;
+    const dateOf = (t: Todo) => t.doc.doc_date ?? t.doc.received_at.slice(0, 10);
+    const dates = g.map(dateOf).sort();
+    if (day(dates[dates.length - 1]) - day(dates[0]) > 200) continue; // weit auseinander: verschiedene Vorgänge
+    const [latest, ...older] = [...g].sort((a, b) => dateOf(b).localeCompare(dateOf(a)));
+    latest.letters = older.map((t) => t.doc);
+    if (latest.total === undefined) latest.total = older.map((t) => t.total ?? t.payment?.amount ?? 0).reduce((a, b) => a + b, latest.payment?.amount ?? 0) || undefined;
+    for (const t of older) drop.add(t);
+  }
+  out.splice(0, out.length, ...out.filter((t) => !drop.has(t)));
   // überfällige zuerst (die jüngsten oben), dann nach Datum
   return out.sort((a, b) => (a.days < 0) !== (b.days < 0) ? (a.days < 0 ? -1 : 1) : a.days < 0 ? b.days - a.days : a.days - b.days);
 }

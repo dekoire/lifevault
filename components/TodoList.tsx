@@ -92,7 +92,8 @@ export function TodoList({ docs }: { docs: Doc[] }) {
           const soon = t.days >= 0 && t.days <= 7 && !isDone;
           const K = KIND[t.kind];
           const due = <span className={`inline-block rounded-full border bg-surface px-2.5 py-0.5 text-[12px] font-semibold whitespace-nowrap ${overdue || soon ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>{overdue || soon ? dueLabel(t.days) : `bis ${fmtDate(t.date)}`}</span>;
-          const amount = t.payment?.amount !== undefined ? fmtMoney(t.payment.amount, t.payment.currency) : null;
+          const amt = t.total ?? t.payment?.amount;
+          const amount = amt !== undefined ? fmtMoney(amt, t.payment?.currency ?? "EUR") : null;
           return (
             <li key={k} className={`flex items-center gap-3 px-4 py-3 ${GRID} ${isDone ? "opacity-50" : ""}`}>
               <button type="button" onClick={() => toggle(k)} aria-label={isDone ? "Wieder offen" : "Als erledigt markieren"} title={isDone ? "Wieder offen" : "Erledigt"} className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 ${isDone ? "border-positive bg-positive text-white" : "border-line-strong hover:border-fg"}`}>{isDone && <Check size={13} strokeWidth={3} />}</button>
@@ -101,7 +102,7 @@ export function TodoList({ docs }: { docs: Doc[] }) {
                   <span className="shrink-0 self-start md:self-auto"><SenderLogo domain={t.doc.sender_domain} sender={t.doc.sender} cluster={t.doc.cluster} size={36} /></span>
                   <span className="min-w-0 flex-1">
                     <span className={`line-clamp-2 text-[14px] leading-5 font-semibold md:line-clamp-1 ${isDone ? "line-through" : ""}`}>{t.what}</span>
-                    <span className="hidden min-w-0 truncate text-[12px] text-muted md:block">{t.doc.sender ?? t.doc.title}{t.more > 0 ? ` · +${t.more} weitere Frist${t.more === 1 ? "" : "en"}` : ""}</span>
+                    <span className="hidden min-w-0 truncate text-[12px] text-muted md:block">{t.doc.sender ?? t.doc.title}{t.letters?.length ? ` · ${t.letters.length + 1} Schreiben zusammengefasst` : ""}{t.items?.length ? ` · ${t.items.length} Posten` : ""}{t.more > 0 ? ` · +${t.more} weitere Frist${t.more === 1 ? "" : "en"}` : ""}</span>
                     {/* Handy: Art, Fälligkeit, Betrag in der zweiten Zeile */}
                     <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] md:hidden">
                       <span className="inline-flex items-center gap-1 font-semibold"><K.icon size={12} strokeWidth={2.2} />{K.label}</span>

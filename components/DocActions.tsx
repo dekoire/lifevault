@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { CalendarClock, Check, Copy, ExternalLink, Globe, Landmark, Mail, MapPin, Phone, QrCode } from "lucide-react";
-import { contactOf, dueLabel, epcPayload, fmtIban, paymentOf, todos, type Payment } from "@/lib/actions";
+import { CalendarClock, Check, ChevronDown, Copy, Euro, ExternalLink, Globe, Landmark, Mail, MapPin, Phone, QrCode } from "lucide-react";
+import { contactOf, dueLabel, epcPayload, fmtIban, openTotal, paymentOf, todos, type Payment } from "@/lib/actions";
 import { fmtDate, fmtMoney } from "@/lib/docs";
 import type { Doc } from "@/lib/types";
 
@@ -24,14 +24,14 @@ function Qr({ text, size = 148 }: { text: string; size?: number }) {
 }
 
 /** Überweisung: Betrag, Fälligkeit, alle Felder zum Kopieren, GiroCode zum Scannen */
-function PaymentCard({ p, due }: { p: Payment; due?: { date: string; days: number } }) {
+function PaymentCard({ p, due, label = "Überweisung" }: { p: Payment; due?: { date: string; days: number }; label?: string }) {
   const [done, setDone] = useState(false);
   const all = [p.recipient && `Empfänger: ${p.recipient}`, `IBAN: ${fmtIban(p.iban)}`, p.bic && `BIC: ${p.bic}`, p.amount && `Betrag: ${fmtMoney(p.amount, p.currency)}`, p.reference && `Verwendungszweck: ${p.reference}`].filter(Boolean).join("\n");
   const late = due && due.days < 0;
   return (
     <section className="overflow-hidden rounded-2xl border border-card-line bg-surface">
       <div className="flex items-center justify-between gap-3 bg-surface-2 px-3.5 py-3">
-        <span className="flex items-center gap-2 text-[13.5px] font-semibold"><Landmark size={16} /> Überweisung</span>
+        <span className="flex items-center gap-2 text-[13.5px] font-semibold"><Landmark size={16} /> {label}</span>
         <span className="text-right">
           {p.amount !== undefined && <b className="tnum block text-[18px] leading-6">{fmtMoney(p.amount, p.currency)}</b>}
           {due && <span className={`block text-[11.5px] font-semibold ${late ? "text-negative-text" : "text-muted"}`}>bis {fmtDate(due.date)} · {dueLabel(due.days)}</span>}
@@ -90,25 +90,87 @@ function useDocQrCodes(url: string | undefined, mime: string) {
   return codes;
 }
 
-/** Oberer Block im Dokument-Panel: Zu tun, Überweisung, Kontakt, Links, QR-Codes */
-export function DocActions({ doc, url, fullText }: { doc: Doc; url?: string; fullText?: string | null }) {
+const PAY_LINK = /pay|zahl|bezahl|checkout|payment|invoice|rechnung|kundenportal|kundenkonto|mein-?konto|portal/i;
+const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } };
+
+/** GiroCode (EPC) aus dem Brief lesen: BCD-Format mit Empfänger, IBAN, Betrag, Zweck */
+function parseEpc(c: string) {
+  const l = c.split(/\r?\n/);
+  if (l[0] !== "BCD" || l.length < 7) return null;
+  const amt = /^EUR(\d+(?:\.\d+)?)$/.exec(l[7] ?? "");
+  return { recipient: l[5], iban: l[6], amount: amt ? Number(amt[1]) : undefined, reference: l[10] || l[9] || "" };
+}
+
+/** Eigener Bereich „Bezahlung“: was ist offen (gesamt), woraus setzt es sich zusammen, und wie bezahle ich – Überweisung, GiroCode, Link */
+function PaymentSection({ doc, codes, links, related }: { doc: Doc; codes: string[]; links: string[]; related: Doc[] }) {
   const today = new Date().toISOString().slice(0, 10);
   const todo = todos([doc], today)[0];
   const payment = paymentOf(doc);
+  const total = openTotal(doc) ?? payment?.amount;
+  const [showItems, setShowItems] = useState(false);
+  const epc = codes.map(parseEpc).find(Boolean);
+  const qrLinks = codes.filter((c) => /^https?:\/\//i.test(c) && PAY_LINK.test(c));
+  const payLinks = [...new Set([...qrLinks, ...links.filter((l) => PAY_LINK.test(l))])].slice(0, 3);
+  const isPay = !!(payment || total || epc || (todo && /zahl|fällig|überweis|rechnung|mahn|gebühr|abschlag/i.test(todo.what)));
+  if (!isPay) return null;
+  const late = todo && todo.days < 0;
+  return (
+    <section className="overflow-hidden rounded-2xl border border-card-line bg-surface">
+      <div className="flex items-start justify-between gap-3 px-4 pt-3.5 pb-3">
+        <span>
+          <span className="flex items-center gap-2 text-[12px] font-semibold tracking-wide text-muted uppercase"><Euro size={14} /> Bezahlung</span>
+          {total !== undefined ? <b className="tnum mt-1 block text-[26px] leading-8">{fmtMoney(total, "EUR")}</b> : <b className="mt-1 block text-[15px]">Betrag nicht erkannt</b>}
+          <span className="block text-[12.5px] text-muted">{todo?.items?.length ? `offen insgesamt · ${todo.items.length} Posten` : "offen"}</span>
+        </span>
+        {todo && <span className={`mt-1 shrink-0 rounded-full border px-2.5 py-0.5 text-[12px] font-semibold ${late ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>{late ? dueLabel(todo.days) : `bis ${fmtDate(todo.date)}`}</span>}
+      </div>
+      {todo?.items && todo.items.length > 1 && (
+        <div className="border-t border-line">
+          <button type="button" onClick={() => setShowItems(!showItems)} className="flex w-full items-center justify-between px-4 py-2.5 text-[13px] font-semibold hover:bg-surface-2">Zusammensetzung<ChevronDown size={15} className={`text-muted transition-transform ${showItems ? "rotate-180" : ""}`} /></button>
+          {showItems && <ul className="divide-y divide-line border-t border-line text-[13px]">{todo.items.map((x, i) => <li key={i} className="flex gap-3 px-4 py-2"><span className="tnum w-20 shrink-0 text-muted">{fmtDate(x.date)}</span><span className="min-w-0 flex-1">{x.what}</span></li>)}</ul>}
+        </div>
+      )}
+      {related.length > 0 && (
+        <div className="border-t border-line px-4 py-2.5 text-[12.5px] text-soft">
+          <b className="text-fg">{related.length + 1} Schreiben zum selben Vorgang</b> – maßgeblich ist das neueste. Früher: {related.slice(0, 3).map((d) => `${d.title ?? d.file_name} (${fmtDate(d.doc_date ?? d.received_at)})`).join(", ")}
+        </div>
+      )}
+      {/* Wege zu zahlen – jeweils klar benannt */}
+      <div className="space-y-2.5 border-t border-line p-3">
+        {payment && <PaymentCard p={{ ...payment, amount: total ?? payment.amount }} />}
+        {!payment && epc && <PaymentCard p={{ iban: epc.iban, recipient: epc.recipient, amount: epc.amount ?? total, reference: epc.reference, currency: "EUR" }} label="GiroCode aus dem Schreiben" />}
+        {payLinks.map((l) => (
+          <a key={l} href={l} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-card-line px-3.5 py-3 hover:bg-surface-2">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2"><Globe size={16} /></span>
+            <span className="min-w-0 flex-1"><b className="block text-[13.5px]">{qrLinks.includes(l) ? "Online bezahlen (QR-Code im Brief)" : "Online bezahlen / Kundenportal"}</b><span className="block truncate text-[12px] text-muted">{host(l)}</span></span>
+            <ExternalLink size={14} className="shrink-0 text-muted" />
+          </a>
+        ))}
+        {!payment && !epc && !payLinks.length && <p className="px-1 text-[12.5px] text-muted">Keine Bankverbindung oder Zahlungslink im Schreiben – vermutlich per Lastschrift oder im Kundenkonto des Absenders.</p>}
+      </div>
+    </section>
+  );
+}
+
+/** Oberer Block im Dokument-Panel: Bezahlung (eigener Bereich), sonst Frist, dazu Kontakt & Links */
+export function DocActions({ doc, url, fullText, related = [] }: { doc: Doc; url?: string; fullText?: string | null; related?: Doc[] }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const todo = todos([doc], today)[0];
   const contact = contactOf(doc, fullText);
   const codes = useDocQrCodes(url, doc.mime_type);
-  const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } };
   const hasContact = contact.addresses.length + contact.phones.length + contact.emails.length > 0;
+  const pay = PaymentSection({ doc, codes, links: contact.links, related });
+  const otherLinks = contact.links.filter((l) => !PAY_LINK.test(l));
   return (
     <div className="space-y-3">
-      {todo && !payment && (
+      {pay}
+      {todo && !pay && (
         <p className="flex items-start gap-2.5 rounded-2xl border border-card-line bg-surface px-3.5 py-3 text-[13.5px]">
           <CalendarClock size={16} className="mt-0.5 shrink-0" />
           <span><b>{todo.what}</b><span className={`block text-[12px] font-semibold ${todo.days < 0 ? "text-negative-text" : "text-muted"}`}>bis {fmtDate(todo.date)} · {dueLabel(todo.days)}</span></span>
         </p>
       )}
-      {payment && <PaymentCard p={payment} due={todo ? { date: todo.date, days: todo.days } : undefined} />}
-      {(hasContact || contact.links.length > 0) && (
+      {(hasContact || otherLinks.length > 0) && (
         <section className="overflow-hidden rounded-2xl border border-card-line bg-surface">
           <p className="px-3.5 pt-3 pb-1.5 text-[12px] font-semibold tracking-wide text-muted uppercase">Kontakt & Links</p>
           <div className="divide-y divide-line text-[13.5px]">
@@ -116,9 +178,9 @@ export function DocActions({ doc, url, fullText }: { doc: Doc; url?: string; ful
             {contact.phones.map((p) => <a key={p} href={`tel:${p.replace(/[^\d+]/g, "")}`} className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-surface-2"><Phone size={15} className="shrink-0 text-muted" /><span className="tnum flex-1 font-medium">{p}</span></a>)}
             {contact.emails.map((e) => <a key={e} href={`mailto:${e}`} className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-surface-2"><Mail size={15} className="shrink-0 text-muted" /><span className="min-w-0 flex-1 break-all font-medium">{e}</span></a>)}
           </div>
-          {contact.links.length > 0 && (
+          {otherLinks.length > 0 && (
             <div className="flex flex-wrap gap-1.5 border-t border-line p-3">
-              {contact.links.map((l) => (
+              {otherLinks.map((l) => (
                 <a key={l} href={l} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-card-line py-1 pr-3 pl-1 text-[12.5px] font-semibold hover:bg-surface-2">
                   <span className="grid h-6 w-6 shrink-0 place-items-center overflow-hidden rounded-full bg-surface-2"><img src={`/api/logo?d=${encodeURIComponent(host(l))}`} alt="" width={15} height={15} onError={(e) => { e.currentTarget.replaceWith(Object.assign(document.createElement("span"), { textContent: "🌐" })); }} /></span>
                   <span className="truncate">{host(l)}</span><ExternalLink size={12} className="shrink-0 text-muted" />
@@ -126,19 +188,6 @@ export function DocActions({ doc, url, fullText }: { doc: Doc; url?: string; ful
               ))}
             </div>
           )}
-        </section>
-      )}
-      {codes.length > 0 && (
-        <section className="rounded-2xl border border-card-line bg-surface p-3.5">
-          <p className="mb-2 flex items-center gap-1.5 text-[12px] font-semibold tracking-wide text-muted uppercase"><QrCode size={13} /> QR-Code im Dokument</p>
-          {codes.map((c) => (
-            <div key={c} className="flex items-center gap-3">
-              <Qr text={c} size={96} />
-              {/^https?:\/\//i.test(c)
-                ? <a href={c} target="_blank" rel="noopener noreferrer" className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-fg px-3.5 py-2 text-[13px] font-semibold text-canvas"><Globe size={14} /> <span className="truncate">{host(c)} öffnen</span></a>
-                : <span className="min-w-0 text-[12.5px] break-all text-soft">{c.slice(0, 200)}</span>}
-            </div>
-          ))}
         </section>
       )}
     </div>
