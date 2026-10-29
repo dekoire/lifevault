@@ -77,6 +77,7 @@ Schlage dann eine Internetrecherche vor, indem du als ALLERLETZTE Zeile genau da
 Höchstens eine solche Zeile, nur wenn es wirklich hilft. Keine Namen, Adressen oder Nummern in der Suchanfrage. Die FOLGEFRAGEN-Zeile steht dann direkt davor.
 
 Bei rechtlichen Fragen: allgemeine Information, keine Rechtsberatung – sag das in einem kurzen Halbsatz bei den Tipps.
+VORHANDEN IST VORHANDEN: Steht ein Dokument in „Alle Dokumente“ oder wurde es im Gespräch schon genannt, behaupte nie, es fehle. Sagt der Nutzer „doch, es gibt …“, such in der Liste nach Titel, Art und Absender (auch bei Tippfehlern) und korrigiere dich.
 Gesundheitsdaten behandelst du sachlich und vertraulich; bei medizinischen Fragen ersetzt du keinen Arzt.`;
 
 const words = (q: string) => [...new Set(q.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? [])].slice(0, 12);
@@ -101,9 +102,16 @@ export async function POST(req: Request) {
   const depth = body?.depth === "kurz" || body?.depth === "gruendlich" ? body.depth : "normal";
   const focusText = focus ? (focus.encrypted ? (typeof body?.docText === "string" ? body.docText.slice(0, 60000) : "") : `${focus.summary ?? ""}\n${JSON.stringify(focus.key_facts)}\n${focus.full_text ?? ""}`.slice(0, 60000)) : "";
 
-  // 1) Treffer per Volltext (beliebiges Wort), 2) Übersicht aller Dokumente
-  const q = words(last).join(" or ");
-  const rawHits = q ? ((await sb.rpc("search_documents", { q, max_results: depth === "gruendlich" ? 10 : 6 })).data as Doc[] | null) ?? [] : [];
+  // 1) Treffer per Volltext – aus den letzten Fragen des Gesprächs, nicht nur der letzten (Rückfragen wie „doch, es gibt einen“ enthalten das Thema oft nicht)
+  const recentUser = history.filter((m) => m.role === "user").slice(-3).map((m) => m.content.slice(0, 600));
+  const q = [...new Set([...words(last), ...recentUser.flatMap(words)])].slice(0, 20).join(" or ");
+  const rawHits = q ? ((await sb.rpc("search_documents", { q, max_results: depth === "gruendlich" ? 12 : 8 })).data as Doc[] | null) ?? [] : [];
+  // im Gespräch schon genannte Dokumente (Links /d/ID, Dokument-Bausteine): immer mit Volltext dabei
+  const mentioned = [...new Set(history.filter((m) => m.role === "assistant").slice(-4).flatMap((m) => m.content.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) ?? []))].filter((id) => !rawHits.some((h) => h.id === id)).slice(0, 6);
+  if (mentioned.length) {
+    const { data: extra } = await sb.from("documents").select("id,title,full_text,merged_into").in("id", mentioned).eq("status", "ready");
+    rawHits.unshift(...((extra ?? []).filter((d) => !d.merged_into) as unknown as Doc[]));
+  }
   // zusammengeführte Einzelteile weglassen – das Ganze ist schon dabei
   const parts = rawHits.length ? new Set(((await sb.from("documents").select("id").in("id", rawHits.map((h) => h.id)).not("merged_into", "is", null)).data ?? []).map((x) => x.id)) : new Set<string>();
   const hits = rawHits.filter((h) => !parts.has(h.id));
@@ -111,8 +119,9 @@ export async function POST(req: Request) {
   const projectId = typeof body?.projectId === "string" && /^[0-9a-f-]{36}$/i.test(body.projectId) ? body.projectId : undefined;
   let dq = sb.from("documents").select("id,title,cluster,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,tags,archived,encrypted").eq("status", "ready").is("merged_into", null);
   if (projectId) dq = dq.eq("project_id", projectId);
-  const { data: all } = await dq.order("received_at", { ascending: false }).limit(120);
-  const overview = (all ?? []).map((d) => `- [${d.title}](/d/${d.id}) · ${clusterOf(d.cluster).label} · ${d.doc_type ?? ""} · ${d.sender ?? ""} · ${d.doc_date ?? d.received_at.slice(0, 10)}${d.archived ? " · ARCHIVIERT (gilt nicht mehr)" : ""}${d.encrypted ? " · verschlüsselt (Inhalt nicht lesbar)" : ""}\n  ${d.summary ?? ""}\n  Fakten: ${(d.key_facts as { label: string; value: string }[]).slice(0, 12).map((f) => `${f.label}: ${f.value}`).join("; ")}${(d.deadlines as { date: string; what: string }[]).length ? `\n  Fristen: ${(d.deadlines as { date: string; what: string }[]).map((x) => `${x.date} ${x.what}`).join("; ")}` : ""}`).join("\n");
+  // alle Dokumente (nicht nur die neuesten) – knapp gehalten, damit es günstig bleibt
+  const { data: all } = await dq.order("received_at", { ascending: false }).limit(400);
+  const overview = (all ?? []).map((d) => `- [${d.title}](/d/${d.id}) · ${clusterOf(d.cluster).label} · ${d.doc_type ?? ""} · ${d.sender ?? ""} · ${d.doc_date ?? d.received_at.slice(0, 10)}${d.archived ? " · ARCHIVIERT (gilt nicht mehr)" : ""}${d.encrypted ? " · verschlüsselt (Inhalt nicht lesbar)" : ""}\n  ${(d.summary ?? "").slice(0, 220)}\n  Fakten: ${(d.key_facts as { label: string; value: string }[]).slice(0, d.archived ? 3 : 8).map((f) => `${f.label}: ${f.value}`).join("; ")}${(d.deadlines as { date: string; what: string }[]).length ? `\n  Fristen: ${(d.deadlines as { date: string; what: string }[]).map((x) => `${x.date} ${x.what}`).join("; ")}` : ""}`).join("\n");
   const details = hits.slice(0, depth === "gruendlich" ? 8 : depth === "kurz" ? 3 : 5).map((d) => `### [${d.title}](/d/${d.id})\n${(d.full_text ?? "").slice(0, depth === "gruendlich" ? 25000 : 15000)}`).join("\n\n");
   // Partnerliste mit Schlüsseln, damit Firmen im Text klickbar verlinkt werden
   const partners = buildPartners((all ?? []).map((d) => ({ ...d, status: "ready" }) as unknown as Doc)).slice(0, 80).map((p) => `- [${p.name}](/partner/${p.key})`).join("\n");
