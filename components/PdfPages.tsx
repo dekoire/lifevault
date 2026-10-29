@@ -51,11 +51,11 @@ export function PdfPages({ url, card = false, compact = false, bare = false }: {
       {/* zum Wischen: jede Seite passt ganz ins Bild, Tippen öffnet sie groß */}
       <div onScroll={(e) => { const el = e.currentTarget; setAt(Math.round(el.scrollLeft / Math.max(1, el.clientWidth))); }} className="flex snap-x snap-mandatory gap-2 overflow-x-auto [scrollbar-width:none]">
         {pages.map((u, i) => (
-          <figure key={u} className={`w-full shrink-0 snap-center overflow-hidden bg-white ${bare ? "" : "rounded-lg border border-card-line"}`}>
-            <button type="button" onClick={() => setZoom(i)} className="block w-full" aria-label={`${label(i)} groß ansehen`}>
+          <figure key={u} className={`w-full shrink-0 snap-center overflow-hidden ${bare ? "" : "rounded-lg border border-card-line bg-white"}`}>
+            <button type="button" onClick={() => setZoom(i)} className={`block w-full ${bare ? "bg-black" : ""}`} aria-label={`${label(i)} groß ansehen`}>
               <img src={u} alt={label(i)} className={`mx-auto block w-full object-contain ${compact ? "h-64" : "h-[55vh]"}`} />
             </button>
-            {total > 1 && <figcaption className="border-t border-line bg-surface px-2.5 py-1 text-[11.5px] font-semibold text-soft">{label(i)}</figcaption>}
+            {total > 1 && <figcaption className={`bg-surface px-2.5 py-1 text-[11.5px] font-semibold text-soft ${bare ? "pt-2" : "border-t border-line"}`}>{label(i)}</figcaption>}
           </figure>
         ))}
         {loading && <p className={`flex w-full shrink-0 items-center justify-center gap-2 text-[12.5px] text-muted ${compact ? "h-64" : "h-[55vh]"}`}><Loader2 size={14} className="animate-spin" /> {total ? `Seite ${pages.length + 1} von ${total} …` : "Lade Seiten …"}</p>}

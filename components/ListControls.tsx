@@ -24,7 +24,7 @@ export function SortHeader<K extends string>({ cols, sort, onSort, grid }: { col
   const Arrow = ({ k }: { k: K }) => sort.key !== k ? <ArrowUpDown size={13} className="text-muted/70" /> : sort.dir === "asc" ? <ArrowUp size={13} /> : <ArrowDown size={13} />;
   return (
     <>
-      <div className={`hidden border-b border-line bg-surface-2/60 px-4 py-2 md:grid ${grid}`} role="row">
+      <div className={`hidden border-b border-line bg-surface-2/60 px-4 py-3.5 md:grid ${grid}`} role="row">
         {cols.map((c) => (
           <button key={c.key} type="button" role="columnheader" aria-sort={sort.key === c.key ? (sort.dir === "asc" ? "ascending" : "descending") : "none"} onClick={() => onSort(nextSort(sort, c))}
             className={`inline-flex min-w-0 items-center gap-1 text-left text-[12px] font-semibold tracking-wide uppercase ${sort.key === c.key ? "text-fg" : "text-muted hover:text-fg"} ${c.className ?? ""}`}>
