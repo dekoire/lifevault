@@ -2,11 +2,12 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, FileSearch, HeartPulse, History, MessageSquare, Receipt, SquarePen, Trash2, X } from "lucide-react";
+import { ChevronLeft, FileSearch, HeartPulse, History, MessageSquare, PanelLeftClose, PanelLeftOpen, Receipt, SquarePen, Trash2, X } from "lucide-react";
 import { Composer, MessageList, useChat } from "@/components/ChatPanel";
 import { LogoMark } from "@/components/Logo";
 import { useDocs } from "@/lib/docs";
-import { supabase } from "@/lib/supabase";
+import { supabase, useSession } from "@/lib/supabase";
+import { AvatarMenu } from "@/components/AvatarMenu";
 
 type Thread = { id: string; title: string; updated_at: string };
 const SUGGESTIONS = [
@@ -24,9 +25,14 @@ function Chat() {
   const router = useRouter();
   const params = useSearchParams();
   const { docs } = useDocs();
+  const session = useSession();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [current, setCurrent] = useState<string>();
   const [drawer, setDrawer] = useState(false);
+  // Desktop: Verlauf links ein-/ausklappen, startet zugeklappt (gemerkt)
+  const [side, setSide] = useState(false);
+  useEffect(() => { try { setSide(localStorage.getItem("lifevault:chat-side") === "1"); } catch { /* egal */ } }, []);
+  const toggleSide = () => setSide((v) => { try { localStorage.setItem("lifevault:chat-side", v ? "0" : "1"); } catch { /* egal */ } return !v; });
   const loadThreads = useCallback(async () => {
     const { data } = await supabase.from("chats").select("id,title,updated_at").is("doc_id", null).order("updated_at", { ascending: false }).limit(100);
     setThreads((data as Thread[]) ?? []);
@@ -70,16 +76,21 @@ function Chat() {
   return (
     <div className="flex min-h-dvh bg-canvas">
       {/* Desktop: Verlauf links */}
-      <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 border-r border-card-line bg-page lg:block">{list}</aside>
+      {side && <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 border-r border-card-line bg-page lg:block">{list}</aside>}
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="pt-safe sticky top-0 z-20 bg-canvas/90 backdrop-blur-xl">
-          <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-2 px-3">
+          <div className="mx-auto flex h-14 items-center justify-between gap-2 px-3 lg:h-16 lg:px-5">
             <button type="button" onClick={() => (history.length > 1 ? router.back() : router.push("/"))} className="inline-flex h-10 items-center gap-1 rounded-full pr-3 pl-1.5 text-[14.5px] font-semibold hover:bg-surface-3 lg:hidden"><ChevronLeft size={18} /> Zurück</button>
-            <span className="truncate text-[15px] font-semibold max-lg:hidden">{empty ? "Neuer Chat" : threads.find((t) => t.id === current)?.title ?? "Chat"}</span>
+            <span className="flex min-w-0 items-center gap-2 max-lg:hidden">
+              <button type="button" onClick={toggleSide} aria-label={side ? "Verlauf ausblenden" : "Verlauf einblenden"} title={side ? "Verlauf ausblenden" : "Verlauf einblenden"} className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-surface-3">{side ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}</button>
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-fg text-canvas"><MessageSquare size={15} /></span>
+              <span className="min-w-0"><b className="block truncate text-[15px] leading-5">{empty ? "Fragen" : threads.find((t) => t.id === current)?.title ?? "Chat"}</b><span className="block text-[12px] leading-4 text-muted">{empty ? "Neuer Chat" : `${threads.length} Gespräche im Verlauf`}</span></span>
+            </span>
             <span className="flex items-center gap-1">
               <button type="button" onClick={() => setDrawer(true)} className="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-[14px] font-semibold hover:bg-surface-3 lg:hidden"><History size={17} /> Verlauf</button>
               <button type="button" onClick={() => open(undefined)} aria-label="Neuer Chat" title="Neuer Chat" className="grid h-10 w-10 place-items-center rounded-full hover:bg-surface-3"><SquarePen size={18} /></button>
+              {session?.user.email && <span className="ml-1 max-lg:hidden"><AvatarMenu email={session.user.email} /></span>}
             </span>
           </div>
         </header>
@@ -102,8 +113,8 @@ function Chat() {
           )}
         </div>
 
-        <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-canvas via-canvas to-canvas/0 px-3 pt-6 pb-3 lg:bottom-0 lg:left-[calc(15rem+18rem)] lg:pb-6">
-          <div className="mx-auto max-w-3xl"><Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} /></div>
+        <div className={`fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-canvas via-canvas to-canvas/0 px-3 pt-6 pb-3 lg:bottom-0 lg:pb-6 ${side ? "lg:left-[calc(15rem+18rem)]" : "lg:left-60"}`}>
+          <div className="mx-auto max-w-3xl"><Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} onFiles={(f) => void chat.attach(f)} attachments={chat.attachments} onRemoveAttachment={chat.removeAttachment} depth={chat.depth} onDepth={chat.setDepth} /></div>
         </div>
       </div>
 

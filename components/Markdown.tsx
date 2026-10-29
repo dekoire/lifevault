@@ -1,5 +1,6 @@
-import Link from "next/link";
+"use client";
 import { Fragment } from "react";
+import { EntityLink } from "@/components/EntityLink";
 
 /** Kleines Markdown für Chat-Antworten: Absätze, Listen, Überschriften, **fett** und [Links](/d/…) */
 function inline(text: string, key: string) {
@@ -15,7 +16,7 @@ function inline(text: string, key: string) {
     else {
       const [, label, href] = /\[([^\]]+)\]\(([^)]+)\)/.exec(t)!;
       parts.push(href.startsWith("/")
-        ? <Link key={`${key}-${i++}`} href={href} className="inline-flex items-center rounded-md border border-card-line px-1.5 font-semibold text-fg hover:bg-surface-2">{label}</Link>
+        ? <EntityLink key={`${key}-${i++}`} href={href} label={label} />
         : /^https?:\/\//.test(href) ? <a key={`${key}-${i++}`} href={href} target="_blank" rel="noreferrer" className="font-semibold text-selected underline">{label}</a> : label);
     }
     last = m.index + t.length;
@@ -24,8 +25,65 @@ function inline(text: string, key: string) {
   return parts;
 }
 
+/** Infografik-Blöcke aus der Antwort: ```kpi (Kennzahlen-Kacheln) und ```chart (Balken) */
+function Kpis({ body }: { body: string }) {
+  const rows = body.split("\n").map((l) => l.split("|").map((c) => c.trim())).filter((c) => c[0] && c[1]).slice(0, 6);
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {rows.map(([label, value, sub], i) => (
+        <div key={i} className="rounded-2xl border border-card-line bg-surface px-3.5 py-3">
+          <span className="block text-[12px] leading-4 text-muted">{label}</span>
+          <span className="tnum mt-1 block text-[19px] leading-6 font-[650] tracking-tight">{value}</span>
+          {sub && <span className="block text-[11px] leading-4 text-muted">{sub}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const num = (v: string) => Number(v.replace(/[^\d,.-]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", "."));
+function Chart({ body }: { body: string }) {
+  const lines = body.split("\n").map((l) => l.trim()).filter(Boolean);
+  const meta = Object.fromEntries(lines.filter((l) => /^(title|unit):/i.test(l)).map((l) => [l.split(":")[0].toLowerCase(), l.slice(l.indexOf(":") + 1).trim()]));
+  const rows = lines.filter((l) => !/^(title|unit):/i.test(l) && l.includes("|")).map((l) => { const [label, v] = l.split("|").map((c) => c.trim()); return { label, value: num(v) }; }).filter((r) => r.label && Number.isFinite(r.value)).slice(0, 12);
+  if (!rows.length) return null;
+  const max = Math.max(...rows.map((r) => Math.abs(r.value)), 1);
+  const fmt = (v: number) => `${v.toLocaleString("de-DE", { maximumFractionDigits: 2 })}${meta.unit ? ` ${meta.unit}` : ""}`;
+  return (
+    <figure className="rounded-2xl border border-card-line bg-surface p-4">
+      {meta.title && <figcaption className="mb-3 text-[14px] font-semibold">{meta.title}</figcaption>}
+      <ul className="space-y-2.5">
+        {rows.map((r, i) => (
+          <li key={i} className="grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)] items-center gap-3 text-[13px] sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)]">
+            <span className="truncate text-soft" title={r.label}>{r.label}</span>
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="h-2.5 rounded-full bg-brand-500" style={{ width: `${Math.max(2, (Math.abs(r.value) / max) * 100)}%`, maxWidth: "calc(100% - 5.5rem)" }} />
+              <span className="tnum shrink-0 font-semibold">{fmt(r.value)}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </figure>
+  );
+}
+
 export function Markdown({ text }: { text: string }) {
-  const blocks = text.replace(/\r/g, "").split(/\n{2,}/);
+  // Infografik-Blöcke herauslösen, Rest normal darstellen
+  const parts = text.replace(/\r/g, "").split(/```(kpi|chart)\n([\s\S]*?)(?:```|$)/);
+  if (parts.length > 1) {
+    const out: React.ReactNode[] = [];
+    for (let i = 0; i < parts.length; i += 3) {
+      if (parts[i].trim()) out.push(<MarkdownText key={`t${i}`} text={parts[i]} />);
+      if (parts[i + 1] === "kpi") out.push(<Kpis key={`k${i}`} body={parts[i + 2] ?? ""} />);
+      if (parts[i + 1] === "chart") out.push(<Chart key={`c${i}`} body={parts[i + 2] ?? ""} />);
+    }
+    return <div className="space-y-3">{out}</div>;
+  }
+  return <MarkdownText text={text} />;
+}
+
+function MarkdownText({ text }: { text: string }) {
+  const blocks = text.replace(/\r/g, "").replace(/```\w*\n?/g, "").split(/\n{2,}/);
   return (
     <div className="space-y-3 text-[15px] leading-7">
       {blocks.map((b, bi) => {

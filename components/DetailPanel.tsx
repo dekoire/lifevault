@@ -1,0 +1,155 @@
+"use client";
+import Link from "next/link";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, CalendarClock, Download, ExternalLink, Lock, Maximize2, X } from "lucide-react";
+import { CopyValue } from "@/components/CopyValue";
+import { DocRow } from "@/components/DocRow";
+import { SenderLogo } from "@/components/SenderLogo";
+import { clusterOf } from "@/lib/clusters";
+import { fmtDate, fmtMoney, isUrgent, useDocs } from "@/lib/docs";
+import { buildPartners, partnerKey } from "@/lib/partners";
+import { supabase } from "@/lib/supabase";
+import type { Doc } from "@/lib/types";
+
+/**
+ * Detail von der Seite (wie bei Finastry): Klick auf ein Dokument oder einen Partner im Chat
+ * öffnet rechts eine Vorschau – „Groß öffnen“ führt zur vollen Seite.
+ */
+export type Detail = { kind: "doc"; id: string } | { kind: "partner"; key: string };
+const Ctx = createContext<((d: Detail) => void) | undefined>(undefined);
+/** Öffnet das Panel; außerhalb eines Hosts undefined (dann sind es normale Links) */
+export const useDetail = () => useContext(Ctx);
+
+export function DetailHost({ children }: { children: React.ReactNode }) {
+  const [stack, setStack] = useState<Detail[]>([]);
+  const open = (d: Detail) => setStack((s) => [...s.slice(-4), d]);
+  const top = stack[stack.length - 1];
+  useEffect(() => {
+    if (!top) return;
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setStack([]);
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [top]);
+  return (
+    <Ctx.Provider value={open}>
+      {children}
+      {top && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={() => setStack([])}>
+          <aside role="dialog" aria-modal="true" className="panel-in pt-safe pb-safe flex h-full w-full max-w-[440px] flex-col bg-surface shadow-[-12px_0_40px_rgba(16,24,40,.18)]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
+              {stack.length > 1 ? <button type="button" onClick={() => setStack((s) => s.slice(0, -1))} className="inline-flex h-9 items-center gap-1 rounded-full pr-3 pl-2 text-[14px] font-semibold hover:bg-surface-2"><ArrowLeft size={16} /> Zurück</button> : <span />}
+              <button type="button" onClick={() => setStack([])} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3"><X size={17} /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {top.kind === "doc" ? <DocDetail id={top.id} open={open} close={() => setStack([])} /> : <PartnerDetail pkey={top.key} open={open} close={() => setStack([])} />}
+            </div>
+          </aside>
+        </div>
+      )}
+    </Ctx.Provider>
+  );
+}
+
+const BTN = "inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-[14px] font-semibold";
+
+function DocDetail({ id, open, close }: { id: string; open: (d: Detail) => void; close: () => void }) {
+  const { allDocs } = useDocs();
+  const [doc, setDoc] = useState<Doc | undefined>(allDocs.find((d) => d.id === id));
+  const [url, setUrl] = useState<string>();
+  useEffect(() => {
+    void supabase.from("documents").select("*").eq("id", id).maybeSingle().then(({ data }) => data && setDoc(data as Doc));
+  }, [id]);
+  useEffect(() => {
+    if (!doc || doc.encrypted || doc.file_path.startsWith("inbox/")) return;
+    void supabase.storage.from("documents").createSignedUrl(doc.file_path, 600).then(({ data }) => setUrl(data?.signedUrl));
+  }, [doc]);
+  if (!doc) return <p className="p-6 text-[14px] text-muted">Dokument nicht gefunden.</p>;
+  const c = clusterOf(doc.cluster);
+  const image = doc.mime_type.startsWith("image/");
+  const download = async () => {
+    const { data } = await supabase.storage.from("documents").createSignedUrl(doc.file_path, 60, { download: doc.file_name });
+    if (data) location.href = data.signedUrl;
+  };
+  return (
+    <div className="space-y-4 p-4">
+      <div className="flex items-start gap-3">
+        <SenderLogo domain={doc.sender_domain} sender={doc.sender} cluster={doc.cluster} urgent={isUrgent(doc)} size={48} />
+        <div className="min-w-0">
+          <h2 className="text-[18px] leading-6 font-semibold">{doc.title ?? doc.file_name}</h2>
+          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[12px] text-muted">
+            <span className="rounded-full border border-card-line px-2 py-px font-semibold text-fg">{c.label}</span>
+            {fmtDate(doc.doc_date ?? doc.received_at)}
+            {doc.sender && <> · <button type="button" onClick={() => open({ kind: "partner", key: partnerKey(doc.sender!) })} className="font-semibold text-selected hover:underline">{doc.sender}</button></>}
+          </p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Link href={`/d/${doc.id}`} onClick={close} className={`${BTN} bg-brand-500 text-white hover:bg-brand-600`}><Maximize2 size={15} /> Groß öffnen</Link>
+        {!doc.encrypted && !doc.file_path.startsWith("inbox/") && <button type="button" onClick={() => void download()} className={`${BTN} border border-card-line hover:bg-surface-2`}><Download size={15} /> Original</button>}
+      </div>
+      {doc.encrypted ? (
+        <p className="flex items-center gap-2 rounded-xl border border-card-line p-3 text-[13px] text-soft"><Lock size={15} /> Verschlüsselt – Inhalt siehst du in der großen Ansicht nach dem Entsperren.</p>
+      ) : (
+        <>
+          {doc.summary && <p className="text-[14px] leading-6">{doc.summary}</p>}
+          {url && (
+            <div className="overflow-hidden rounded-xl border border-card-line bg-surface-2">
+              {image ? <img src={url} alt={doc.title ?? ""} className="max-h-80 w-full object-contain" /> : <iframe src={`${url}#toolbar=0&view=FitH`} title="Vorschau" className="h-80 w-full" />}
+            </div>
+          )}
+          {doc.deadlines?.length > 0 && (
+            <div className="rounded-xl border border-card-line">
+              <p className="flex items-center gap-1.5 px-3 pt-2.5 text-[13px] font-semibold"><CalendarClock size={14} /> Fristen</p>
+              <ul className="divide-y divide-line text-[13px]">{doc.deadlines.map((x, i) => <li key={i} className="flex gap-3 px-3 py-2"><b className="tnum w-20 shrink-0">{fmtDate(x.date)}</b>{x.what}</li>)}</ul>
+            </div>
+          )}
+          {doc.key_facts?.length > 0 && (
+            <dl className="divide-y divide-line rounded-xl border border-card-line text-[13px]">
+              {doc.key_facts.slice(0, 10).map((f, i) => <div key={i} className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-2 px-3 py-2"><dt className="min-w-0 break-words text-muted">{f.label}</dt><dd className="min-w-0 font-semibold break-words">{f.value}</dd></div>)}
+            </dl>
+          )}
+          {doc.amounts?.[0] && <p className="text-[13px] text-muted">{doc.amounts[0].label}: <b className="text-fg">{fmtMoney(doc.amounts[0].value, doc.amounts[0].currency)}</b></p>}
+        </>
+      )}
+    </div>
+  );
+}
+
+function PartnerDetail({ pkey, open, close }: { pkey: string; open: (d: Detail) => void; close: () => void }) {
+  const { allDocs } = useDocs();
+  const p = useMemo(() => buildPartners(allDocs).find((x) => x.key === pkey), [allDocs, pkey]);
+  if (!p) return <p className="p-6 text-[14px] text-muted">Partner nicht gefunden.</p>;
+  const today = new Date().toISOString().slice(0, 10);
+  const deadlines = p.docs.flatMap((d) => (d.deadlines ?? []).filter((x) => x.date >= today).map((x) => ({ ...x, d }))).sort((a, b) => a.date.localeCompare(b.date));
+  return (
+    <div className="space-y-4 p-4">
+      <div className="flex items-center gap-3">
+        <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={52} />
+        <div className="min-w-0">
+          <h2 className="text-[18px] leading-6 font-semibold">{p.name}</h2>
+          <p className="text-[12px] text-muted">{clusterOf(p.cluster).label} · {p.docs.length} {p.docs.length === 1 ? "Dokument" : "Dokumente"}{p.isShop ? ` · zuletzt ${fmtDate(p.last)}` : ""}</p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Link href={`/partner/${p.key}`} onClick={close} className={`${BTN} bg-brand-500 text-white hover:bg-brand-600`}><Maximize2 size={15} /> Groß öffnen</Link>
+        {p.domain && <a href={`https://${p.domain}`} target="_blank" rel="noopener noreferrer" className={`${BTN} border border-card-line hover:bg-surface-2`}><ExternalLink size={15} /> Website</a>}
+      </div>
+      {p.ids.length > 0 && (
+        <div className="rounded-xl border border-card-line">
+          <p className="px-3 pt-2.5 text-[13px] font-semibold">Kennungen & Nummern</p>
+          <ul className="divide-y divide-line text-[13px]">{p.ids.slice(0, 10).map((i, n) => <li key={n} className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-2 px-3 py-2"><span className="min-w-0 break-words text-muted">{i.label}</span><CopyValue value={i.value} /></li>)}</ul>
+        </div>
+      )}
+      {deadlines.length > 0 && (
+        <div className="rounded-xl border border-card-line">
+          <p className="flex items-center gap-1.5 px-3 pt-2.5 text-[13px] font-semibold"><CalendarClock size={14} /> Anstehend</p>
+          <ul className="divide-y divide-line text-[13px]">{deadlines.map((x, i) => <li key={i} className="flex gap-3 px-3 py-2"><b className="tnum w-20 shrink-0">{fmtDate(x.date)}</b>{x.what}</li>)}</ul>
+        </div>
+      )}
+      <div className="overflow-hidden rounded-xl border border-card-line">
+        <p className="px-3 pt-2.5 text-[13px] font-semibold">Dokumente</p>
+        <div className="divide-y divide-line">{p.docs.map((d) => <div key={d.id} onClickCapture={(e) => { e.preventDefault(); e.stopPropagation(); open({ kind: "doc", id: d.id }); }}><DocRow d={d} /></div>)}</div>
+      </div>
+    </div>
+  );
+}

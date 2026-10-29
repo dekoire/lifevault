@@ -10,6 +10,9 @@ import { VaultUnlock } from "@/components/VaultUnlock";
 import { clusterOf } from "@/lib/clusters";
 import { chrono, fmtDate, fmtMoney, isUrgent, useDocs } from "@/lib/docs";
 import { useProjects } from "@/lib/projects";
+import { explainDoc, groupRank } from "@/lib/doctypes";
+import { partnerKey } from "@/lib/partners";
+import { useDetail } from "@/components/DetailPanel";
 import { useMe } from "@/lib/me";
 import { openDoc, protectDoc, unprotectDoc } from "@/lib/protect";
 import { supabase } from "@/lib/supabase";
@@ -81,10 +84,22 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
 
   const content: SecretPart | null = doc ? (doc.encrypted ? opened?.content ?? null : doc) : null;
   const groups = useMemo(() => groupFacts(content?.key_facts ?? []), [content]);
+  const sortedGroups = useMemo(() => [...groups].sort((a, b) => groupRank(a[0]) - groupRank(b[0])), [groups]);
+  const [more, setMore] = useState<Record<string, boolean>>({});
+  const detail = useDetail();
   const chat = useChat({ docId: id, docText: doc?.encrypted && content ? `${content.summary ?? ""}\n${JSON.stringify(content.key_facts)}\n${content.full_text ?? ""}` : undefined });
 
   if (!doc) return <p className="py-20 text-center text-muted">Lädt …</p>;
   const c = clusterOf(doc.cluster);
+  const explain = explainDoc(doc.doc_type, doc.title);
+  // Auf einen Blick: wichtigste Beträge und die nächste Frist
+  const today = new Date().toISOString().slice(0, 10);
+  const nextDl = (content?.deadlines ?? []).filter((x) => x.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const daysTo = nextDl ? Math.round((Date.parse(nextDl.date) - Date.parse(today)) / 864e5) : 0;
+  const glance = [
+    ...(content?.amounts ?? []).slice(0, nextDl ? 2 : 3).map((a) => ({ label: a.label, value: fmtMoney(a.value, a.currency), sub: undefined as string | undefined, urgent: false })),
+    ...(nextDl ? [{ label: "Nächste Frist", value: fmtDate(nextDl.date), sub: `${nextDl.what} · in ${daysTo} ${daysTo === 1 ? "Tag" : "Tagen"}`, urgent: daysTo <= 7 }] : []),
+  ];
   const fileUrl = doc.encrypted ? opened?.url : url;
   const image = doc.mime_type.startsWith("image/");
   const isOpen = (k: string, def: boolean) => open[k] ?? def;
@@ -122,9 +137,12 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
       {/* Kopf: Logo, Titel, Kennzeichen, kleine Aktionen */}
       <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="flex min-w-0 items-start gap-3.5">
-          <SenderLogo domain={doc.sender_domain} sender={doc.sender} cluster={doc.cluster} urgent={isUrgent(doc)} size={52} />
+          <button type="button" onClick={() => doc.sender && detail?.({ kind: "partner", key: partnerKey(doc.sender) })} disabled={!doc.sender} title={doc.sender ? `Alles zu ${doc.sender}` : undefined} className="shrink-0 rounded-full transition hover:ring-2 hover:ring-brand-500/40 disabled:hover:ring-0">
+            <SenderLogo domain={doc.sender_domain} sender={doc.sender} cluster={doc.cluster} urgent={isUrgent(doc)} size={52} />
+          </button>
           <div className="min-w-0">
             <h1 className="text-[24px] leading-8 font-[650] tracking-tight md:text-[28px] md:leading-9">{doc.title ?? doc.file_name}</h1>
+            {doc.sender && <button type="button" onClick={() => detail?.({ kind: "partner", key: partnerKey(doc.sender!) })} className="mt-0.5 text-[14px] font-semibold text-soft hover:text-selected hover:underline">{doc.sender}</button>}
             <div className="mt-2 flex flex-wrap gap-1.5">
               <Link href={`/c/${c.id}`} className="inline-flex h-7 items-center rounded-full px-2.5 text-[12px] font-semibold border border-card-line text-fg">{c.label}</Link>
               {doc.archived ? <span className="inline-flex h-7 items-center gap-1 rounded-full border border-card-line px-2.5 text-[12px] font-semibold text-soft" title={doc.archived_reason ?? ""}><Archive size={12} /> Archiviert</span> : doc.status === "ready" && <span className="inline-flex h-7 items-center rounded-full bg-positive/10 px-2.5 text-[12px] font-semibold text-positive-text">Aktuell</span>}
@@ -145,9 +163,25 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] lg:items-start">
         {/* links: Daten */}
         <div className="space-y-3">
-          {show.summary && content?.summary && <section className={`${CARD} p-4`}><p className="text-[15px] leading-6">{content.summary}</p></section>}
+          {(explain || (show.summary && content?.summary)) && (
+            <section className={`${CARD} p-4`}>
+              {explain && <p className="mb-2 text-[13px] leading-5 text-muted">{explain}</p>}
+              {show.summary && content?.summary && <p className="text-[15px] leading-6">{content.summary}</p>}
+            </section>
+          )}
+          {glance.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {glance.map((g, i) => (
+                <div key={i} className={`rounded-2xl border px-3.5 py-3 ${g.urgent ? "border-urgent bg-urgent text-white" : "border-card-line bg-surface"}`}>
+                  <span className={`block truncate text-[12px] ${g.urgent ? "text-white/80" : "text-muted"}`}>{g.label}</span>
+                  <span className="tnum mt-0.5 block text-[18px] leading-6 font-[650]">{g.value}</span>
+                  {g.sub && <span className={`block truncate text-[11px] ${g.urgent ? "text-white/80" : "text-muted"}`}>{g.sub}</span>}
+                </div>
+              ))}
+            </div>
+          )}
           {show.info && (
-            <Section title="Überblick" icon={<FileText size={16} />} open={isOpen("info", true)} onToggle={() => toggle("info", true)}>
+            <Section title="Überblick" icon={<FileText size={16} />} open={isOpen("info", false)} onToggle={() => toggle("info", false)}>
               <KeyValueTable rows={[
                 { label: "Art", value: doc.doc_type ?? "–" },
                 { label: "Absender", value: doc.sender ?? "–" },
@@ -165,11 +199,16 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
               ]} />
             </Section>
           )}
-          {show.facts && groups.map(([g, fs], i) => (
-            <Section key={g} title={g} count={fs.length} open={isOpen(`g:${g}`, i < 3)} onToggle={() => toggle(`g:${g}`, i < 3)}>
-              <KeyValueTable rows={fs.map((f) => ({ label: f.label, value: f.value }))} />
-            </Section>
-          ))}
+          {show.facts && sortedGroups.map(([g, fs], i) => {
+            const all = more[g];
+            const rows = all ? fs : fs.slice(0, 4);
+            return (
+              <Section key={g} title={g} count={fs.length} open={isOpen(`g:${g}`, i < 2 && groupRank(g) === 0)} onToggle={() => toggle(`g:${g}`, i < 2 && groupRank(g) === 0)}>
+                <KeyValueTable rows={rows.map((f) => ({ label: f.label, value: f.value }))} />
+                {fs.length > 4 && <button type="button" onClick={() => setMore({ ...more, [g]: !all })} className="w-full border-t border-line px-4 py-2.5 text-left text-[13px] font-semibold text-selected hover:bg-surface-2">{all ? "Weniger anzeigen" : `Alle ${fs.length} anzeigen`}</button>}
+              </Section>
+            );
+          })}
           {show.deadlines && !!content?.deadlines?.length && (
             <Section title="Fristen & Termine" icon={<CalendarClock size={16} />} count={content.deadlines.length} open={isOpen("dl", true)} onToggle={() => toggle("dl", true)}>
               <KeyValueTable rows={content.deadlines.map((x) => ({ label: fmtDate(x.date), value: x.what }))} />
@@ -198,7 +237,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
             <section className={`${CARD} p-4`}>
               <h2 className="mb-3 text-[15px] font-semibold">Frag zu diesem Dokument</h2>
               {chat.msgs.length > 0 && <div className="mb-4 max-h-[50vh] overflow-y-auto pr-1"><MessageList msgs={chat.msgs} compact onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} /></div>}
-              <Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} placeholder="z. B. Wie hoch ist mein Netto?" />
+              <Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} placeholder="z. B. Wie hoch ist mein Netto?" depth={chat.depth} onDepth={chat.setDepth} />
             </section>
           )}
         </div>

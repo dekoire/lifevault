@@ -112,7 +112,7 @@ export default function Home() {
                     const n = counts.get(c.id) ?? 0;
                     return (
                       <Link key={c.id} href={`/c/${c.id}`} className={`${CARD} flex flex-col gap-3 p-4 transition hover:border-brand-500/40 active:scale-[.98] ${n ? "" : "opacity-60"}`}>
-                        <span className="flex items-start justify-between gap-2"><ClusterIcon id={c.id} size={40} tone="plain" /><span className="tnum rounded-full border border-card-line px-2 py-0.5 text-[12px] font-semibold text-soft">{n}</span></span>
+                        <span className="flex items-start justify-between gap-2"><ClusterIcon id={c.id} size={40} tone="plain" /><span className={`tnum inline-grid h-7 min-w-7 place-items-center rounded-full px-2 text-[12px] font-bold ${n ? "bg-brand-500 text-white" : "border border-card-line text-muted"}`}>{n}</span></span>
                         <span>
                           <span className="block text-[15px] leading-5 font-semibold">{c.label}</span>
                           <span className="mt-0.5 line-clamp-2 block text-[12px] leading-4 text-muted">{c.hint}</span>

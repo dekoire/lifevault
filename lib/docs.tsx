@@ -8,7 +8,7 @@ import { openBytes, sealBytes, vaultKey } from "@/lib/vault";
 import { LIST_COLS, type Doc } from "@/lib/types";
 
 export type BatchItem = { key: string; name: string; id?: string; state: "uploading" | "saved" | "failed"; error?: string };
-type Ctx = { batch: BatchItem[]; clearBatch: () => void; docs: Doc[]; allDocs: Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null }) => Promise<void>; pendingProtect: number; reprocess: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
+type Ctx = { batch: BatchItem[]; clearBatch: () => void; docs: Doc[]; allDocs: Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null; silent?: boolean }) => Promise<string[]>; pendingProtect: number; reprocess: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
 const DocsCtx = createContext<Ctx | null>(null);
 
 const OK = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
@@ -81,12 +81,14 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
   };
   const { current, defaultProject } = useProjects();
 
-  const upload = useCallback(async (files: File[], opts: { encrypt?: boolean; projectId?: string | null } = {}) => {
+  const upload = useCallback(async (files: File[], opts: { encrypt?: boolean; projectId?: string | null; silent?: boolean } = {}): Promise<string[]> => {
+    const ids: string[] = [];
     const encrypt = !!opts.encrypt && !!vaultKey();
     const projectId = opts.projectId ?? (current !== "all" ? current : defaultProject?.id ?? null);
     setUploading((n) => n + files.length);
     const items = files.map((f, i) => ({ key: crypto.randomUUID(), name: friendlyName(f.name, i, files.length), state: "uploading" as const }));
-    setBatch((b) => [...b.filter((x) => x.state !== "failed"), ...items]);
+    // silent: ohne Fortschritts-Fenster (z. B. Anhang im Chat)
+    if (!opts.silent) setBatch((b) => [...b.filter((x) => x.state !== "failed"), ...items]);
     await Promise.all(files.map(async (raw, i) => {
       const item = items[i];
       try {
@@ -101,6 +103,7 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
         const { data, error } = await supabase.from("documents").insert({ file_path: path, file_name: item.name.slice(0, 200), mime_type: file.type || "application/octet-stream", size_bytes: file.size, encrypted: encrypt, ...(projectId ? { project_id: projectId } : {}) }).select("id").single();
         if (error) throw error;
         patch(item.key, { id: data.id, state: "saved" });
+        ids.push(data.id);
         await refresh();
         if (encrypt) await processEncrypted({ id: data.id, mime_type: file.type }, plain).catch(async (e) => { await supabase.from("documents").update({ status: "error", error: (e as Error).message }).eq("id", data.id); }).finally(() => refresh());
         else void process(data.id);
@@ -111,6 +114,7 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
         setUploading((n) => n - 1);
       }
     }));
+    return ids;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, refresh, current, defaultProject?.id]);
 

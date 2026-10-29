@@ -5,7 +5,7 @@
 export async function GET(req: Request) {
   const d = new URL(req.url).searchParams.get("d")?.toLowerCase() ?? "";
   if (!/^[a-z0-9.-]{3,80}\.[a-z]{2,}$/.test(d)) return new Response("bad domain", { status: 400 });
-  const sources = [`https://icons.duckduckgo.com/ip3/${d}.ico`, `https://www.google.com/s2/favicons?domain=${d}&sz=128`];
+  const sources = [`https://www.google.com/s2/favicons?domain=${d}&sz=128`, `https://icons.duckduckgo.com/ip3/${d}.ico`];
   for (const url of sources) {
     try {
       const r = await fetch(url, { signal: AbortSignal.timeout(4000) });

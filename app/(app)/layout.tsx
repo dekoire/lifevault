@@ -11,6 +11,8 @@ import { MeProvider, useMe } from "@/lib/me";
 import { ProjectsProvider } from "@/lib/projects";
 import { ProjectSwitcher, UploadTarget } from "@/components/ProjectSwitcher";
 import { UploadProgress } from "@/components/UploadProgress";
+import { DetailHost } from "@/components/DetailPanel";
+import { Avatar, AvatarMenu, nameFromEmail } from "@/components/AvatarMenu";
 import { supabase, useSession } from "@/lib/supabase";
 
 const Splash = () => <div className="grid min-h-dvh place-items-center bg-page"><span className="animate-pulse"><LogoMark size={56} /></span></div>;
@@ -42,7 +44,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <MeProvider userId={session.user.id}>
       <ProjectsProvider>
         <DocsProvider userId={session.user.id}>
-          <Shell email={session.user.email ?? ""}>{children}</Shell>
+          <DetailHost><Shell email={session.user.email ?? ""}>{children}</Shell></DetailHost>
         </DocsProvider>
       </ProjectsProvider>
     </MeProvider>
@@ -73,14 +75,17 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-card-line bg-surface px-3 py-5 lg:flex">
         <Link href="/" className="mb-5 px-2"><Logo size={30} /></Link>
         <div className="mb-3"><ProjectSwitcher /></div>
-        <button type="button" onClick={() => setSheet(true)} className="mb-5 flex h-11 items-center justify-center gap-2 rounded-full bg-brand-500 text-[14px] font-semibold text-white hover:bg-brand-600"><Plus size={18} strokeWidth={2.4} /> Hinzufügen</button>
         <nav className="grid gap-1">
           {NAV.map(({ href, label, icon: Icon, match }) => {
             const on = match(path);
             return <Link key={href} href={href} aria-current={on ? "page" : undefined} className={`flex h-11 items-center gap-2.5 rounded-xl px-3 text-[14px] font-medium transition-colors ${on ? "bg-fg text-canvas" : "text-soft hover:bg-surface-2 hover:text-fg"}`}><Icon size={18} strokeWidth={1.8} /> {label}</Link>;
           })}
         </nav>
-        <p className="mt-auto truncate px-3 text-[12px] text-muted" title={email}>{email}</p>
+        <Link href="/einstellungen" className="mt-auto flex items-center gap-2.5 rounded-xl p-2 hover:bg-surface-2" title="Einstellungen">
+          <Avatar email={email} />
+          <span className="min-w-0 flex-1"><b className="block truncate text-[14px]">{nameFromEmail(email)}</b><span className="block truncate text-[12px] text-muted">{email}</span></span>
+          <Settings size={16} className="shrink-0 text-muted" />
+        </Link>
       </aside>
 
       {/* Handy: Kopf mit Logo */}
@@ -95,8 +100,15 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
           </div>
         </header>
       )}
+      {/* Desktop: oben rechts Hinzufügen und Avatar */}
+      {!chat && (
+        <div className="sticky top-0 z-20 hidden h-16 items-center justify-end gap-3 border-b border-card-line/70 bg-page/90 px-8 backdrop-blur-xl lg:ml-60 lg:flex">
+          <button type="button" onClick={() => setSheet(true)} className="inline-flex h-10 items-center gap-2 rounded-full bg-brand-500 px-4 text-[14px] font-semibold text-white hover:bg-brand-600"><Plus size={17} strokeWidth={2.4} /> Hinzufügen</button>
+          <AvatarMenu email={email} />
+        </div>
+      )}
       <main className={`lg:pl-60 ${chat ? "" : "pb-28 lg:pb-12"}`}>
-        {chat ? children : <div className="mx-auto max-w-6xl px-4 pt-5 md:px-8 lg:pt-10">{children}</div>}
+        {chat ? children : <div className="mx-auto max-w-6xl px-4 pt-5 md:px-8 lg:pt-8">{children}</div>}
       </main>
 
       {/* Handy: untere Leiste ohne Schatten – Start, +, Fragen */}

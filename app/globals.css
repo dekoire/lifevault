@@ -86,3 +86,7 @@ body {
 
 /* nie seitlich wischen: lange Inhalte brechen um statt die Seite zu verbreitern */
 html, body { overflow-x: clip; }
+
+/* Seitenpanel von rechts */
+@keyframes panel-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.panel-in { animation: panel-in 0.2s ease-out; }
