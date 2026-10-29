@@ -116,7 +116,7 @@ function Chat() {
 
         <div className={`fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-page via-page to-page/0 px-3 pt-6 pb-3 lg:bottom-0 lg:pb-6 ${side ? "lg:left-[calc(var(--side,15rem)+18rem)]" : "lg:left-[var(--side,15rem)]"}`}>
           {chat.gate && (
-            <div className="mx-auto mb-3 max-w-3xl">
+            <div className="mx-auto mb-3 max-w-md">
               <div className="rounded-2xl border border-card-line bg-surface p-3 shadow-card">
                 <p className="mb-2.5 px-1 text-[13px] text-soft">Für <b className="text-fg">„{chat.gate.q}“</b> brauche ich wahrscheinlich verschlüsselte Unterlagen. Entsperre den Tresor – oder frag ohne sie.</p>
                 <VaultUnlock compact title="Tresor entsperren" text="Danach geht deine Frage automatisch los. Die Inhalte werden nur für diese Antwort im Browser entschlüsselt." />

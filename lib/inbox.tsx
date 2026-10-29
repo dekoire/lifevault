@@ -51,6 +51,35 @@ export function useInbox() {
 }
 
 type Item = { id: string; from: string; subject: string; date: string; snippet: string; attachments: { id: string; name: string; mime: string; size: number; inline: boolean }[] };
+/* Gmail-Weiterleitung bestätigen: erkannte Bestätigungs-Mails merken, bis man sie erledigt hat */
+export type Confirmation = { id: string; date: string; link: string | null; code: string | null; forwarder: string | null };
+const CONF = "lifevault:gmail-confirm", CONF_DONE = "lifevault:gmail-confirm-done";
+const readJson = <T,>(k: string, d: T): T => { try { return JSON.parse(localStorage.getItem(k) ?? "") as T; } catch { return d; } };
+function rememberConfirmations(list: Confirmation[]) {
+  const done = readJson<string[]>(CONF_DONE, []);
+  const cur = readJson<Confirmation[]>(CONF, []);
+  const next = [...cur, ...list.filter((c) => !done.includes(c.id) && !cur.some((x) => x.id === c.id))];
+  try { localStorage.setItem(CONF, JSON.stringify(next)); } catch { /* egal */ }
+  window.dispatchEvent(new Event("lifevault:gmail-confirm"));
+}
+export function useConfirmations() {
+  const [list, setList] = useState<Confirmation[]>([]);
+  useEffect(() => {
+    const load = () => setList(readJson<Confirmation[]>(CONF, []));
+    load();
+    window.addEventListener("lifevault:gmail-confirm", load);
+    return () => window.removeEventListener("lifevault:gmail-confirm", load);
+  }, []);
+  const done = (id: string) => {
+    try {
+      localStorage.setItem(CONF_DONE, JSON.stringify([...readJson<string[]>(CONF_DONE, []), id]));
+      localStorage.setItem(CONF, JSON.stringify(readJson<Confirmation[]>(CONF, []).filter((c) => c.id !== id)));
+    } catch { /* egal */ }
+    window.dispatchEvent(new Event("lifevault:gmail-confirm"));
+  };
+  return { list, done };
+}
+
 export type InboxResult = { checked: number; imported: number; files: number; known: number; withoutDocs: number; rejected: { subject: string; from: string; reason: string }[] };
 
 /** Abholen und importieren. Ohne KI-Vorprüfung: was du selbst schickst, willst du auch haben (nur Logos/Deko fallen raus). */
@@ -58,7 +87,8 @@ export async function importInbox(opts: { since: Date; until?: Date; upload: (fi
   const { since, until, upload, onStep } = opts;
   onStep?.("Mails abrufen");
   const res = await authFetch("/api/mail/inbox", { method: "POST", body: JSON.stringify({ since: since.toISOString(), until: until?.toISOString() }) });
-  const json = (await res.json().catch(() => ({}))) as { items?: Item[]; rejected?: InboxResult["rejected"]; error?: string };
+  const json = (await res.json().catch(() => ({}))) as { items?: Item[]; rejected?: InboxResult["rejected"]; confirmations?: Confirmation[]; error?: string };
+  if (json.confirmations?.length) rememberConfirmations(json.confirmations);
   if (!res.ok || json.error) throw new Error(json.error ?? `Fehler ${res.status}`);
   const items = json.items ?? [];
   const ids = items.map((m) => `inbox:${m.id}`);

@@ -1,4 +1,4 @@
-import { HttpError, listForInbox, myInbox, rejectReason, resend, type Received } from "@/lib/inbox-server";
+import { gmailConfirmation, HttpError, listForInbox, myInbox, rejectReason, resend, type Received } from "@/lib/inbox-server";
 import { unauthorized, userClient } from "@/lib/server";
 
 export const maxDuration = 60;
@@ -15,8 +15,11 @@ export async function POST(req: Request) {
     const list = await listForInbox(inbox, since, until);
     const items: unknown[] = [];
     const rejected: { subject: string; from: string; reason: string }[] = [];
+    const confirmations: { id: string; date: string; link: string | null; code: string | null; forwarder: string | null }[] = [];
     for (const m of list.slice(0, 200)) {
       const full = await resend<Received>(`/emails/receiving/${encodeURIComponent(m.id)}?html_format=cid`);
+      const conf = gmailConfirmation(full, inbox);
+      if (conf) { confirmations.push({ id: full.id, date: full.created_at, ...conf }); continue; }
       const why = rejectReason(full, inbox);
       if (why) { rejected.push({ subject: full.subject ?? "", from: full.from, reason: why }); continue; }
       items.push({
@@ -25,7 +28,7 @@ export async function POST(req: Request) {
         attachments: (full.attachments ?? []).map((a) => ({ id: a.id, name: a.filename ?? "Anhang", mime: a.content_type, size: a.size, inline: a.content_disposition === "inline" })),
       });
     }
-    return Response.json({ items, rejected });
+    return Response.json({ items, rejected, confirmations });
   } catch (e) {
     const err = e instanceof HttpError ? e : new HttpError(500, "Abruf fehlgeschlagen.");
     return Response.json({ error: err.message }, { status: err.status });

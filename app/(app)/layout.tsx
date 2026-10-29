@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ExportSheet } from "@/components/ExportSheet";
 import { JobToasts } from "@/components/JobToasts";
 import { DraftHost } from "@/components/DraftSheet";
+import { ForwardConfirm } from "@/components/ForwardConfirm";
 import { DownloadsMenu } from "@/components/settings/Downloads";
 import { useCallback, useEffect, useState } from "react";
 import { Building2, Camera, FolderOutput, PanelLeftClose, PanelLeftOpen, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
@@ -142,7 +143,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
         </div>
       )}
       <main className={`lg:pl-[var(--side,15rem)] ${chat ? "" : "pb-28 lg:pb-12"}`}>
-        {chat ? children : <div key={path} className="page-in app-scale mx-auto max-w-[88rem] px-4 pt-5 md:px-6 lg:px-12 lg:pt-6 xl:px-16 2xl:px-20">{children}</div>}
+        {chat ? children : <div key={path} className="page-in app-scale mx-auto max-w-[88rem] px-4 pt-5 md:px-6 lg:px-12 lg:pt-6 xl:px-16 2xl:px-20"><ForwardConfirm />{children}</div>}
       </main>
 
       {/* Handy: untere Leiste ohne Schatten – Start, +, Fragen */}

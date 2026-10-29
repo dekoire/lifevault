@@ -1,4 +1,4 @@
-import { generateText, Output } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 import { aiFor, loadAiSettings, todayLine } from "@/lib/ai";
 import { unauthorized, userClient } from "@/lib/server";
@@ -40,9 +40,17 @@ export async function POST(req: Request) {
     return `- id: ${d.id} | ${d.cluster}/${d.topic ?? ""} | ${d.doc_type ?? ""} | ${d.title ?? ""} | ${d.sender ?? "–"} | ${d.doc_date ?? d.received_at.slice(0, 10)}${(d.labels ?? []).length ? ` | Tags: ${(d.labels as string[]).join(", ")}` : ""}${amounts ? ` | Beträge: ${amounts}` : ""}${dl ? ` | Fristen: ${dl}` : ""}${!d.encrypted && d.summary ? ` | ${d.summary.slice(0, 140).replace(/\s+/g, " ")}` : ""}`;
   };
   try {
-    const r = await generateText({ ...aiFor("classify"), system: `${SYSTEM}\n${todayLine()}`, prompt: `<docs>\n${docs.map(line).join("\n")}\n</docs>`, output: Output.object({ schema: Advice, name: "empfehlungen" }), maxOutputTokens: 6000 });
+    // JSON als Text und tolerant lesen (kleine Modelle halten Schemas nicht immer exakt ein)
+    const r = await generateText({ ...aiFor("classify"), system: `${SYSTEM}\n${todayLine()}\nAntworte NUR mit JSON: {"items":[{"title":"…","why":"…","kind":"geld|frist|rechte|ordnung","saving":123 oder null,"effort":"gering|mittel|hoch","steps":["…"],"doc_ids":["…"],"draft":"widerspruch|widerruf|kuendigung|stundung|rueckfrage" oder null}]}`, prompt: `<docs>\n${docs.map(line).join("\n")}\n</docs>`, maxOutputTokens: 6000 });
+    const json = r.text.slice(r.text.indexOf("{"), r.text.lastIndexOf("}") + 1);
+    const raw = (JSON.parse(json || "{}") as { items?: unknown[] }).items ?? [];
+    const Item = Advice.shape.items.element;
     const known = new Set(docs.map((d) => d.id));
-    const items = (r.output?.items ?? []).slice(0, 6).map((i) => ({ ...i, doc_ids: i.doc_ids.filter((x) => known.has(x)) }));
+    const items = raw.map((x) => {
+      const o = (x ?? {}) as Record<string, unknown>;
+      return Item.safeParse({ ...o, saving: typeof o.saving === "number" ? o.saving : null, draft: typeof o.draft === "string" && o.draft !== "null" ? o.draft : null, steps: Array.isArray(o.steps) ? o.steps.map(String) : [], doc_ids: Array.isArray(o.doc_ids) ? o.doc_ids.map(String) : [], effort: String(o.effort ?? "mittel"), kind: String(o.kind ?? "ordnung") });
+    }).filter((p) => p.success).map((p) => p.data!).slice(0, 6).map((i) => ({ ...i, doc_ids: i.doc_ids.filter((x) => known.has(x)) }));
+    if (!items.length && raw.length) throw new Error("Antwort nicht lesbar");
     return Response.json({ items, at: new Date().toISOString() });
   } catch (e) {
     console.error("advice", (e as Error).message);

@@ -43,6 +43,19 @@ export function rejectReason(m: Received, inbox: InboxRow): string | undefined {
   return undefined;
 }
 
+/**
+ * Bestätigung einer Gmail-Weiterleitung (forwarding-noreply@google.com, echt per SPF/DKIM):
+ * Link und Code herausziehen, damit man sie in der App mit einem Klick bestätigen kann.
+ */
+export function gmailConfirmation(m: Received, inbox: InboxRow) {
+  if (!sentTo(m, addressOf(inbox.token)) || bare(m.from) !== "forwarding-noreply@google.com" || !authentic(m)) return null;
+  const text = `${m.text ?? ""} ${m.html ?? ""}`;
+  const link = text.match(/https:\/\/mail(?:-settings)?\.google\.com\/mail\/[^\s"'<>]*vf-[^\s"'<>]+/i)?.[0]?.replace(/&amp;/g, "&");
+  const code = (m.subject ?? "").match(/#(\d{6,12})/)?.[1] ?? text.match(/\b(\d{9})\b/)?.[1];
+  const forwarder = text.match(/([\w.+-]+@gmail\.com|[\w.+-]+@googlemail\.com)/i)?.[1];
+  return link || code ? { link: link ?? null, code: code ?? null, forwarder: forwarder ?? null } : null;
+}
+
 /** Mails an die eigene Adresse im Zeitraum (neueste zuerst, höchstens 1000 durchsucht) */
 export async function listForInbox(inbox: InboxRow, since: Date, until: Date) {
   const addr = addressOf(inbox.token);
