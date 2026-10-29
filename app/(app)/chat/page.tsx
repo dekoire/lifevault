@@ -84,7 +84,7 @@ function Chat() {
             <button type="button" onClick={() => (history.length > 1 ? router.back() : router.push("/"))} className="inline-flex h-10 items-center gap-1 rounded-full pr-3 pl-1.5 text-[14.5px] font-semibold hover:bg-surface-3 lg:hidden"><ChevronLeft size={18} /> Zurück</button>
             <span className="flex min-w-0 items-center gap-2 max-lg:hidden">
               <button type="button" onClick={toggleSide} aria-label={side ? "Verlauf ausblenden" : "Verlauf einblenden"} title={side ? "Verlauf ausblenden" : "Verlauf einblenden"} className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-surface-3">{side ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}</button>
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-fg text-canvas"><MessageSquare size={15} /></span>
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-2 text-fg"><MessageSquare size={16} /></span>
               <span className="min-w-0"><b className="block truncate text-[15px] leading-5">{empty ? "Fragen" : threads.find((t) => t.id === current)?.title ?? "Chat"}</b><span className="block text-[12px] leading-4 text-muted">{empty ? "Neuer Chat" : `${threads.length} Gespräche im Verlauf`}</span></span>
             </span>
             <span className="flex items-center gap-1">

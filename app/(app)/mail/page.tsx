@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, FileUp, Inbox, Loader2, Mail, Paperclip, RefreshCw, Sparkles, X } from "lucide-react";
-import { CARD, PageHeader } from "@/components/ui";
+import { BackLink, CARD, PageHeader } from "@/components/ui";
 import { fmtDate, useDocs } from "@/lib/docs";
 import { GMAIL_CLIENT_ID, gmailMessage, gmailProfile, gmailSearch, gmailToken, importName, parseMailFiles, pool, type MailItem } from "@/lib/mail";
 import { authFetch, supabase, useSession } from "@/lib/supabase";
@@ -162,6 +162,7 @@ export default function MailPage() {
 
   return (
     <>
+      <BackLink href="/einstellungen" label="Einstellungen" />
       <PageHeader title="E-Mail-Import" subtitle="Rechnungen, Angebote, Verträge & Co. aus deinem Postfach holen – eine günstige KI sortiert vor" />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {/* Zeitraum */}

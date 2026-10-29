@@ -2,11 +2,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { AtSign, Building2, Camera, PanelLeftClose, PanelLeftOpen, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
+import { Building2, Camera, PanelLeftClose, PanelLeftOpen, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
 import { Logo, LogoMark } from "@/components/Logo";
 import { MfaChallenge, MfaEnroll } from "@/components/Mfa";
 import { useCaptureTray } from "@/components/CaptureTray";
-import { DocsProvider } from "@/lib/docs";
+import { DocsProvider, useDocs } from "@/lib/docs";
+import { NotifySync } from "@/lib/notify";
 import { MeProvider, useMe } from "@/lib/me";
 import { ProjectsProvider } from "@/lib/projects";
 import { ProjectSwitcher, UploadTarget } from "@/components/ProjectSwitcher";
@@ -46,6 +47,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <ProjectsProvider>
         <DocsProvider userId={session.user.id}>
           <DetailHost><Shell email={session.user.email ?? ""}>{children}</Shell></DetailHost>
+          <QueueSync />
         </DocsProvider>
       </ProjectsProvider>
     </MeProvider>
@@ -53,6 +55,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 type Nav = { href: string; label: string; icon: LucideIcon; match: (p: string) => boolean };
+
+/** Erinnerungen (Mitteilungen) aktuell halten */
+function QueueSync() {
+  const { allDocs } = useDocs();
+  return <NotifySync docs={allDocs} />;
+}
 
 function Shell({ email, children }: { email: string; children: React.ReactNode }) {
   const path = usePathname();
@@ -72,7 +80,6 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
     { href: "/profil", label: "Profil", icon: UserRound, match: (p) => p.startsWith("/profil") },
     { href: "/partner", label: "Partner", icon: Building2, match: (p) => p.startsWith("/partner") },
     { href: "/einstellungen", label: "Einstellungen", icon: Settings, match: (p) => p.startsWith("/einstellungen") },
-    { href: "/mail", label: "E-Mail-Import", icon: AtSign, match: (p: string) => p.startsWith("/mail") },
     ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: ShieldCheck, match: (p: string) => p.startsWith("/admin") }] : []),
   ];
   return (

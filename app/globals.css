@@ -49,7 +49,9 @@
   --color-selected: #a995ff;
 }
 
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+/* iPhone zoomt beim Tippen in Felder unter 16px – in der App nie */
+@media (max-width: 1023px) { input, select, textarea { font-size: max(16px, 1em) !important; } }
 body {
   background: var(--color-page);
   color: var(--color-fg);
