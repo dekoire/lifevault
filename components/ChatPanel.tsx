@@ -500,6 +500,8 @@ export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; 
   const { vault, unlocked } = useMe();
   // Frage braucht verschlüsselte Inhalte, Tresor gesperrt: erst fragen, dann weiter
   const [gate, setGate] = useState<{ q: string; base: Msg[] } | null>(null);
+  // einmal „Ohne Tresor fragen“ gewählt: in diesem Gespräch nicht noch einmal nach dem Passwort fragen
+  const noVault = useRef(false);
   const [depth, setDepthState] = useState<Depth>("normal");
   useEffect(() => { try { const d = localStorage.getItem("lifevault:depth"); if (d === "kurz" || d === "normal" || d === "gruendlich") setDepthState(d); } catch { /* egal */ } }, []);
   const setDepth = (d: Depth) => { setDepthState(d); try { localStorage.setItem("lifevault:depth", d); } catch { /* egal */ } };
@@ -521,6 +523,7 @@ export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; 
   // gespeicherten Chat laden
   useEffect(() => {
     setId(chatId);
+    noVault.current = false;
     if (!chatId) { setMsgs([]); return; }
     void supabase.from("chats").select("messages").eq("id", chatId).maybeSingle().then(({ data }) => setMsgs((data?.messages as Msg[]) ?? []));
   }, [chatId]);
@@ -543,7 +546,7 @@ export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; 
     const question = q.trim();
     if (!question || busy) return;
     const encDocs = allDocs.filter((d) => d.encrypted && d.secret);
-    if (!docId && !opts.skipGate && vault && !vaultKey() && encDocs.length && SENSITIVE_Q.test(question)) { setGate({ q: question, base }); return; }
+    if (!docId && !opts.skipGate && !noVault.current && vault && !vaultKey() && encDocs.length && SENSITIVE_Q.test(question)) { setGate({ q: question, base }); return; }
     setGate(null);
     const secretDocs = !docId && vaultKey() && encDocs.length ? await decryptForChat(encDocs, question) : undefined;
     const att = attachments.filter((a) => a.id).map((a) => ({ id: a.id!, name: a.name }));
@@ -581,7 +584,7 @@ export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; 
       await save(all).catch(() => undefined);
     }
   };
-  const reset = () => { abort.current?.abort(); setMsgs([]); setId(undefined); };
+  const reset = () => { abort.current?.abort(); setMsgs([]); setId(undefined); noVault.current = false; };
 
   // Nachricht i ändern und speichern
   const update = async (list: Msg[]) => { setMsgs(list); await save(list).catch(() => undefined); };
@@ -642,6 +645,6 @@ export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; 
 
   // nach dem Entsperren die zurückgehaltene Frage automatisch senden
   useEffect(() => { if (gate && unlocked) void send(gate.q, gate.base, { skipGate: true }); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [unlocked]);
-  const skipGate = () => { if (gate) void send(gate.q, gate.base, { skipGate: true }); };
+  const skipGate = () => { noVault.current = true; if (gate) void send(gate.q, gate.base, { skipGate: true }); };
   return { msgs, busy, send, stop: () => abort.current?.abort(), reset, id, research, saveFound, depth, setDepth, attachments, attach, removeAttachment, gate, skipGate, cancelGate: () => setGate(null) };
 }

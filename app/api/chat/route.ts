@@ -1,6 +1,7 @@
 import { streamText, type ModelMessage } from "ai";
 import { aiFor, loadAiSettings, todayLine } from "@/lib/ai";
 import { clusterOf } from "@/lib/clusters";
+import { routeQuestion } from "@/lib/route";
 import { buildPartners } from "@/lib/partners";
 import { unauthorized, userClient } from "@/lib/server";
 import type { Doc } from "@/lib/types";
@@ -77,7 +78,7 @@ Schlage dann eine Internetrecherche vor, indem du als ALLERLETZTE Zeile genau da
 Höchstens eine solche Zeile, nur wenn es wirklich hilft. Keine Namen, Adressen oder Nummern in der Suchanfrage. Die FOLGEFRAGEN-Zeile steht dann direkt davor.
 
 Bei rechtlichen Fragen: allgemeine Information, keine Rechtsberatung – sag das in einem kurzen Halbsatz bei den Tipps.
-VORHANDEN IST VORHANDEN: Steht ein Dokument in „Alle Dokumente“ oder wurde es im Gespräch schon genannt, behaupte nie, es fehle. Sagt der Nutzer „doch, es gibt …“, such in der Liste nach Titel, Art und Absender (auch bei Tippfehlern) und korrigiere dich.
+VORHANDEN IST VORHANDEN: Steht ein Dokument in „Passende Dokumente“ oder „Weitere Dokumente“ (Kurzliste mit Titel) oder wurde es im Gespräch schon genannt, behaupte nie, es fehle. Sagt der Nutzer „doch, es gibt …“, such in der Liste nach Titel, Art und Absender (auch bei Tippfehlern) und korrigiere dich. Ist ein passendes Dokument nur in der Kurzliste, nenne es mit Link – bei der nächsten Frage liegt dir sein Inhalt vor.
 Gesundheitsdaten behandelst du sachlich und vertraulich; bei medizinischen Fragen ersetzt du keinen Arzt.`;
 
 const words = (q: string) => [...new Set(q.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? [])].slice(0, 12);
@@ -119,9 +120,19 @@ export async function POST(req: Request) {
   const projectId = typeof body?.projectId === "string" && /^[0-9a-f-]{36}$/i.test(body.projectId) ? body.projectId : undefined;
   let dq = sb.from("documents").select("id,title,cluster,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,tags,archived,encrypted").eq("status", "ready").is("merged_into", null);
   if (projectId) dq = dq.eq("project_id", projectId);
-  // alle Dokumente (nicht nur die neuesten) – knapp gehalten, damit es günstig bleibt
-  const { data: all } = await dq.order("received_at", { ascending: false }).limit(400);
-  const overview = (all ?? []).map((d) => `- [${d.title}](/d/${d.id}) · ${clusterOf(d.cluster).label} · ${d.doc_type ?? ""} · ${d.sender ?? ""} · ${d.doc_date ?? d.received_at.slice(0, 10)}${d.archived ? " · ARCHIVIERT (gilt nicht mehr)" : ""}${d.encrypted ? " · verschlüsselt (Inhalt nicht lesbar)" : ""}\n  ${(d.summary ?? "").slice(0, 220)}\n  Fakten: ${(d.key_facts as { label: string; value: string }[]).slice(0, d.archived ? 3 : 8).map((f) => `${f.label}: ${f.value}`).join("; ")}${(d.deadlines as { date: string; what: string }[]).length ? `\n  Fristen: ${(d.deadlines as { date: string; what: string }[]).map((x) => `${x.date} ${x.what}`).join("; ")}` : ""}`).join("\n");
+  // alle Dokumente (nicht nur die neuesten): ausführlich nur, was zur Frage passt (Bereich, Art, Partner, Treffer, im Gespräch genannt),
+  // der Rest als Kurzliste – so geht nichts verloren, und es bleibt schnell und günstig, auch bei vielen Dokumenten
+  const { data: all } = await dq.order("received_at", { ascending: false }).limit(1500);
+  const route = routeQuestion(recentUser.join(" "), all ?? []);
+  const hitIds = new Set(hits.map((h) => h.id));
+  const today = new Date().toISOString().slice(0, 10);
+  const open = (d: { deadlines: unknown }) => (d.deadlines as { date: string }[]).some((x) => x.date >= today);
+  const wanted = (d: NonNullable<typeof all>[number], i: number) => hitIds.has(d.id) || route.ids.has(d.id) || (route.general && (i < 40 || open(d)));
+  const rich = (all ?? []).filter(wanted).slice(0, depth === "gruendlich" ? 120 : 70);
+  const richIds = new Set(rich.map((d) => d.id));
+  const line = (d: NonNullable<typeof all>[number]) => `- [${d.title}](/d/${d.id}) · ${clusterOf(d.cluster).label} · ${d.doc_type ?? ""} · ${d.sender ?? ""} · ${d.doc_date ?? d.received_at.slice(0, 10)}${d.archived ? " · ARCHIVIERT (gilt nicht mehr)" : ""}${d.encrypted ? " · verschlüsselt (Inhalt nicht lesbar)" : ""}`;
+  const overview = rich.map((d) => `${line(d)}\n  ${(d.summary ?? "").slice(0, 260)}\n  Fakten: ${(d.key_facts as { label: string; value: string }[]).slice(0, d.archived ? 3 : 10).map((f) => `${f.label}: ${f.value}`).join("; ")}${(d.deadlines as { date: string; what: string }[]).length ? `\n  Fristen: ${(d.deadlines as { date: string; what: string }[]).map((x) => `${x.date} ${x.what}`).join("; ")}` : ""}`).join("\n");
+  const index = (all ?? []).filter((d) => !richIds.has(d.id)).map((d) => `- [${d.title}](/d/${d.id}) · ${d.doc_type ?? ""} · ${d.sender ?? ""} · ${d.doc_date ?? d.received_at.slice(0, 10)}${d.archived ? " · archiviert" : ""}`).join("\n");
   const details = hits.slice(0, depth === "gruendlich" ? 8 : depth === "kurz" ? 3 : 5).map((d) => `### [${d.title}](/d/${d.id})\n${(d.full_text ?? "").slice(0, depth === "gruendlich" ? 25000 : 15000)}`).join("\n\n");
   // Partnerliste mit Schlüsseln, damit Firmen im Text klickbar verlinkt werden
   const partners = buildPartners((all ?? []).map((d) => ({ ...d, status: "ready" }) as unknown as Doc)).slice(0, 80).map((p) => `- [${p.name}](/partner/${p.key})`).join("\n");
@@ -130,7 +141,7 @@ export async function POST(req: Request) {
   // verschlüsselte Dokumente: nur wenn der Browser sie für diese Antwort entschlüsselt mitschickt – hier nicht gespeichert
   const secret = (Array.isArray(body?.secretDocs) ? body.secretDocs : []).filter((d) => typeof d?.id === "string" && /^[0-9a-f-]{36}$/i.test(d.id) && typeof d.text === "string").slice(0, 40);
   const secretBlock = secret.length ? `## Verschlüsselte Dokumente (für diese Antwort im Browser entschlüsselt)\n${secret.map((d) => `### [${String(d.title).slice(0, 200)}](/d/${d.id})\n${d.text.slice(0, 8000)}`).join("\n\n")}\n\n` : "";
-  const context = `${attachBlock}${focusBlock}${secretBlock}${todayLine()}\n\n## Alle Dokumente (${all?.length ?? 0})\n${overview || "(noch keine Dokumente)"}\n\n## Partner (Firmen, Vertragspartner, Händler)\n${partners || "(keine)"}\n\n## Volltext der passendsten Dokumente\n${details || "(keine Volltext-Treffer)"}`;
+  const context = `${attachBlock}${focusBlock}${secretBlock}${todayLine()}\n\n## Passende Dokumente mit Inhalt (${rich.length} von ${all?.length ?? 0})\n${overview || "(noch keine Dokumente)"}\n\n## Weitere Dokumente – nur Titel (${(all?.length ?? 0) - rich.length})\n${index || "(keine)"}\n\n## Partner (Firmen, Vertragspartner, Händler)\n${partners || "(keine)"}\n\n## Volltext der passendsten Dokumente\n${details || "(keine Volltext-Treffer)"}`;
 
   const messages: ModelMessage[] = history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content.slice(0, 8000) }));
   const style = depth === "kurz"
