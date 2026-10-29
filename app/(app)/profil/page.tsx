@@ -101,24 +101,24 @@ export default function ProfilPage() {
       />
 
       {/* Kopf: Avatar, Name, Alter, Kurzfassung, wichtigste Eckdaten */}
-      <section className={`${CARD} mb-4 overflow-hidden p-4 md:p-5`} style={{ background: "var(--gradient-silver)" }}>
+      <section className="mb-4 overflow-hidden rounded-2xl p-4 text-white shadow-card md:p-5" style={{ background: "linear-gradient(135deg, #2f3947 0%, #3b4555 100%)" }}>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-          {email && <Avatar email={email} size={52} />}
+          {email && <span className="rounded-full ring-2 ring-white/25"><Avatar email={email} size={52} /></span>}
           <div className="min-w-0 flex-1">
             <h2 className="text-[18px] leading-6 font-semibold">{fullName || "Du"}</h2>
-            {birth && <p className="text-[13px] text-muted">geboren am {birth}{age !== null ? ` · ${age} Jahre` : ""}</p>}
+            {birth && <p className="text-[13px] text-white/70">geboren am {birth}{age !== null ? ` · ${age} Jahre` : ""}</p>}
           </div>
         </div>
         {chips.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {chips.map((c) => { const lp = c.icon === Home ? undefined : logoFor(c.v, []); return <span key={c.v} className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-surface py-0.5 shadow-card pr-2.5 pl-1.5 text-[12.5px] font-semibold">{lp ? <SenderLogo domain={lp.domain} sender={lp.name} cluster={lp.cluster} size={18} bare /> : <c.icon size={13} className="mx-0.5 shrink-0" />}<span className="truncate">{c.v}</span></span>; })}
+            {chips.map((c) => { const lp = c.icon === Home ? undefined : logoFor(c.v, []); return <span key={c.v} className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white py-0.5 text-[#111] pr-2.5 pl-1.5 text-[12.5px] font-semibold">{lp ? <SenderLogo domain={lp.domain} sender={lp.name} cluster={lp.cluster} size={18} bare /> : <c.icon size={13} className="mx-0.5 shrink-0" />}<span className="truncate">{c.v}</span></span>; })}
           </div>
         )}
         {/* Kennzahlen in einer Leiste, durch Striche getrennt */}
-        <dl className="-mx-4 mt-4 -mb-4 grid grid-cols-3 divide-x divide-card-line border-t border-card-line md:-mx-5 md:-mb-5">
-          <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-muted">Dokumente</dt><dd className="tnum text-[18px] font-bold">{ready}</dd></div>
-          <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-muted">Bereiche</dt><dd className="tnum text-[18px] font-bold">{profile?.sections.length ?? "–"}</dd></div>
-          <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-muted">Stand</dt><dd className="flex flex-wrap items-center gap-1.5 text-[15px] leading-[27px] font-semibold">{profile ? new Date(profile.generatedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "–"}{newer > 0 && <span className="rounded-full bg-brand-500/10 px-1.5 py-px text-[11px] font-semibold text-brand-500">{newer} neu</span>}</dd></div>
+        <dl className="-mx-4 mt-4 -mb-4 grid grid-cols-3 divide-x divide-white/15 border-t border-white/15 md:-mx-5 md:-mb-5">
+          <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-white/65">Dokumente</dt><dd className="tnum text-[18px] font-bold">{ready}</dd></div>
+          <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-white/65">Bereiche</dt><dd className="tnum text-[18px] font-bold">{profile?.sections.length ?? "–"}</dd></div>
+          <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-white/65">Stand</dt><dd className="flex flex-wrap items-center gap-1.5 text-[15px] leading-[27px] font-semibold">{profile ? new Date(profile.generatedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "–"}{newer > 0 && <span className="rounded-full bg-white/15 px-1.5 py-px text-[11px] font-semibold text-white">{newer} neu</span>}</dd></div>
         </dl>
       </section>
 
