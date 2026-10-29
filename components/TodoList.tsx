@@ -1,14 +1,25 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, ChevronRight, ListTodo } from "lucide-react";
+import { AlertTriangle, CalendarClock, Check, ChevronRight, ClipboardPen, Clock, Euro, FileSignature, ListTodo, Scale, Tag } from "lucide-react";
 import { useDetail } from "@/components/DetailPanel";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD } from "@/components/ui";
-import { dueLabel, todos } from "@/lib/actions";
+import { dueLabel, todoKind, todos, type TodoKind } from "@/lib/actions";
 import { fmtDate, fmtMoney } from "@/lib/docs";
 import type { Doc } from "@/lib/types";
 
 const KEY = "lifevault:todo-done";
+
+/** Art der Aufgabe: eigene Farbe + Symbol (Zahlung, Formular, Angebot läuft ab …) */
+export const KIND: Record<TodoKind, { label: string; icon: typeof Euro; cls: string }> = {
+  zahlung: { label: "Zahlung", icon: Euro, cls: "bg-[#fff4e5] text-[#b45309] dark:bg-[#3a2a12] dark:text-[#f5b45a]" },
+  formular: { label: "Formular", icon: ClipboardPen, cls: "bg-[#e8f1ff] text-[#1d5fd6] dark:bg-[#132544] dark:text-[#8db8ff]" },
+  angebot: { label: "Angebot läuft ab", icon: Tag, cls: "bg-[#e6f6f3] text-[#157368] dark:bg-[#10302b] dark:text-[#6fd3c4]" },
+  widerspruch: { label: "Widerspruch", icon: Scale, cls: "bg-lavender text-brand-600 dark:bg-[#2a2350] dark:text-brand-300" },
+  vertrag: { label: "Vertrag", icon: FileSignature, cls: "bg-[#f1f1f4] text-[#3f3f46] dark:bg-[#26262e] dark:text-[#d4d4d8]" },
+  termin: { label: "Termin", icon: CalendarClock, cls: "bg-[#fdeef6] text-[#b0246f] dark:bg-[#3a1529] dark:text-[#f59cc9]" },
+  frist: { label: "Frist", icon: Clock, cls: "bg-[#f1f1f4] text-[#52525b] dark:bg-[#26262e] dark:text-[#d4d4d8]" },
+};
 const load = (): string[] => { try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; } };
 
 /** „Zu erledigen“: Fristen mit Handlungsbedarf, überfällige rot; Klick öffnet Details (Überweisung, Kontakt) rechts */
@@ -67,7 +78,7 @@ export function TodoList({ docs }: { docs: Doc[] }) {
                 <SenderLogo domain={t.doc.sender_domain} sender={t.doc.sender} cluster={t.doc.cluster} size={38} />
                 <span className="min-w-0 flex-1">
                   <span className={`block truncate text-[14px] font-semibold ${isDone ? "line-through" : ""}`}>{t.what}</span>
-                  <span className="block truncate text-[12px] text-muted">{t.doc.title}{t.more > 0 ? ` · +${t.more} weitere Frist${t.more === 1 ? "" : "en"}` : ""}</span>
+                  <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] text-muted">{(() => { const k = KIND[todoKind(t)]; return <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-px text-[11px] font-semibold ${k.cls}`}><k.icon size={11} strokeWidth={2.4} />{k.label}</span>; })()}<span className="min-w-0 truncate">{t.doc.title}{t.more > 0 ? ` · +${t.more} weitere Frist${t.more === 1 ? "" : "en"}` : ""}</span></span>
                 </span>
                 <span className="shrink-0 text-right">
                   {t.payment?.amount !== undefined && <b className="tnum block text-[13.5px]">{fmtMoney(t.payment.amount, t.payment.currency)}</b>}

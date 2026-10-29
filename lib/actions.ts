@@ -87,3 +87,17 @@ export function dueLabel(days: number) {
   if (days < 0) { const n = -days; return n >= 60 ? `überfällig seit ${Math.round(n / 30)} Monaten` : `überfällig seit ${n} ${n === 1 ? "Tag" : "Tagen"}`; }
   return days === 0 ? "heute fällig" : days === 1 ? "morgen" : `in ${days} Tagen`;
 }
+
+/** Art einer Aufgabe – bestimmt Farbe und Symbol in „Zu erledigen“ */
+export type TodoKind = "widerspruch" | "angebot" | "formular" | "zahlung" | "vertrag" | "termin" | "frist";
+export function todoKind(t: Pick<Todo, "what" | "doc" | "payment">): TodoKind {
+  const what = t.what.toLowerCase();
+  const all = `${what} ${(t.doc.doc_type ?? "").toLowerCase()} ${(t.doc.title ?? "").toLowerCase()}`;
+  if (/widerspruch|einspruch|gerichtliche entscheidung|anfecht|rechtsbehelf|anhörung/.test(what)) return "widerspruch";
+  if (/angebot|kostenvoranschlag|bindefrist|annahmefrist/.test(all) && !/mahnung|rechnung/.test(all)) return "angebot";
+  if (/ausfüll|zurücksend|rücksend|einreich|unterschreib|unterzeichn|formular|fragebogen|antrag|nachweis|vorlegen|melden|anmeld/.test(what)) return "formular";
+  if (/zahl|überweis|fällig|gebühr|mahn|rechnung|beitrag|betrag|forderung|abschlag/.test(what) || (t.payment && /zahl|fällig|bis/.test(what))) return "zahlung";
+  if (/vertrag|kündig|verlänger|änderung|police|laufzeit/.test(what)) return "vertrag";
+  if (/termin|untersuchung|vorstellung|kontrolle|sprechstunde/.test(what)) return "termin";
+  return "frist";
+}
