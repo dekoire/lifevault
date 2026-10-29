@@ -340,17 +340,21 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
             </Section>
           )}
 
-          {/* 8. weitere Angaben (Kennungen, Vertragsdaten …) */}
-          {show.facts && restGroups.map(([g, fs]) => {
-            const all = more[g];
-            const rows = all ? fs : fs.slice(0, 8);
-            return (
-              <Section key={g} title={g} count={fs.length} open={isOpen(`g:${g}`, false)} onToggle={() => toggle(`g:${g}`, false)}>
-                <FactGrid facts={rows} />
-                {fs.length > 8 && <button type="button" onClick={() => setMore({ ...more, [g]: !all })} className="w-full border-t border-line bg-surface-2 px-4 py-2.5 text-center text-[13px] font-semibold text-fg transition-colors hover:bg-surface-3">{all ? "Weniger anzeigen" : `Alle ${fs.length} anzeigen`}</button>}
-              </Section>
-            );
-          })}
+          {/* 8. weitere Angaben in EINER Kachel (Kennungen, Hinweise, Konsequenzen …) – Gruppen als Zwischenüberschriften */}
+          {show.facts && restGroups.length > 0 && (
+            <Section title="Weitere Angaben" icon={<FileText size={16} />} count={restGroups.reduce((n, [, fs]) => n + fs.length, 0)} open={isOpen("rest", false)} onToggle={() => toggle("rest", false)}>
+              {restGroups.map(([g, fs]) => {
+                const all = more[g];
+                return (
+                  <div key={g}>
+                    <h3 className="border-t border-line bg-surface-2/60 px-4 py-1.5 text-[12px] font-semibold tracking-wide text-muted uppercase">{g}</h3>
+                    <FactGrid facts={all ? fs : fs.slice(0, 8)} />
+                    {fs.length > 8 && <button type="button" onClick={() => setMore({ ...more, [g]: !all })} className="w-full border-t border-line px-4 py-2 text-center text-[12.5px] font-semibold text-fg hover:bg-surface-2">{all ? "Weniger anzeigen" : `Alle ${fs.length} anzeigen`}</button>}
+                  </div>
+                );
+              })}
+            </Section>
+          )}
           {show.deadlines && !!content?.deadlines?.length && (
             <Section title="Fristen & Termine" icon={<CalendarClock size={16} />} count={content.deadlines.length} open={isOpen("dl", false)} onToggle={() => toggle("dl", false)}>
               <KeyValueTable rows={content.deadlines.map((x) => ({ label: fmtDate(x.date), value: x.what }))} />
