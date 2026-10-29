@@ -17,7 +17,10 @@ export async function POST(req: Request) {
   if (ids.length < 1) return Response.json({ ok: true, changed: 0 });
   const list = `(${ids.join(",")})`;
   const { data } = await auth.sb.from("documents").select("id,title,doc_type,sender,sender_domain,status,merged_into").or(`id.in.${list},split_from.in.${list}`);
-  const docs = (data ?? []).filter((d) => d.status === "ready" && !d.merged_into);
+  // zusammengeführte Anhänge: stattdessen das Hauptdokument nehmen
+  const extra = [...new Set((data ?? []).map((d) => d.merged_into as string | null).filter((x): x is string => !!x && !(data ?? []).some((d) => d.id === x)))];
+  const { data: parents } = extra.length ? await auth.sb.from("documents").select("id,title,doc_type,sender,sender_domain,status,merged_into").in("id", extra) : { data: [] };
+  const docs = [...(data ?? []), ...(parents ?? [])].filter((d) => d.status === "ready" && !d.merged_into);
   if (docs.length < 2) return Response.json({ ok: true, changed: 0 });
   const senders = new Set(docs.map((d) => `${d.sender ?? ""}|${d.sender_domain ?? ""}`));
   if (senders.size < 2) return Response.json({ ok: true, changed: 0 });
