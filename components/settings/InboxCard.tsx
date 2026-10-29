@@ -3,7 +3,7 @@ import { useState } from "react";
 import { AtSign, Check, Copy, Loader2, Plus, RefreshCw, RotateCcw, ShieldCheck, X } from "lucide-react";
 import { CARD, Switch } from "@/components/ui";
 import { useDocs } from "@/lib/docs";
-import { importInbox, inboxAddress, useInbox, type InboxResult } from "@/lib/inbox";
+import { importInbox, inboxAddress, MAIL_MODES, useInbox, type InboxResult } from "@/lib/inbox";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -40,7 +40,7 @@ export function InboxCard({ mode, from, to }: { mode: "since" | "range"; from: s
     const range = mode === "range"
       ? { since: new Date(`${from}T00:00:00`), until: new Date(new Date(`${to}T00:00:00`).getTime() + 86_400_000), advance: false }
       : { since: last ? new Date(last.getTime() - 3_600_000) : new Date(Date.now() - 30 * 86_400_000) };
-    try { setResult(await importInbox({ ...range, upload, onStep: (s, d, t) => setStep(t ? `${s} · ${d} / ${t}` : s) })); }
+    try { setResult(await importInbox({ ...range, upload, mode: inbox?.mode, onStep: (s, d, t) => setStep(t ? `${s} · ${d} / ${t}` : s) })); }
     catch (e) { setError((e as Error).message); }
     finally { setStep(undefined); }
   };
@@ -83,6 +83,15 @@ export function InboxCard({ mode, from, to }: { mode: "since" | "range"; from: s
         </form>
       </div>
 
+      {inbox.mode && (
+        <div className="border-t border-line p-5">
+          <b className="block text-[14px]">Was soll gelesen werden?</b>
+          <div className="mt-2.5 inline-flex flex-wrap gap-1 rounded-full bg-surface-2 p-1">
+            {MAIL_MODES.map((m) => <button key={m.id} type="button" onClick={() => void save({ mode: m.id })} aria-pressed={inbox.mode === m.id} className={`h-9 rounded-full px-3.5 text-[13px] font-semibold ${inbox.mode === m.id ? "bg-surface text-fg shadow-sm" : "text-soft hover:text-fg"}`}>{m.label}</button>)}
+          </div>
+          <p className="mt-2 text-[12.5px] text-muted">{MAIL_MODES.find((m) => m.id === inbox.mode)?.hint} Die KI entscheidet, was relevant ist; Werbung und Versandinfos ohne Preis werden nicht abgelegt.</p>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-4 border-t border-line p-5">
         <span className="min-w-0 flex-1">
           <b className="block text-[14px]">Automatisch abrufen</b>
