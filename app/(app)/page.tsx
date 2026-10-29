@@ -62,7 +62,7 @@ export default function Home() {
   return (
     <div>
       <PageHeader title={currentProject?.name ?? "Deine Unterlagen"} subtitle={loading ? " " : `${ready.length} Dokumente in ${counts.size} Bereichen${archived ? ` · ${archived} archiviert` : ""}`} />
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
         <div className="min-w-0 space-y-5">
           {/* Kennzahlen: was bisher gesammelt ist */}
           <section className={`${CARD} grid grid-cols-2 sm:grid-cols-4 [&>*:nth-child(odd)]:border-r [&>*:nth-child(-n+2)]:border-b sm:[&>*]:border-b-0 sm:[&>*:not(:last-child)]:border-r`}>
@@ -103,7 +103,7 @@ export default function Home() {
                 <h2 className="mb-3 text-[17px] font-semibold">Bereiche</h2>
                 {counts.size === 0 && !loading && <p className="mb-3 text-[14px] text-muted">Noch nichts abgelegt. Fotografiere ein Dokument oder lade ein PDF hoch – Lifevault sortiert es automatisch in einen dieser Bereiche.</p>}
                 {/* alle Bereiche: belegte zuerst, leere blass mit Beschreibung, was hineingehört */}
-                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                   {[...CLUSTERS].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0)).map((c) => {
                     const n = counts.get(c.id) ?? 0;
                     return (

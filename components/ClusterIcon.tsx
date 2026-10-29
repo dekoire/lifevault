@@ -13,6 +13,13 @@ const TONES = {
   plain: "bg-surface text-fg", // ruhig: weiß ohne Rand, schwarzes Symbol
 };
 
+/** Bereich als Text mit schwarzem Symbol davor (in Listen) */
+export function ClusterTag({ id, className = "" }: { id?: string | null; className?: string }) {
+  const c = clusterOf(id);
+  const Icon = ICONS[c.id] ?? Folder;
+  return <span className={`inline-flex min-w-0 items-center gap-1.5 ${className}`}><Icon size={14} strokeWidth={2} className="shrink-0 text-fg" /><span className="truncate">{c.label}</span></span>;
+}
+
 /** Bereichs-Symbol als runder Avatar */
 export function ClusterIcon({ id, size = 40, tone = "solid" }: { id?: string | null; size?: number; tone?: keyof typeof TONES }) {
   const c = clusterOf(id);

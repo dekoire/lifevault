@@ -1,52 +1,94 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ChevronRight, Search } from "lucide-react";
+import { ClusterTag } from "@/components/ClusterIcon";
+import { compare, FilterBar, FilterSelect, FilterToggle, SortHeader, type Col, type Sort } from "@/components/ListControls";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD, PageHeader } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
 import { buildPartners, type Partner } from "@/lib/partners";
 
-/** Alle Vertragspartner, Dienstleister und Händler aus deinen Dokumenten */
+type Key = "name" | "cluster" | "docs" | "ids" | "last";
+const COLS: Col<Key>[] = [
+  { key: "name", label: "Partner" },
+  { key: "cluster", label: "Bereich" },
+  { key: "docs", label: "Dokumente", className: "justify-end", defaultDir: "desc" },
+  { key: "ids", label: "Kennungen", className: "justify-end", defaultDir: "desc" },
+  { key: "last", label: "Zuletzt", className: "justify-end", defaultDir: "desc" },
+];
+const GRID = "grid-cols-[minmax(0,1fr)_11rem_7.5rem_7.5rem_6.5rem] gap-4";
+const KINDS = [{ value: "vertrag", label: "Verträge & Dienstleister" }, { value: "shop", label: "Händler & Einkäufe" }];
+const kindOf = (p: Partner) => (p.isShop ? "shop" : "vertrag");
+
+/** Alle Vertragspartner, Dienstleister und Händler aus deinen Dokumenten – sortier- und filterbar */
 export default function PartnersPage() {
   const { docs, loading } = useDocs();
-  const [q, setQ] = useState("");
   const all = useMemo(() => buildPartners(docs), [docs]);
+  const [q, setQ] = useState("");
+  const [sort, setSort] = useState<Sort<Key>>({ key: "last", dir: "desc" });
+  const [fCluster, setFCluster] = useState("");
+  const [fKind, setFKind] = useState("");
+  const [onlyIds, setOnlyIds] = useState(false);
+  const [withFormer, setWithFormer] = useState(false);
+
+  const clusters = useMemo(() => [...new Set(all.map((p) => clusterOf(p.cluster).id))].map((id) => ({ value: id, label: clusterOf(id).label })).sort((a, b) => a.label.localeCompare(b.label, "de")), [all]);
+  const hasFormer = all.some((p) => !p.active);
   const term = q.trim().toLowerCase();
-  const list = term ? all.filter((p) => p.name.toLowerCase().includes(term) || p.ids.some((i) => `${i.label} ${i.value}`.toLowerCase().includes(term))) : all;
-  const groups: [string, Partner[]][] = [
-    ["Verträge & Dienstleister", list.filter((p) => p.active && !p.isShop)],
-    ["Händler & Einkäufe", list.filter((p) => p.active && p.isShop)],
-    ["Früher", list.filter((p) => !p.active)],
-  ];
+  const list = all
+    .filter((p) => withFormer || p.active)
+    .filter((p) => !fCluster || clusterOf(p.cluster).id === fCluster)
+    .filter((p) => !fKind || kindOf(p) === fKind)
+    .filter((p) => !onlyIds || p.ids.length > 0)
+    .filter((p) => !term || p.name.toLowerCase().includes(term) || p.ids.some((i) => `${i.label} ${i.value}`.toLowerCase().includes(term)))
+    .sort((a, b) => {
+      const v = (p: Partner): string | number => sort.key === "name" ? p.name : sort.key === "cluster" ? clusterOf(p.cluster).label : sort.key === "docs" ? p.docs.length : sort.key === "ids" ? p.ids.length : p.last;
+      return compare(v(a), v(b), sort.dir) || b.last.localeCompare(a.last);
+    });
+  const filtered = !!(term || fCluster || fKind || onlyIds || withFormer);
+  const reset = () => { setQ(""); setFCluster(""); setFKind(""); setOnlyIds(false); setWithFormer(false); };
+
   return (
     <>
       <PageHeader title="Partner" subtitle={loading ? " " : `${all.length} Firmen und Stellen aus deinen Unterlagen – mit allen Kunden-, Vertrags- und Versicherungsnummern`} />
-      <div className="max-w-4xl space-y-5">
-        <label className="flex h-12 items-center gap-2.5 rounded-full border border-card-line bg-surface px-4 focus-within:border-brand-500">
-          <Search size={18} className="text-muted" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Suchen: Firma oder Nummer, z. B. O2 oder Kundennummer" className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted" />
-        </label>
-        {groups.map(([title, ps]) => ps.length > 0 && (
-          <section key={title}>
-            <h2 className="mb-2.5 text-[15px] font-semibold text-soft">{title}</h2>
-            <div className={`${CARD} divide-y divide-line overflow-hidden`}>
-              {ps.map((p) => (
-                <Link key={p.key} href={`/partner/${p.key}`} className={`flex items-center gap-3 px-4 py-3 hover:bg-surface-2/70 ${p.active ? "" : "opacity-60"}`}>
-                  <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={42} />
-                  <span className="min-w-0 flex-1">
-                    <b className="block truncate text-[15px]">{p.name}</b>
-                    <span className="block truncate text-[13px] text-muted">
-                      {p.isShop ? `zuletzt ${fmtDate(p.last)} · ${p.docs.length} ${p.docs.length === 1 ? "Beleg" : "Belege"}` : `${clusterOf(p.cluster).label} · ${p.docs.length} ${p.docs.length === 1 ? "Dokument" : "Dokumente"}${p.ids.length ? ` · ${p.ids.length} ${p.ids.length === 1 ? "Kennung" : "Kennungen"}` : ""}`}
+      <div className="max-w-5xl space-y-3">
+        <FilterBar q={q} onQ={setQ} placeholder="Suchen: Firma oder Nummer, z. B. O2 oder Kundennummer" active={filtered} onReset={reset} count={`${list.length} von ${all.length}`}>
+          {clusters.length > 1 && <FilterSelect label="Bereich" value={fCluster} onChange={setFCluster} options={clusters} />}
+          <FilterSelect label="Art" value={fKind} onChange={setFKind} options={KINDS} />
+          <FilterToggle label="Mit Kennungen" on={onlyIds} onChange={setOnlyIds} />
+          {hasFormer && <FilterToggle label="Auch frühere" on={withFormer} onChange={setWithFormer} />}
+        </FilterBar>
+        {all.length > 0 && (
+          <div className={`${CARD} overflow-hidden`} role="table">
+            <SortHeader cols={COLS} sort={sort} onSort={setSort} grid={GRID} />
+            {list.length === 0 ? <p className="px-4 py-6 text-center text-[14px] text-muted">Nichts gefunden – Filter zurücksetzen?</p> : (
+              <div className="divide-y divide-line" role="rowgroup">
+                {list.map((p) => (
+                  <Link key={p.key} href={`/partner/${p.key}`} role="row" className={`flex items-center gap-3 px-4 py-3 hover:bg-surface-2/70 md:grid ${GRID} ${p.active ? "" : "opacity-60"}`}>
+                    <span className="flex min-w-0 flex-1 items-center gap-3">
+                      <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={38} />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-1.5">
+                          <b className="truncate text-[14.5px]">{p.name}</b>
+                          {p.isShop && <span className="shrink-0 rounded-full border border-card-line px-1.5 py-px text-[11px] font-semibold text-soft">Händler</span>}
+                          {!p.active && <span className="shrink-0 rounded-full border border-card-line px-1.5 py-px text-[11px] font-semibold text-soft">früher</span>}
+                        </span>
+                        <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-muted md:hidden">
+                          <ClusterTag id={p.cluster} className="shrink-0 text-soft" /><span>·</span>
+                          <span className="truncate">{p.docs.length} Dok.{p.ids.length ? ` · ${p.ids.length} Kenn.` : ""} · {fmtDate(p.last)}</span>
+                        </span>
+                      </span>
                     </span>
-                  </span>
-                  <ChevronRight size={16} className="text-muted" />
-                </Link>
-              ))}
-            </div>
-          </section>
-        ))}
+                    <span className="hidden min-w-0 text-[13.5px] text-soft md:block"><ClusterTag id={p.cluster} /></span>
+                    <span className="tnum hidden text-right text-[13.5px] text-soft md:block">{p.docs.length}</span>
+                    <span className="tnum hidden text-right text-[13.5px] text-soft md:block">{p.ids.length || "–"}</span>
+                    <span className="tnum hidden text-right text-[13.5px] text-soft md:block">{fmtDate(p.last)}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {!loading && !all.length && <p className="text-[14px] text-muted">Noch keine Partner. Sobald Dokumente ausgelesen sind, erscheinen hier Absender, Vertragspartner und Händler.</p>}
       </div>
     </>

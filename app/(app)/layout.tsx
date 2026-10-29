@@ -119,7 +119,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
         </div>
       )}
       <main className={`lg:pl-[var(--side,15rem)] ${chat ? "" : "pb-28 lg:pb-12"}`}>
-        {chat ? children : <div className="mx-auto max-w-6xl px-4 pt-5 md:px-8 lg:pt-8">{children}</div>}
+        {chat ? children : <div className="mx-auto max-w-[90rem] px-4 pt-5 md:px-6 lg:pt-6 xl:px-8">{children}</div>}
       </main>
 
       {/* Handy: untere Leiste ohne Schatten – Start, +, Fragen */}

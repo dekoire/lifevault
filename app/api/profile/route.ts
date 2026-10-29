@@ -10,14 +10,14 @@ const Item = z.object({
   value: z.string().describe("z. B. „Nordwerk Maschinenbau GmbH“, „Vodafone, 39,95 €/Monat“"),
   detail: z.string().nullable().describe("kurzer Zusatz: seit, bis, Tarif, Kündigungsfrist …"),
   status: z.enum(["aktuell", "früher"]),
-  docIds: z.array(z.string()).describe("IDs der Quelldokumente"),
+  docIds: z.array(z.string()).describe("IDs der Quelldokumente, höchstens 3 (die wichtigsten/neuesten)"),
 });
 const Schema = z.object({
   intro: z.string().describe("1–2 Sätze: wer ist die Person, was ist der aktuelle Stand"),
   sections: z.array(z.object({
     id: z.enum(["person", "arbeit", "wohnen", "versicherungen", "vertraege", "finanzen", "gesundheit", "mobilitaet", "offen"]),
     title: z.string(),
-    items: z.array(Item),
+    items: z.array(Item).describe("höchstens 12"),
   })).describe("nur Bereiche mit Inhalt; „offen“ = offene Rechnungen, Mahnungen, anstehende Fristen"),
 });
 export type LifeProfile = z.infer<typeof Schema> & { generatedAt: string; docCount: number };
@@ -38,17 +38,19 @@ ${(d.deadlines as { date: string; what: string }[]).map((x) => `- Frist ${x.date
       ...aiFor("profile"),
       system: `Du erstellst aus den Dokumenten einer Person ein übersichtliches Lebensprofil (Deutsch). Heute ist ${new Date().toISOString().slice(0, 10)}.
 Fasse zusammen, was AKTUELL gilt (Arbeitgeber, Wohnung, Versicherungen, Verträge mit Kosten, Fahrzeug, Bank, Gesundheit) und was FRÜHER war (archivierte Dokumente, frühere Arbeitgeber/Anbieter → status „früher“).
-Nur Fakten aus den Dokumenten, nichts erfinden. Jede Angabe mit den IDs der Quelldokumente. Kurz und konkret.`,
+Nur Fakten aus den Dokumenten, nichts erfinden. Jede Angabe mit höchstens 3 IDs der Quelldokumente. Kurz und konkret.
+Pro Bereich höchstens 12 Angaben – fasse zusammen statt aufzuzählen: Viele Arztbriefe werden zu wenigen Angaben (z. B. Diagnosen, behandelnde Kliniken, letzte Untersuchung), viele Merkblätter eines Arbeitgebers zu einer Angabe.`,
       prompt: list,
-      maxOutputTokens: 8000,
+      maxOutputTokens: 16000,
       output: Output.object({ schema: Schema, name: "profile" }),
     });
     if (!r.output) return Response.json({ error: "Profil konnte nicht erstellt werden." }, { status: 422 });
-    const data: LifeProfile = { ...r.output, generatedAt: new Date().toISOString(), docCount: docs.length };
+    const sections = r.output.sections.map((s) => ({ ...s, items: s.items.slice(0, 15).map((i) => ({ ...i, docIds: i.docIds.slice(0, 3) })) }));
+    const data: LifeProfile = { ...r.output, sections, generatedAt: new Date().toISOString(), docCount: docs.length };
     await sb.from("life_profiles").upsert({ user_id: auth.user.id, data, updated_at: new Date().toISOString() });
     return Response.json(data);
   } catch (e) {
-    console.error("profile", (e as Error).message);
+    console.error("profile", (e as Error).name, (e as Error).message.slice(0, 500));
     return Response.json({ error: "Profil konnte nicht erstellt werden. Bitte später erneut versuchen." }, { status: 502 });
   }
 }

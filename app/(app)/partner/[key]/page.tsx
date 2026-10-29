@@ -3,7 +3,7 @@ import Link from "next/link";
 import { use, useMemo } from "react";
 import { CalendarClock, ExternalLink, Hash, MessageSquare, ShoppingBag } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
-import { DocRow } from "@/components/DocRow";
+import { DocTable } from "@/components/DocTable";
 import { SenderLogo } from "@/components/SenderLogo";
 import { BackLink, CARD, PageHeader } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
@@ -70,9 +70,9 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
             </section>
           )}
         </div>
-        <section className={CARD}>
-          <h2 className="px-5 pt-4 pb-1 text-[16px] font-semibold">Dokumente</h2>
-          <div className="divide-y divide-line">{p.docs.map((d) => <DocRow key={d.id} d={d} />)}</div>
+        <section className="space-y-3">
+          <h2 className="text-[16px] font-semibold">Dokumente</h2>
+          <DocTable docs={p.docs} sender={false} archiveToggle={false} />
         </section>
       </div>
     </div>
