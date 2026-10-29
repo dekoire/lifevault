@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarClock, Download, ExternalLink, Lock, Maximize2, X } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
+import { DocActions } from "@/components/DocActions";
 import { OfficePreview } from "@/components/OfficePreview";
 import { officeKind } from "@/lib/office";
 import { DocRow } from "@/components/DocRow";
@@ -85,6 +86,7 @@ function DocDetail({ id, open, close }: { id: string; open: (d: Detail) => void;
           </p>
         </div>
       </div>
+      {!doc.encrypted && <DocActions doc={doc} url={url} fullText={doc.full_text} />}
       <div className="flex gap-2">
         <Link href={`/d/${doc.id}`} onClick={close} className={`${BTN} bg-brand-500 text-white hover:bg-brand-600`}><Maximize2 size={15} /> Groß öffnen</Link>
         {!doc.encrypted && !doc.file_path.startsWith("inbox/") && <button type="button" onClick={() => void download()} className={`${BTN} border border-card-line hover:bg-surface-2`}><Download size={15} /> Original</button>}

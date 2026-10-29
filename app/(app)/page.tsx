@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { CalendarClock, ChevronRight, FileText, Layers, ListChecks, Lock, Search, Sparkles } from "lucide-react";
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
+import { TodoList } from "@/components/TodoList";
+import { Duplicates } from "@/components/Duplicates";
+import { todos } from "@/lib/actions";
 import { PageHeader } from "@/components/ui";
 import { SenderLogo } from "@/components/SenderLogo";
 import { buildPartners } from "@/lib/partners";
@@ -23,7 +26,7 @@ export default function Home() {
     for (const d of docs) if (d.status === "ready" && d.cluster) m.set(d.cluster, (m.get(d.cluster) ?? 0) + 1);
     return m;
   }, [docs]);
-  const deadlines = useMemo(() => docs.flatMap((d) => (d.deadlines ?? []).filter((x) => x.date >= today).map((x) => ({ ...x, d }))).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5), [docs, today]);
+  const open = useMemo(() => todos(docs, today), [docs, today]);
   const term = q.trim().toLowerCase();
   const found = term ? docs.filter((d) => [d.title, d.file_name, d.sender, d.summary, d.doc_type, ...(d.tags ?? []), ...(d.key_facts ?? []).map((f) => `${f.label} ${f.value}`)].some((v) => v?.toLowerCase().includes(term))) : [];
   const recent = docs.slice(0, 8);
@@ -33,32 +36,12 @@ export default function Home() {
     { icon: FileText, value: ready.length, label: "Dokumente", sub: `+${docs.filter((d) => d.received_at.startsWith(month)).length} diesen Monat` },
     { icon: Layers, value: counts.size, label: "Bereiche", sub: `von ${CLUSTERS.length}` },
     { icon: ListChecks, value: ready.reduce((a, d) => a + (d.key_facts?.length ?? 0), 0), label: "Key-Fakten", sub: "herausgeschrieben" },
-    { icon: CalendarClock, value: docs.reduce((a, d) => a + (d.deadlines ?? []).filter((x) => x.date >= today).length, 0), label: "Fristen", sub: "stehen an" },
+    { icon: CalendarClock, value: open.length, label: "Zu erledigen", sub: open.some((t) => t.days < 0) ? `${open.filter((t) => t.days < 0).length} überfällig` : "stehen an" },
   ];
-  const daysTo = (iso: string) => Math.round((Date.parse(iso) - Date.parse(today)) / 86_400_000);
 
   const archived = docs.filter((d) => d.archived).length;
-  // rechte Spalte nur, wenn es etwas Wichtiges gibt (Fristen, Verschlüsselung)
-  const side = deadlines.length > 0 || pendingProtect > 0;
-  const deadlineCard = deadlines.length > 0 && (
-    <section className={CARD}>
-      <h2 className="flex items-center gap-2 px-4 pt-4 pb-1 text-[16px] font-semibold"><CalendarClock size={18} /> Nächste Fristen</h2>
-      <ul className="divide-y divide-line">
-        {deadlines.map((x, i) => {
-          const n = daysTo(x.date);
-          return (
-            <li key={i}>
-              <Link href={`/d/${x.d.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2/70">
-                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-center leading-none ${n <= 7 ? "bg-urgent text-white" : "bg-fg text-canvas"}`}><span><span className="tnum block text-[15px] font-bold">{n}</span><span className="block text-[9px] font-semibold">{n === 1 ? "Tag" : "Tage"}</span></span></span>
-                <span className="min-w-0 flex-1"><span className="block truncate text-[14px] font-semibold">{x.what}</span><span className="block truncate text-[12px] text-muted">{fmtDate(x.date)} · {x.d.title}</span></span>
-                <ChevronRight size={16} className="text-muted" />
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
+  // rechte Spalte nur, wenn Dokumente auf Verschlüsselung warten
+  const side = pendingProtect > 0;
 
   return (
     <div>
@@ -85,14 +68,13 @@ export default function Home() {
             </section>
           ) : (
             <>
-              <div className="lg:hidden">{deadlineCard}</div>
               {partners.length > 0 && (
                 <section>
                   <div className="mb-3 flex items-center justify-between"><h2 className="text-[17px] font-semibold">Deine Partner</h2><Link href="/partner" className="text-[13px] font-semibold text-selected">Alle {partners.length}</Link></div>
                   <div className="-mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:px-0">
                     {partners.slice(0, 12).map((p) => (
                       <Link key={p.key} href={`/partner/${p.key}`} className={`${CARD} flex w-[104px] shrink-0 flex-col items-center gap-2 p-3 text-center ${p.active ? "" : "opacity-60"}`}>
-                        <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={44} />
+                        <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={44} bare />
                         <span className="line-clamp-2 text-[12px] leading-4 font-semibold">{p.name}</span>
                       </Link>
                     ))}
@@ -118,6 +100,8 @@ export default function Home() {
                   })}
                 </div>
               </section>
+              <Duplicates docs={docs} />
+              <TodoList docs={docs} />
               {recent.length > 0 && (
                 <section className={CARD}>
                   <h2 className="px-4 pt-4 pb-1 text-[16px] font-semibold">Zuletzt hinzugefügt</h2>
@@ -136,7 +120,6 @@ export default function Home() {
               <span className="text-[13px]"><b className="block text-[14px]">{pendingProtect} warten auf Verschlüsselung</b><span className="text-muted">Tresor entsperren, dann werden sie geschützt.</span></span>
             </Link>
           )}
-          {deadlineCard}
         </aside>}
       </div>
     </div>
