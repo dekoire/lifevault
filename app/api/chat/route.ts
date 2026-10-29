@@ -150,5 +150,25 @@ export async function POST(req: Request) {
       ? "\n\nANTWORTTIEFE: Gründlich. Prüfe alle passenden Dokumente, vergleiche sie, zeige Rechnungen und Fristen Schritt für Schritt, nenne Alternativen und Risiken und einen klaren Plan."
       : "";
   const res = streamText({ ...aiFor("chat"), system: `${SYSTEM}${style}\n\n${context}`, messages, maxOutputTokens: depth === "gruendlich" ? 9000 : depth === "kurz" ? 1500 : 4000 });
-  return res.toTextStreamResponse();
+  // eigener Text-Stream: am Ende eine unsichtbare Zeile, warum er endete – bricht er ab, sieht der Browser das und sagt es
+  const enc = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(c) {
+      let reason = "unbekannt";
+      try {
+        for await (const part of res.fullStream) {
+          if (part.type === "text-delta") c.enqueue(enc.encode(part.text));
+          else if (part.type === "error") throw part.error;
+          else if (part.type === "finish") reason = part.finishReason;
+          else if (part.type === "abort") reason = "abort";
+        }
+        c.enqueue(enc.encode(`\n[[ENDE:${reason}]]`));
+      } catch (e) {
+        console.error("chat stream", (e as Error)?.message ?? e);
+        c.enqueue(enc.encode(`\n[[FEHLER:${String((e as Error)?.message ?? e).replace(/\]\]/g, "").slice(0, 200)}]]`));
+      }
+      c.close();
+    },
+  });
+  return new Response(stream, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store", "x-accel-buffering": "no" } });
 }

@@ -542,6 +542,7 @@ export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; 
     }
   };
 
+  const END = /\n?\[\[(ENDE|FEHLER):[^\]]*\]\]\s*$/;
   const send = async (q: string, base = msgs, opts: { skipGate?: boolean } = {}) => {
     const question = q.trim();
     if (!question || busy) return;
@@ -566,8 +567,12 @@ export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; 
         const { value, done } = await reader.read();
         if (done) break;
         out += dec.decode(value, { stream: true });
-        setMsgs([...next, { role: "assistant", content: out }]);
+        setMsgs([...next, { role: "assistant", content: out.replace(END, "") }]);
       }
+      // Ende-Zeile vom Server: fehlt sie oder meldet sie einen Fehler, ist die Antwort unvollständig
+      const end = END.exec(out);
+      out = out.replace(END, "").trimEnd();
+      if (!end || end[1] === "FEHLER") out = `${out}${out ? "\n\n" : ""}_Die Antwort wurde unterbrochen. Bitte die Frage noch einmal senden._`;
       if (!out.trim()) out = "Dazu habe ich gerade keine Antwort bekommen. Bitte noch einmal fragen.";
     } catch (e) {
       if ((e as Error).name === "AbortError") out = out || "(abgebrochen)";
