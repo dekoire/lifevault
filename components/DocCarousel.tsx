@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Lock, LockKeyhole, ShieldCheck } from "lucide-react";
+import { KindTag } from "@/components/KindTag";
 import { SenderLogo } from "@/components/SenderLogo";
 import { dateOf, fmtDate, fmtMoney, isUrgent } from "@/lib/docs";
 import type { Doc, SecretPart } from "@/lib/types";
@@ -54,7 +55,7 @@ function DocCard({ d, wide = false }: { d: Doc; wide?: boolean }) {
               <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} urgent={isUrgent(d)} size={40} />
               <span className="min-w-0 flex-1">
                 <b className="line-clamp-2 text-[15px] leading-5">{d.title ?? d.file_name}</b>
-                <span className="block truncate text-[12px] text-muted">{fmtDate(dateOf(d))}{d.sender ? ` · ${d.sender}` : ""}</span>
+                <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] text-muted"><KindTag d={d} /><span className="truncate">{fmtDate(dateOf(d))}{d.sender ? ` · ${d.sender}` : ""}</span></span>
               </span>
               {d.encrypted && <Lock size={14} className="shrink-0 text-fg" />}
             </span>

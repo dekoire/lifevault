@@ -5,6 +5,7 @@ import { DocCarousel } from "@/components/DocCarousel";
 import { DocRow } from "@/components/DocRow";
 import { Box, stateOf } from "@/components/ExportSheet";
 import { FilterBar, FilterSelect, FilterToggle } from "@/components/ListControls";
+import { KINDS, kindOf } from "@/lib/kinds";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD } from "@/components/ui";
 import { todos } from "@/lib/actions";
@@ -22,12 +23,12 @@ import type { Doc } from "@/lib/types";
  * Abschnitte mit offenen Aufgaben stehen oben. Die Suche durchsucht alles, auch Eingeklapptes.
  */
 // immer chronologisch nach Jahr; optional innerhalb des Jahres unterteilt
-type Sub = "" | "sender" | "topic";
-const SUBS: { value: Sub; label: string }[] = [{ value: "", label: "Nicht unterteilen" }, { value: "sender", label: "Absender" }, { value: "topic", label: "Thema" }];
+type Sub = "" | "sender" | "topic" | "kind";
+const SUBS: { value: Sub; label: string }[] = [{ value: "", label: "Nicht unterteilen" }, { value: "sender", label: "Absender" }, { value: "topic", label: "Thema" }, { value: "kind", label: "Art" }];
 const dateOf = (d: Doc) => d.doc_date ?? d.received_at.slice(0, 10);
 type Range = "all" | "year" | "12m";
-type Filter = { purpose: string; topic: string; label: string; sender: string; range: Range; year: string; encOnly: boolean };
-const NONE: Filter = { purpose: "", topic: "", label: "", sender: "", range: "all", year: "", encOnly: false };
+type Filter = { kind: string; purpose: string; topic: string; label: string; sender: string; range: Range; year: string; encOnly: boolean };
+const NONE: Filter = { kind: "", purpose: "", topic: "", label: "", sender: "", range: "all", year: "", encOnly: false };
 type SortBy = "new" | "old" | "sender" | "title";
 const SORTS: { value: SortBy; label: string }[] = [{ value: "old", label: "Älteste zuerst" }, { value: "sender", label: "Absender A–Z" }, { value: "title", label: "Titel A–Z" }];
 
@@ -66,6 +67,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   const from = f.range === "year" ? `${today.slice(0, 4)}-01-01` : f.range === "12m" ? new Date(Date.now() - 365 * 86_400_000).toISOString().slice(0, 10) : "";
   // ein Filter ausgelassen: daraus ergeben sich die Auswahlmöglichkeiten, die noch Treffer haben
   const match = (d: Doc, skip?: keyof Filter) =>
+    (skip === "kind" || !f.kind || kindOf(d).id === f.kind) &&
     (skip === "purpose" || !f.purpose || purposeOf(d) === f.purpose) &&
     (skip === "topic" || !f.topic || topicOf(d) === f.topic) &&
     (skip === "label" || !f.label || (d.labels ?? []).includes(f.label)) &&
@@ -89,7 +91,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
     return [...years.entries()].sort((a, b) => (sortBy === "old" ? a[0].localeCompare(b[0]) : b[0].localeCompare(a[0]))).map(([year, ds]) => {
       ds.sort(cmp);
       const groups = new Map<string, Doc[]>();
-      if (sub) for (const d of ds) { const k = sub === "sender" ? senderOf(d) : topicOf(d); groups.set(k, [...(groups.get(k) ?? []), d]); }
+      if (sub) for (const d of ds) { const k = sub === "sender" ? senderOf(d) : sub === "kind" ? kindOf(d).label : topicOf(d); groups.set(k, [...(groups.get(k) ?? []), d]); }
       return {
         year, docs: ds, open: ds.filter((d) => openIds.has(d.id)).length,
         groups: [...groups.entries()].sort((a, b) => b[1].length - a[1].length).map(([k, gd]) => ({ key: k, label: sub === "sender" ? senderName(k) : k, partner: sub === "sender" ? partners.get(k) : undefined, docs: gd })),
@@ -99,6 +101,8 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
 
   // nur Auswahl mit Treffern anzeigen (z. B. kein leeres „Betriebsrat“)
   const purposeN = countBy("purpose", purposeOf);
+  const kindN = countBy("kind", (d) => kindOf(d).id);
+  const kindOpts = KINDS.filter((k) => kindN.get(k.id) || f.kind === k.id).map((k) => ({ value: k.id, label: `${k.label} (${kindN.get(k.id) ?? 0})` }));
   const topicN = countBy("topic", topicOf);
   const senderN = countBy("sender", senderOf);
   const purposeOpts = PURPOSES.filter((p) => purposeN.get(p.id) || f.purpose === p.id).map((p) => ({ value: p.id, label: `${p.label} (${purposeN.get(p.id) ?? 0})` }));
@@ -107,7 +111,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   const labelN = new Map<string, number>();
   for (const d of docs) if (match(d, "label")) for (const t of d.labels ?? []) labelN.set(t, (labelN.get(t) ?? 0) + 1);
   const yearN = countBy("year", (d) => dateOf(d).slice(0, 4));
-  const active = Number(!!f.year) + Number(!!f.label) + Number(!!f.purpose) + Number(!!f.topic) + Number(!!f.sender) + Number(f.range !== "all") + Number(f.encOnly);
+  const active = Number(!!f.kind) + Number(!!f.year) + Number(!!f.label) + Number(!!f.purpose) + Number(!!f.topic) + Number(!!f.sender) + Number(f.range !== "all") + Number(f.encOnly);
   const lockedN = unlocked ? 0 : docs.filter((d) => picked.has(d.id) && d.encrypted).length;
   const rows = (ds: Doc[]) => picking
     ? <div className="divide-y divide-line">{ds.map((d) => (
@@ -131,6 +135,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
         {yearN.size > 1 && <FilterSelect label="Jahr" value={f.year} onChange={(v) => set({ year: v })} options={[...yearN.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([y, n]) => ({ value: y, label: `${y} (${n})` }))} />}
         <FilterSelect label="Je Jahr unterteilen nach" value={sub} onChange={(v) => pickSub(v as Sub)} options={SUBS.slice(1)} empty="Nicht unterteilen" />
         {senders.length > 1 && <SenderPick value={f.sender} onChange={(v) => set({ sender: v })} options={senders} />}
+        {kindOpts.length > 1 && <FilterSelect label="Art" value={f.kind} onChange={(v) => set({ kind: v })} options={kindOpts} />}
         {topicOpts.length > 1 && <FilterSelect label="Thema" value={f.topic} onChange={(v) => set({ topic: v })} options={topicOpts} />}
         {labelN.size > 0 && <LabelPick value={f.label} onChange={(v) => set({ label: v })} counts={labelN} />}
         {purposeOpts.length > 1 && <FilterSelect label="Status" value={f.purpose} onChange={(v) => set({ purpose: v })} options={purposeOpts} />}
@@ -140,6 +145,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
       {active > 0 && (
         <div className="-mt-3 flex flex-wrap items-center gap-1.5">
           {[
+            f.kind && { k: "kind", text: KINDS.find((k) => k.id === f.kind)?.label ?? f.kind, color: KINDS.find((k) => k.id === f.kind)?.color },
             f.year && { k: "year", text: f.year },
             f.sender && { k: "sender", text: senders.find((x) => x.key === f.sender)?.name ?? f.sender },
             f.topic && { k: "topic", text: f.topic },

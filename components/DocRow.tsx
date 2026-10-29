@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AlertCircle, Archive, ChevronRight, Lock } from "lucide-react";
+import { KindTag } from "@/components/KindTag";
 import { SenderLogo } from "@/components/SenderLogo";
 import { clusterOf } from "@/lib/clusters";
 import { isUrgent, fmtDate } from "@/lib/docs";
@@ -21,8 +22,8 @@ export function DocRow({ d }: { d: Doc }) {
           {d.encrypted && <Lock size={13} className="shrink-0 text-brand-500" aria-label="verschlüsselt" />}
           {d.archived && <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-card-line px-1.5 py-px text-[11px] font-semibold text-soft"><Archive size={11} /> Archiv</span>}
         </span>
-        <span className="block truncate text-[13px] text-muted">
-          {processing ? <span className="text-shimmer font-medium">Wird ausgelesen</span> : d.status === "error" ? <span className="inline-flex items-center gap-1 text-negative-text"><AlertCircle size={13} /> {d.error ?? "Fehler"}</span> : <>{[d.sender, fmtDate(d.doc_date ?? d.received_at)].filter(Boolean).join(" · ")}{d.cluster && <> · {clusterOf(d.cluster).label}</>}</>}
+        <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted">
+          {processing ? <span className="text-shimmer font-medium">Wird ausgelesen</span> : d.status === "error" ? <span className="inline-flex items-center gap-1 text-negative-text"><AlertCircle size={13} /> {d.error ?? "Fehler"}</span> : <><KindTag d={d} /><span className="truncate">{[d.sender, fmtDate(d.doc_date ?? d.received_at)].filter(Boolean).join(" · ")}{d.cluster && <> · {clusterOf(d.cluster).label}</>}</span></>}
         </span>
       </span>
       <ChevronRight size={16} className="shrink-0 text-muted" />
