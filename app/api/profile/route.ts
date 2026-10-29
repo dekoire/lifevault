@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   if (!auth) return unauthorized();
   await loadAiSettings(auth.sb);
   const { sb } = auth;
-  const { data: docs } = await sb.from("documents").select("id,title,cluster,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,archived,archived_reason,encrypted").eq("status", "ready").order("received_at", { ascending: false }).limit(300);
+  const { data: docs } = await sb.from("documents").select("id,title,cluster,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,archived,archived_reason,encrypted").eq("status", "ready").is("merged_into", null).order("received_at", { ascending: false }).limit(300);
   if (!docs?.length) return Response.json({ error: "Noch keine ausgelesenen Dokumente." }, { status: 400 });
   const list = docs.map((d) => `### ${d.id} | ${d.title} | ${d.cluster} | ${d.doc_type ?? ""} | ${d.sender ?? ""} | ${d.doc_date ?? d.received_at.slice(0, 10)}${d.archived ? ` | ARCHIVIERT: ${d.archived_reason ?? ""}` : ""}${d.encrypted ? " | verschlüsselt (nur Titel bekannt)" : ""}
 ${d.summary ?? ""}

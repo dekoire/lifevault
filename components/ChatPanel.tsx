@@ -228,8 +228,8 @@ function useDictation(onText: (t: string) => void) {
 }
 
 /** Eingabe wie bei Finastry: Feld oben, darunter Plus (Foto/Datei), Antworttiefe, Mikrofon und Senden */
-export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu deinen Unterlagen …", onFiles, attachments = [], onRemoveAttachment, depth, onDepth }: {
-  busy: boolean; onSend: (q: string) => void; onStop: () => void; placeholder?: string;
+export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu deinen Unterlagen …", onFiles, attachments = [], onRemoveAttachment, depth, onDepth, plain = false }: {
+  busy: boolean; onSend: (q: string) => void; onStop: () => void; placeholder?: string; plain?: boolean;
   onFiles?: (files: File[]) => void; attachments?: Attachment[]; onRemoveAttachment?: (key: string) => void; depth?: Depth; onDepth?: (d: Depth) => void;
 }) {
   const { allDocs } = useDocs();
@@ -246,7 +246,7 @@ export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu de
   const cur = DEPTHS.find((d) => d.id === depth) ?? DEPTHS[1];
   const ready = attachments.map(docOf).find((d) => d?.status === "ready");
   return (
-    <form onSubmit={(e) => { e.preventDefault(); send(); }} className="chat-box relative rounded-[22px] border bg-surface p-2">
+    <form onSubmit={(e) => { e.preventDefault(); send(); }} className={plain ? "relative rounded-2xl border border-card-line bg-surface p-2 focus-within:border-line-strong" : "chat-box relative rounded-[22px] border bg-surface p-2"}>
       <input ref={cam} type="file" accept="image/*" capture="environment" className="hidden" onChange={pick} />
       <input ref={files} type="file" accept="image/*,application/pdf,.pptx,.docx,.xlsx" multiple className="hidden" onChange={pick} />
       {attachments.length > 0 && (
@@ -270,7 +270,7 @@ export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu de
         value={text}
         onChange={(e) => { setText(e.target.value); e.target.style.height = "auto"; e.target.style.height = `${Math.min(160, e.target.scrollHeight)}px`; }}
         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }}
-        rows={1}
+        rows={plain ? 3 : 1}
         maxLength={2000}
         placeholder={dict.on ? "Ich höre zu …" : ready ? `Frag etwas zu „${ready.title}“ …` : placeholder}
         className="block max-h-40 min-h-10 w-full resize-none bg-transparent px-2.5 py-2 text-[16px] leading-6 outline-none placeholder:text-muted"

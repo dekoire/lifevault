@@ -103,10 +103,13 @@ export async function POST(req: Request) {
 
   // 1) Treffer per Volltext (beliebiges Wort), 2) Übersicht aller Dokumente
   const q = words(last).join(" or ");
-  const hits = q ? ((await sb.rpc("search_documents", { q, max_results: depth === "gruendlich" ? 10 : 6 })).data as Doc[] | null) ?? [] : [];
+  const rawHits = q ? ((await sb.rpc("search_documents", { q, max_results: depth === "gruendlich" ? 10 : 6 })).data as Doc[] | null) ?? [] : [];
+  // zusammengeführte Einzelteile weglassen – das Ganze ist schon dabei
+  const parts = rawHits.length ? new Set(((await sb.from("documents").select("id").in("id", rawHits.map((h) => h.id)).not("merged_into", "is", null)).data ?? []).map((x) => x.id)) : new Set<string>();
+  const hits = rawHits.filter((h) => !parts.has(h.id));
   // nur das gewählte Projekt (falls eines gewählt ist)
   const projectId = typeof body?.projectId === "string" && /^[0-9a-f-]{36}$/i.test(body.projectId) ? body.projectId : undefined;
-  let dq = sb.from("documents").select("id,title,cluster,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,tags,archived,encrypted").eq("status", "ready");
+  let dq = sb.from("documents").select("id,title,cluster,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,tags,archived,encrypted").eq("status", "ready").is("merged_into", null);
   if (projectId) dq = dq.eq("project_id", projectId);
   const { data: all } = await dq.order("received_at", { ascending: false }).limit(120);
   const overview = (all ?? []).map((d) => `- [${d.title}](/d/${d.id}) · ${clusterOf(d.cluster).label} · ${d.doc_type ?? ""} · ${d.sender ?? ""} · ${d.doc_date ?? d.received_at.slice(0, 10)}${d.archived ? " · ARCHIVIERT (gilt nicht mehr)" : ""}${d.encrypted ? " · verschlüsselt (Inhalt nicht lesbar)" : ""}\n  ${d.summary ?? ""}\n  Fakten: ${(d.key_facts as { label: string; value: string }[]).slice(0, 12).map((f) => `${f.label}: ${f.value}`).join("; ")}${(d.deadlines as { date: string; what: string }[]).length ? `\n  Fristen: ${(d.deadlines as { date: string; what: string }[]).map((x) => `${x.date} ${x.what}`).join("; ")}` : ""}`).join("\n");

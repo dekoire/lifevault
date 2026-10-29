@@ -71,7 +71,7 @@ export async function POST(req: Request) {
   // mehrere Briefe in einer PDF → in einzelne Dokumente trennen (nicht bei verschlüsselten Dateien)
   // Teile einer schon getrennten PDF nicht erneut trennen (außer ausdrücklich gewünscht)
   const isPart = !!doc.split_from || / – Teil \d+ \(S\. /.test(doc.file_name);
-  if (!inline && mediaType === "application/pdf" && (body?.split === true || !isPart)) {
+  if (!inline && mediaType === "application/pdf" && (body?.split === true || (!isPart && body?.split !== false))) {
     const plan = await splitPlan(data).catch(() => undefined);
     if (plan) {
       const ids: string[] = [];

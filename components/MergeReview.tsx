@@ -42,7 +42,7 @@ export function PagePreview({ d, className = "" }: { d: Doc; className?: string 
  * einzelne Fotos abwählen (z. B. doppelt fotografiert) – erst „Zusammenführen“ ändert etwas.
  */
 export function MergeReview({ docs, title, reason, skip: preSkip = [], onDone, onCancel, onNotSame }: { docs: Doc[]; title: string; reason?: string; skip?: string[]; onDone?: () => void; onCancel?: () => void; onNotSame?: () => void }) {
-  const { upload, remove } = useDocs();
+  const { upload, remove, refresh } = useDocs();
   const [order, setOrder] = useState(docs.map((d) => d.id));
   const [skip, setSkip] = useState<string[]>(preSkip);
   const [dropSkipped, setDropSkipped] = useState(true);
@@ -69,9 +69,13 @@ export function MergeReview({ docs, title, reason, skip: preSkip = [], onDone, o
     try {
       const pdf = await toPdf(used);
       const name = `${title.replace(/[\\/:*?"<>|]/g, "").slice(0, 120) || "Dokument"}.pdf`;
-      const ids = await upload([new File([pdf], name, { type: "application/pdf" })], { projectId: used[0].project_id });
+      const ids = await upload([new File([pdf], name, { type: "application/pdf" })], { projectId: used[0].project_id, noSplit: true });
       if (!ids.length) throw new Error("Hochladen hat nicht geklappt – die Einzelteile bleiben erhalten.");
-      for (const d of [...used, ...(dropSkipped ? list.filter((x) => skip.includes(x.id)) : [])]) await remove(d);
+      // Teile nicht löschen, sondern dem Ganzen zuordnen (ausgeblendet) – so lässt es sich wieder trennen
+      const { error } = await supabase.from("documents").update({ merged_into: ids[0] }).in("id", used.map((d) => d.id));
+      if (error) throw new Error("Die Teile konnten nicht zugeordnet werden – bitte erneut versuchen.");
+      for (const d of dropSkipped ? list.filter((x) => skip.includes(x.id)) : []) await remove(d);
+      await refresh();
       onDone?.();
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }

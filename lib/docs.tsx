@@ -6,10 +6,11 @@ import { OFFICE_MIME, officeKind } from "@/lib/office";
 import { downloadFile, processEncrypted, protectDoc } from "@/lib/protect";
 import { authFetch, supabase } from "@/lib/supabase";
 import { openBytes, sealBytes, vaultKey } from "@/lib/vault";
+import { isBack } from "@/lib/cards";
 import { LIST_COLS, type Doc } from "@/lib/types";
 
 export type BatchItem = { key: string; name: string; id?: string; state: "uploading" | "saved" | "failed"; error?: string };
-type Ctx = { batch: BatchItem[]; clearBatch: () => void; docs: Doc[]; allDocs: Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null; silent?: boolean }) => Promise<string[]>; pendingProtect: number; reprocess: (id: string) => Promise<void>; splitDoc: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
+type Ctx = { batch: BatchItem[]; clearBatch: () => void; docs: Doc[]; allDocs: Doc[]; partsOf: (id: string) => Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null; silent?: boolean; noSplit?: boolean }) => Promise<string[]>; pendingProtect: number; reprocess: (id: string) => Promise<void>; splitDoc: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
 const DocsCtx = createContext<Ctx | null>(null);
 
 const OK = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
@@ -48,6 +49,7 @@ async function prepare(file: File): Promise<File> {
 
 export function DocsProvider({ userId, children }: { userId: string; children: React.ReactNode }) {
   const [docs, setDocs] = useState<Doc[]>([]);
+  const [parts, setParts] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(0);
   const [batch, setBatch] = useState<BatchItem[]>([]);
@@ -58,7 +60,10 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
     let { data, error } = await load(LIST_COLS);
     // Datenbank noch ohne Projekte (Migration 0003 fehlt): ohne die neuen Spalten laden
     if (error) ({ data, error } = await load(LIST_COLS.replace(",project_id,split_from", "")));
-    setDocs((data as unknown as Doc[]) ?? []);
+    const list = (data as unknown as Doc[]) ?? [];
+    // Einzelteile zusammengeführter Dokumente ausblenden, aber merken (für „Teile“ und „Wieder trennen“)
+    setParts(list.filter((d) => d.merged_into));
+    setDocs(list.filter((d) => !d.merged_into));
     setLoading(false);
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
@@ -73,9 +78,10 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
   }, [busy, refresh]);
 
   // Auslesen; enthält eine PDF mehrere Briefe, kommen die Teile zurück und werden einzeln ausgelesen
-  const process = async (id: string, split = false): Promise<void> => {
+  // split: true = jetzt trennen, false = nie trennen (z. B. bewusst zusammengeführt), undefined = automatisch
+  const process = async (id: string, split?: boolean): Promise<void> => {
     try {
-      const res = await authFetch("/api/process", { method: "POST", body: JSON.stringify({ id, ...(split ? { split: true } : {}) }) });
+      const res = await authFetch("/api/process", { method: "POST", body: JSON.stringify({ id, ...(split !== undefined ? { split } : {}) }) });
       const json = (await res.json().catch(() => ({}))) as { split?: string[] };
       await refresh();
       if (json.split?.length) for (let i = 0; i < json.split.length; i += 2) await Promise.all(json.split.slice(i, i + 2).map((x) => process(x)));
@@ -85,7 +91,7 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
   };
   const { current, defaultProject } = useProjects();
 
-  const upload = useCallback(async (files: File[], opts: { encrypt?: boolean; projectId?: string | null; silent?: boolean } = {}): Promise<string[]> => {
+  const upload = useCallback(async (files: File[], opts: { encrypt?: boolean; projectId?: string | null; silent?: boolean; noSplit?: boolean } = {}): Promise<string[]> => {
     const ids: string[] = [];
     const encrypt = !!opts.encrypt && !!vaultKey();
     const projectId = opts.projectId ?? (current !== "all" ? current : defaultProject?.id ?? null);
@@ -110,7 +116,7 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
         ids.push(data.id);
         await refresh();
         if (encrypt) await processEncrypted({ id: data.id, mime_type: file.type }, plain).catch(async (e) => { await supabase.from("documents").update({ status: "error", error: (e as Error).message }).eq("id", data.id); }).finally(() => refresh());
-        else void process(data.id);
+        else void process(data.id, opts.noSplit ? false : undefined);
       } catch (e) {
         console.error(e);
         patch(item.key, { state: "failed", error: "Hochladen hat nicht geklappt." });
@@ -203,7 +209,8 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
   const pendingProtect = unlocked ? 0 : toProtect.length;
   // Ansicht auf das gewählte Projekt beschränken
   const visible = useMemo(() => (current === "all" ? docs : docs.filter((d) => d.project_id === current)), [docs, current]);
-  const value = useMemo(() => ({ batch, clearBatch, docs: visible, allDocs: docs, loading, refresh, upload, reprocess, splitDoc, remove, uploading, pendingProtect }), [batch, clearBatch, visible, docs, loading, refresh, upload, reprocess, splitDoc, remove, uploading, pendingProtect]);
+  const partsOf = useCallback((id: string) => parts.filter((d) => d.merged_into === id).sort((a, b) => Number(isBack(a)) - Number(isBack(b)) || (a.file_name ?? "").localeCompare(b.file_name ?? "", "de", { numeric: true })), [parts]);
+  const value = useMemo(() => ({ batch, clearBatch, docs: visible, allDocs: docs, partsOf, loading, refresh, upload, reprocess, splitDoc, remove, uploading, pendingProtect }), [batch, clearBatch, visible, docs, partsOf, loading, refresh, upload, reprocess, splitDoc, remove, uploading, pendingProtect]);
   return <DocsCtx.Provider value={value}>{children}</DocsCtx.Provider>;
 }
 

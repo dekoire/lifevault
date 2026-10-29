@@ -21,6 +21,7 @@ import { useMe } from "@/lib/me";
 import { openDoc, protectDoc, unprotectDoc } from "@/lib/protect";
 import { sensitivity } from "@/lib/sensitive";
 import { WebSourceCard } from "@/components/WebSourceCard";
+import { MergedParts } from "@/components/MergedParts";
 import { supabase } from "@/lib/supabase";
 import type { Doc, Fact, SecretPart } from "@/lib/types";
 
@@ -286,12 +287,13 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
               {image ? <img src={fileUrl} alt={doc.title ?? doc.file_name} className="max-h-[60vh] w-full bg-surface-2 object-contain" /> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={fileUrl} mime={doc.mime_type} name={doc.file_name} /> : <iframe src={fileUrl} title="Original" className="h-[60vh] w-full bg-surface-2" />}
             </section>
           )}
+          <MergedParts doc={doc} onSplit={() => router.push("/")} />
           {!doc.encrypted && <WebSourceCard doc={doc} onChanged={() => void refresh()} />}
           {show.chat && (
             <section className={`${CARD} p-4`}>
               <h2 className="mb-3 text-[15px] font-semibold">Frag zu diesem Dokument</h2>
               {chat.msgs.length > 0 && <div className="mb-4 max-h-[50vh] overflow-y-auto pr-1"><MessageList msgs={chat.msgs} compact busy={chat.busy} onAsk={(q) => void chat.send(q)} onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} /></div>}
-              <Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} placeholder="z. B. Wie hoch ist mein Netto?" depth={chat.depth} onDepth={chat.setDepth} />
+              <Composer plain busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} placeholder="z. B. Wie hoch ist mein Netto?" depth={chat.depth} onDepth={chat.setDepth} />
             </section>
           )}
         </div>
