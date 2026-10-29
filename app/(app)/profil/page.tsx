@@ -118,7 +118,7 @@ export default function ProfilPage() {
         <dl className="-mx-4 mt-4 -mb-4 grid grid-cols-3 divide-x divide-white/15 border-t border-white/15 md:-mx-5 md:-mb-5">
           <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-white/65">Dokumente</dt><dd className="tnum text-[18px] font-bold">{ready}</dd></div>
           <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-white/65">Bereiche</dt><dd className="tnum text-[18px] font-bold">{profile?.sections.length ?? "–"}</dd></div>
-          <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-white/65">Stand</dt><dd className="flex flex-wrap items-center gap-1.5 text-[15px] leading-[27px] font-semibold">{profile ? new Date(profile.generatedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "–"}{newer > 0 && <span className="rounded-full bg-white/15 px-1.5 py-px text-[11px] font-semibold text-white">{newer} neu</span>}</dd></div>
+          <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-white/65">Stand</dt><dd className="tnum text-[18px] font-bold">{profile ? new Date(profile.generatedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "–"}</dd></div>
         </dl>
       </section>
 
