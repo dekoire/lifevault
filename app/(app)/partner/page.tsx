@@ -1,8 +1,9 @@
 "use client";
 import Link from "next/link";
+import { Building2, CalendarDays, FileText, Hash, LayoutGrid } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ClusterTag } from "@/components/ClusterIcon";
-import { compare, FilterBar, FilterSelect, FilterToggle, SortHeader, type Col, type Sort } from "@/components/ListControls";
+import { compare, FilterBar, FilterSelect, FilterToggle, SortHeader, SortMenu, type Col, type Sort } from "@/components/ListControls";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD, PageHeader } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
@@ -11,11 +12,11 @@ import { buildPartners, type Partner } from "@/lib/partners";
 
 type Key = "name" | "cluster" | "docs" | "ids" | "last";
 const COLS: Col<Key>[] = [
-  { key: "name", label: "Partner" },
-  { key: "cluster", label: "Bereich" },
-  { key: "docs", label: "Dokumente", className: "justify-end", defaultDir: "desc" },
-  { key: "ids", label: "Kennungen", className: "justify-end", defaultDir: "desc" },
-  { key: "last", label: "Zuletzt", className: "justify-end", defaultDir: "desc" },
+  { key: "name", label: "Partner", icon: Building2 },
+  { key: "cluster", label: "Bereich", icon: LayoutGrid },
+  { key: "docs", label: "Dokumente", icon: FileText, className: "justify-end", defaultDir: "desc" },
+  { key: "ids", label: "Kennungen", icon: Hash, className: "justify-end", defaultDir: "desc" },
+  { key: "last", label: "Zuletzt", icon: CalendarDays, className: "justify-end", defaultDir: "desc" },
 ];
 const GRID = "grid-cols-[minmax(0,1fr)_11rem_7.5rem_7.5rem_6.5rem] gap-4";
 const KINDS = [{ value: "vertrag", label: "Verträge & Dienstleister" }, { value: "shop", label: "Händler & Einkäufe" }];
@@ -52,7 +53,7 @@ export default function PartnersPage() {
     <>
       <PageHeader title="Partner" subtitle={loading ? " " : `${all.length} Firmen und Stellen aus deinen Unterlagen – mit allen Kunden-, Vertrags- und Versicherungsnummern`} />
       <div className="max-w-5xl space-y-3">
-        <FilterBar q={q} onQ={setQ} placeholder="Suchen: Firma oder Nummer, z. B. O2 oder Kundennummer" activeCount={[fCluster, fKind, onlyIds, withFormer].filter(Boolean).length} onReset={reset} count={`${list.length} von ${all.length}`}>
+        <FilterBar q={q} onQ={setQ} placeholder="Suchen: Firma oder Nummer, z. B. O2 oder Kundennummer" actions={<SortMenu cols={COLS} sort={sort} onSort={setSort} />} activeCount={[fCluster, fKind, onlyIds, withFormer].filter(Boolean).length} onReset={reset} count={`${list.length} von ${all.length}`}>
           {clusters.length > 1 && <FilterSelect label="Bereich" value={fCluster} onChange={setFCluster} options={clusters} />}
           <FilterSelect label="Art" value={fKind} onChange={setFKind} options={KINDS} />
           <FilterToggle label="Mit Kennungen" on={onlyIds} onChange={setOnlyIds} />

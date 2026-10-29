@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlertCircle, Archive, Lock } from "lucide-react";
+import { AlertCircle, Archive, Building2, CalendarDays, FileText, LayoutGrid, Lock } from "lucide-react";
 import { ClusterTag } from "@/components/ClusterIcon";
-import { compare, FilterBar, FilterSelect, FilterToggle, SortHeader, type Col, type Sort } from "@/components/ListControls";
+import { compare, FilterBar, FilterSelect, FilterToggle, SortHeader, SortMenu, type Col, type Sort } from "@/components/ListControls";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
@@ -26,10 +26,10 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
   const [withArchive, setWithArchive] = useState(false);
 
   const cols: Col<Key>[] = [
-    { key: "title", label: "Dokument" },
-    ...(cluster ? [{ key: "cluster" as const, label: "Bereich" }] : []),
-    ...(sender ? [{ key: "sender" as const, label: "Absender" }] : []),
-    { key: "date", label: "Datum", className: "justify-end", defaultDir: "desc" },
+    { key: "title", label: "Dokument", icon: FileText },
+    ...(cluster ? [{ key: "cluster" as const, label: "Bereich", icon: LayoutGrid }] : []),
+    ...(sender ? [{ key: "sender" as const, label: "Absender", icon: Building2 }] : []),
+    { key: "date", label: "Datum", icon: CalendarDays, className: "justify-end", defaultDir: "desc" },
   ];
   const grid = cluster && sender ? "grid-cols-[minmax(0,1fr)_11rem_12rem_6.5rem] gap-4" : cluster || sender ? "grid-cols-[minmax(0,1fr)_12rem_6.5rem] gap-4" : "grid-cols-[minmax(0,1fr)_6.5rem] gap-4";
 
@@ -57,7 +57,7 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
 
   return (
     <div className="space-y-3">
-      <FilterBar q={q} onQ={setQ} placeholder="In dieser Liste suchen" activeCount={[fCluster, fSender, fYear, withArchive].filter(Boolean).length} onReset={reset} count={`${list.length} ${list.length === 1 ? "Dokument" : "Dokumente"}`}>
+      <FilterBar q={q} onQ={setQ} placeholder="In dieser Liste suchen" actions={<SortMenu cols={cols} sort={sort} onSort={setSort} />} activeCount={[fCluster, fSender, fYear, withArchive].filter(Boolean).length} onReset={reset} count={`${list.length} ${list.length === 1 ? "Dokument" : "Dokumente"}`}>
         {cluster && opts.clusters.length > 1 && <FilterSelect label="Bereich" value={fCluster} onChange={setFCluster} options={opts.clusters} />}
         {sender && opts.senders.length > 1 && <FilterSelect label="Absender" value={fSender} onChange={setFSender} options={opts.senders} />}
         {opts.years.length > 1 && <FilterSelect label="Jahr" value={fYear} onChange={setFYear} options={opts.years} />}

@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowDown, ArrowDownWideNarrow, ArrowUp, ArrowUpDown, ArrowUpNarrowWide, Check, ChevronDown, Search, SlidersHorizontal, X, type LucideIcon } from "lucide-react";
 
 export type Sort<K extends string> = { key: K; dir: "asc" | "desc" };
-export type Col<K extends string> = { key: K; label: string; className?: string; defaultDir?: "asc" | "desc" };
+export type Col<K extends string> = { key: K; label: string; icon?: LucideIcon; className?: string; defaultDir?: "asc" | "desc" };
 
 /** Nach Spalte sortieren: gleiche Spalte dreht die Richtung, neue Spalte startet mit ihrer Standardrichtung */
 export function nextSort<K extends string>(s: Sort<K>, col: Col<K>): Sort<K> {
@@ -18,7 +18,7 @@ export function compare(a: string | number, b: string | number, dir: "asc" | "de
 
 /**
  * Kopfzeile einer Liste: Spalten anklicken zum Sortieren.
- * `grid` muss dieselben Spalten haben wie die Zeilen darunter (ab md). Am Handy: eine kompakte Sortier-Zeile.
+ * `grid` muss dieselben Spalten haben wie die Zeilen darunter (ab md). Am Handy sortiert man über das Sortier-Menü (SortMenu).
  */
 export function SortHeader<K extends string>({ cols, sort, onSort, grid }: { cols: Col<K>[]; sort: Sort<K>; onSort: (s: Sort<K>) => void; grid: string }) {
   const Arrow = ({ k }: { k: K }) => sort.key !== k ? <ArrowUpDown size={13} className="text-muted/70" /> : sort.dir === "asc" ? <ArrowUp size={13} /> : <ArrowDown size={13} />;
@@ -32,16 +32,53 @@ export function SortHeader<K extends string>({ cols, sort, onSort, grid }: { col
           </button>
         ))}
       </div>
-      <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto border-b border-line px-3 py-2 md:hidden">
-        <span className="shrink-0 text-[12px] font-semibold text-muted">Sortieren:</span>
-        {cols.map((c) => (
-          <button key={c.key} type="button" onClick={() => onSort(nextSort(sort, c))} aria-pressed={sort.key === c.key}
-            className={`inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-3 text-[12.5px] font-semibold ${sort.key === c.key ? "bg-fg text-canvas" : "border border-card-line text-soft"}`}>
-            {c.label} {sort.key === c.key && (sort.dir === "asc" ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
-          </button>
-        ))}
-      </div>
     </>
+  );
+}
+
+/** Sortieren als Auswahlmenü mit Symbolen: Spalte wählen, Richtung umschalten */
+export function SortMenu<K extends string>({ cols, sort, onSort }: { cols: Col<K>[]; sort: Sort<K>; onSort: (s: Sort<K>) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", close); window.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", close); window.removeEventListener("keydown", esc); };
+  }, [open]);
+  const cur = cols.find((c) => c.key === sort.key) ?? cols[0];
+  const CurIcon = cur.icon ?? ArrowUpDown;
+  const Dir = sort.dir === "asc" ? ArrowUp : ArrowDown;
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button type="button" onClick={() => setOpen(!open)} aria-haspopup="listbox" aria-expanded={open} aria-label={`Sortieren nach ${cur.label}`}
+        className="inline-flex h-11 items-center gap-2 rounded-full border border-card-line bg-surface px-3.5 text-[14px] font-semibold text-fg hover:bg-surface-2">
+        <CurIcon size={16} /> <span className="hidden sm:inline">{cur.label}</span> <Dir size={14} className="text-soft" /> <ChevronDown size={14} className="text-muted" />
+      </button>
+      {open && (
+        <div role="listbox" aria-label="Sortieren" className="sheet-up absolute right-0 z-40 mt-1.5 w-64 rounded-2xl border border-card-line bg-surface p-1.5 shadow-[0_12px_32px_rgba(16,24,40,.14)]">
+          <div className="px-2.5 pt-1.5 pb-1 text-[12px] font-semibold text-muted">Sortieren nach</div>
+          {cols.map((c) => {
+            const Icon = c.icon ?? ArrowUpDown;
+            const on = c.key === sort.key;
+            return (
+              <button key={c.key} type="button" role="option" aria-selected={on} onClick={() => { onSort(on ? sort : { key: c.key, dir: c.defaultDir ?? "asc" }); setOpen(false); }}
+                className={`flex h-10 w-full items-center gap-2.5 rounded-xl px-2.5 text-left text-[14px] hover:bg-surface-2 ${on ? "font-semibold" : ""}`}>
+                <Icon size={16} className="text-fg" /> <span className="flex-1">{c.label}</span> {on && <Check size={15} />}
+              </button>
+            );
+          })}
+          <div className="my-1 h-px bg-line" />
+          <div className="grid grid-cols-2 gap-1 p-1">
+            {([["asc", "Aufsteigend", ArrowUpNarrowWide], ["desc", "Absteigend", ArrowDownWideNarrow]] as const).map(([d, l, Icon]) => (
+              <button key={d} type="button" onClick={() => onSort({ key: sort.key, dir: d })} aria-pressed={sort.dir === d}
+                className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-full text-[13px] font-semibold ${sort.dir === d ? "bg-fg text-canvas" : "text-soft hover:bg-surface-2"}`}><Icon size={15} /> {l}</button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -72,7 +109,7 @@ export function FilterToggle({ label, on, onChange }: { label: string; on: boole
 }
 
 /** Suchfeld + ein „Filter“-Knopf; die Filter öffnen sich als Seitenpanel von rechts */
-export function FilterBar({ q, onQ, placeholder, children, activeCount, onReset, count }: { q?: string; onQ?: (v: string) => void; placeholder?: string; children?: React.ReactNode; activeCount: number; onReset: () => void; count?: string }) {
+export function FilterBar({ q, onQ, placeholder, children, actions, activeCount, onReset, count }: { q?: string; onQ?: (v: string) => void; placeholder?: string; children?: React.ReactNode; actions?: React.ReactNode; activeCount: number; onReset: () => void; count?: string }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!open) return;
@@ -90,6 +127,7 @@ export function FilterBar({ q, onQ, placeholder, children, activeCount, onReset,
             {q && <button type="button" onClick={() => onQ("")} aria-label="Suche leeren" className="text-muted hover:text-fg"><X size={16} /></button>}
           </label>
         )}
+        {actions}
         {children && (
           <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-[14px] font-semibold ${activeCount ? "border-fg bg-fg text-canvas" : "border-card-line bg-surface text-fg hover:bg-surface-2"} ${onQ ? "" : "ml-auto"}`}>
             <SlidersHorizontal size={16} /> Filter
