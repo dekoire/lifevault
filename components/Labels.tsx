@@ -17,7 +17,7 @@ export function LabelChip({ tag, on = true, onClick }: { tag: string; on?: boole
 }
 
 /** Tags eines Dokuments, nach Typ gruppiert; „Bearbeiten“ zeigt den ganzen Katalog zum An-/Abwählen */
-export function DocLabels({ doc, onChange }: { doc: Doc; onChange?: (d: Doc) => void }) {
+export function DocLabels({ doc, onChange, inline = false }: { doc: Doc; onChange?: (d: Doc) => void; inline?: boolean }) {
   const { refresh } = useDocs();
   const [edit, setEdit] = useState(false);
   const labels = doc.labels ?? [];
@@ -27,6 +27,13 @@ export function DocLabels({ doc, onChange }: { doc: Doc; onChange?: (d: Doc) => 
     await supabase.from("documents").update({ labels: next, topic_manual: true }).eq("id", doc.id);
     void refresh();
   };
+  // im Kopf: nur die Tags als Pills, Bearbeiten klappt den Katalog auf
+  if (inline && !edit) return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {LABEL_GROUPS.flatMap((g) => g.tags.filter((t) => labels.includes(t))).map((t) => <LabelChip key={t} tag={t} />)}
+      <button type="button" onClick={() => setEdit(true)} title="Tags bearbeiten" aria-label="Tags bearbeiten" className="grid h-7 w-7 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-fg"><Pencil size={12} /></button>
+    </div>
+  );
   const groups = LABEL_GROUPS.map((g) => ({ g, tags: edit ? g.tags : g.tags.filter((t) => labels.includes(t)) })).filter((x) => x.tags.length);
   return (
     <div className="space-y-2">

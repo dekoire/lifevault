@@ -224,3 +224,14 @@ function RelatedDocs({ doc, related }: { doc: Doc; related: Doc[] }) {
     </div>
   );
 }
+
+/** Dokumentseite: Bezahlung gleich offen zeigen, solange die Zahlung nicht erledigt ist */
+export function DocPayment({ doc, url, fullText, related = [] }: { doc: Doc; url?: string; fullText?: string | null; related?: Doc[] }) {
+  const codes = useDocQrCodes(url, doc.mime_type);
+  const contact = contactOf(doc, fullText);
+  const todo = todos([doc], new Date().toISOString().slice(0, 10))[0];
+  let done = false;
+  try { done = !!todo && (JSON.parse(localStorage.getItem("lifevault:todo-done") ?? "[]") as string[]).includes(`${doc.id}|${todo.date}`); } catch { /* egal */ }
+  if (!todo || done) return null;
+  return <PaymentSection doc={doc} codes={codes} links={contact.links} related={related} />;
+}

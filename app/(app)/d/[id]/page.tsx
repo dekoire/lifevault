@@ -3,7 +3,7 @@ import { isCardDoc, PdfPages } from "@/components/PdfPages";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useRef, useState } from "react";
-import { Archive, ArchiveRestore, CalendarClock, ChevronLeft, ChevronRight, Download, FileDown, FileText, Lock, LockOpen, RefreshCw, Scissors, ShieldAlert, ShieldCheck, Trash2, Wallet } from "lucide-react";
+import { Archive, ArchiveRestore, CalendarClock, Check, Copy, ChevronLeft, ChevronRight, Download, FileDown, FileText, Lock, LockOpen, RefreshCw, Scissors, ShieldAlert, ShieldCheck, Trash2, Wallet } from "lucide-react";
 import { Composer, MessageList, useChat } from "@/components/ChatPanel";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD, ICON_BTN, KeyValueTable, Section } from "@/components/ui";
@@ -13,6 +13,8 @@ import { chrono, fmtDate, fmtMoney, isUrgent, useDocs } from "@/lib/docs";
 import { useProjects } from "@/lib/projects";
 import { Clamp } from "@/components/Clamp";
 import { DocLabels } from "@/components/Labels";
+import { DocPayment } from "@/components/DocActions";
+import { relatedPayDocs } from "@/lib/related";
 import { explainDoc, groupRank } from "@/lib/doctypes";
 import { partnerKey } from "@/lib/partners";
 import { useHistoryLinks } from "@/lib/history";
@@ -141,9 +143,18 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
   const today = new Date().toISOString().slice(0, 10);
   const nextDl = (content?.deadlines ?? []).filter((x) => x.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0];
   const daysTo = nextDl ? Math.round((Date.parse(nextDl.date) - Date.parse(today)) / 864e5) : 0;
-  const glance = [
-    ...(content?.amounts ?? []).slice(0, nextDl ? 2 : 3).map((a) => ({ label: a.label, value: fmtMoney(a.value, a.currency), sub: undefined as string | undefined, urgent: false })),
-    ...(nextDl ? [{ label: "Nächste Frist", value: fmtDate(nextDl.date), sub: `${nextDl.what} · in ${daysTo} ${daysTo === 1 ? "Tag" : "Tagen"}`, urgent: daysTo <= 7 }] : []),
+  // Auf einen Blick, je nach Dokument: zu zahlen (mit Zusammensetzung klein), nächste Frist, wichtigste Nummer zum Kopieren
+  const amounts = content?.amounts ?? [];
+  const totalA = amounts.find((a) => /gesamt|zu zahlen|zahlbetrag|summe|forderung|endbetrag|rechnungsbetrag|offen/i.test(a.label))
+    ?? (amounts.length > 2 ? amounts.find((a) => Math.abs(a.value - amounts.filter((b) => b !== a).reduce((n, b) => n + b.value, 0)) < 0.01) : undefined);
+  const mainA = totalA ?? amounts[0];
+  const partsA = amounts.filter((a) => a !== mainA).slice(0, 3);
+  const REF = /aktenzeichen|kassenzeichen|kunden-?n(umme)?r|vertrags-?n(umme)?r|rechnungs-?n(umme)?r|versicherungs-?n(umme)?r|versichertenn|policen|mitglieds|steuernummer|steuer-id|identifikationsnummer|vorgangsnummer|referenz|fall-?n(umme)?r|antragsn/i;
+  const refFact = (content?.key_facts ?? []).find((f) => REF.test(f.label) && f.value.length <= 40);
+  const glance: { label: string; value: string; sub?: string; urgent?: boolean; copy?: string }[] = [
+    ...(mainA ? [{ label: mainA.label, value: fmtMoney(mainA.value, mainA.currency), sub: partsA.length ? partsA.map((a) => `${a.label} ${fmtMoney(a.value, a.currency)}`).join(" · ") : totalA ? undefined : undefined }] : []),
+    ...(nextDl ? [{ label: "Nächste Frist", value: fmtDate(nextDl.date), sub: `${nextDl.what} · in ${daysTo} ${daysTo === 1 ? "Tag" : "Tagen"}`, urgent: daysTo <= 7 }] : [{ label: "Datum", value: fmtDate(doc.doc_date ?? doc.received_at), sub: doc.doc_type ?? undefined }]),
+    ...(refFact ? [{ label: refFact.label, value: refFact.value, copy: refFact.value }] : []),
   ];
   const fileUrl = doc.encrypted ? opened?.url : url;
   const image = doc.mime_type.startsWith("image/");
@@ -194,6 +205,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
               {doc.archived ? <span className="inline-flex h-7 items-center gap-1 rounded-full border border-card-line px-2.5 text-[12px] font-semibold text-soft" title={doc.archived_reason ?? ""}><Archive size={12} /> Archiviert</span> : doc.status === "ready" && <span className="inline-flex h-7 items-center rounded-full bg-positive/10 px-2.5 text-[12px] font-semibold text-positive-text">Aktuell</span>}
               {doc.encrypted && <span className="inline-flex h-7 items-center gap-1 rounded-full border border-card-line px-2.5 text-[12px] font-semibold text-fg"><Lock size={12} /> Verschlüsselt</span>}
             </div>
+            <div className="mt-1.5"><DocLabels inline doc={doc} onChange={setDoc} /></div>
           </div>
         </div>
         <div className="flex shrink-0 gap-1.5">
@@ -223,18 +235,19 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
               {show.summary && content?.summary && <Clamp className="text-[15px] leading-6 text-soft">{content.summary}</Clamp>}
             </section>
           )}
-          <section className={`${CARD} p-4`}><DocLabels doc={doc} onChange={setDoc} /></section>
           {glance.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className={`grid gap-2 ${glance.length >= 3 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2"}`}>
               {glance.map((g, i) => (
-                <div key={i} className={`rounded-2xl border px-3.5 py-3 ${g.urgent ? "border-urgent bg-urgent text-white" : "border-card-line bg-surface"}`}>
+                <div key={i} className={`group relative min-w-0 rounded-2xl border px-3.5 py-3 ${g.urgent ? "border-urgent bg-urgent text-white" : "border-card-line bg-surface"} ${glance.length === 3 && i === 2 ? "col-span-2 sm:col-span-1" : ""}`}>
                   <span className={`block truncate text-[12px] ${g.urgent ? "text-white/80" : "text-muted"}`}>{g.label}</span>
-                  <span className="tnum mt-0.5 block text-[18px] leading-6 font-[650]">{g.value}</span>
-                  {g.sub && <span className={`block truncate text-[11px] ${g.urgent ? "text-white/80" : "text-muted"}`}>{g.sub}</span>}
+                  <span className="tnum mt-0.5 block truncate text-[18px] leading-6 font-[650]">{g.value}</span>
+                  {g.sub && <span className={`block truncate text-[11.5px] ${g.urgent ? "text-white/80" : "text-muted"}`} title={g.sub}>{g.sub}</span>}
+                  {g.copy && <CopyBtn value={g.copy} className="absolute top-2.5 right-2.5" />}
                 </div>
               ))}
             </div>
           )}
+          <DocPayment doc={doc} url={fileUrl} fullText={content?.full_text} related={relatedPayDocs(doc, docs)} />
           {show.info && (
             <Section title="Überblick" icon={<FileText size={16} />} open={isOpen("info", false)} onToggle={() => toggle("info", false)}>
               <KeyValueTable rows={[
@@ -255,13 +268,13 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
               ]} />
             </Section>
           )}
-          {show.facts && sortedGroups.map(([g, fs], i) => {
+          {show.facts && sortedGroups.map(([g, fs]) => {
             const all = more[g];
-            const rows = all ? fs : fs.slice(0, 4);
+            const rows = all ? fs : fs.slice(0, 8);
             return (
-              <Section key={g} title={g} count={fs.length} open={isOpen(`g:${g}`, i < 2 && groupRank(g) === 0)} onToggle={() => toggle(`g:${g}`, i < 2 && groupRank(g) === 0)}>
-                <KeyValueTable rows={rows.map((f) => ({ label: f.label, value: f.value }))} />
-                {fs.length > 4 && <button type="button" onClick={() => setMore({ ...more, [g]: !all })} className="w-full border-t border-line bg-surface-2 px-4 py-2.5 text-center text-[13px] font-semibold text-fg transition-colors hover:bg-surface-3">{all ? "Weniger anzeigen" : `Alle ${fs.length} anzeigen`}</button>}
+              <Section key={g} title={g} count={fs.length} open={isOpen(`g:${g}`, true)} onToggle={() => toggle(`g:${g}`, true)}>
+                <FactGrid facts={rows} />
+                {fs.length > 8 && <button type="button" onClick={() => setMore({ ...more, [g]: !all })} className="w-full border-t border-line bg-surface-2 px-4 py-2.5 text-center text-[13px] font-semibold text-fg transition-colors hover:bg-surface-3">{all ? "Weniger anzeigen" : `Alle ${fs.length} anzeigen`}</button>}
               </Section>
             );
           })}
@@ -273,11 +286,6 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
           {show.amounts && !!content?.amounts?.length && (
             <Section title="Beträge" icon={<Wallet size={16} />} count={content.amounts.length} open={isOpen("am", false)} onToggle={() => toggle("am", false)}>
               <KeyValueTable rows={content.amounts.map((a) => ({ label: a.label, value: <span className="tnum">{fmtMoney(a.value, a.currency)}</span> }))} />
-            </Section>
-          )}
-          {show.content && content?.full_text && (
-            <Section title="Vollständiger Text" open={isOpen("txt", false)} onToggle={() => toggle("txt", false)}>
-              <pre className="px-4 py-4 font-sans text-[13px] leading-6 whitespace-pre-wrap text-soft">{content.full_text}</pre>
             </Section>
           )}
         </div>
@@ -304,5 +312,30 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
         </div>
       </div>
     </div>
+  );
+}
+
+/** Angaben kompakt in zwei Spalten, jeder Wert mit Kopieren (z. B. Aktenzeichen fürs Telefonat) */
+function FactGrid({ facts }: { facts: Fact[] }) {
+  return (
+    <dl className="grid sm:grid-cols-2">
+      {facts.map((f, i) => (
+        <div key={i} className="group relative min-w-0 border-t border-line px-4 py-2.5 sm:odd:border-r">
+          <dt className="truncate pr-8 text-[12px] text-muted" title={f.label}>{f.label}</dt>
+          <dd className="pr-8 text-[14px] font-semibold break-words">{f.value}</dd>
+          <CopyBtn value={f.value} className="absolute top-1/2 right-2.5 -translate-y-1/2" />
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function CopyBtn({ value, className = "" }: { value: string; className?: string }) {
+  const [ok, setOk] = useState(false);
+  return (
+    <button type="button" onClick={() => { void navigator.clipboard?.writeText(value); setOk(true); setTimeout(() => setOk(false), 1200); }} aria-label="Kopieren" title="Kopieren"
+      className={`grid h-7 w-7 place-items-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg sm:opacity-0 sm:group-hover:opacity-100 ${ok ? "!opacity-100 text-positive-text" : ""} ${className}`}>
+      {ok ? <Check size={14} /> : <Copy size={13} />}
+    </button>
   );
 }

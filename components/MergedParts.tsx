@@ -21,7 +21,7 @@ export function MergedParts({ doc, onSplit }: { doc: Doc; onSplit?: () => void }
   const split = async () => { setBusy(true); try { await remove(doc); onSplit?.(); } finally { setBusy(false); } };
   return (
     <section className={`${CARD} overflow-hidden`}>
-      <h2 className="flex items-center gap-2 px-4 pt-3.5 pb-2 text-[14px] font-semibold"><Layers size={15} /> Zusammengeführt aus {parts.length} Teilen</h2>
+      <h2 className="flex items-center gap-2 px-4 pt-3.5 pb-2 text-[14px] font-semibold"><Layers size={15} /> {parts.length} Dokumente zusammengeführt</h2>
       <ul className="divide-y divide-line border-t border-line">
         {parts.map((p, i) => (
           <li key={p.id} className="flex items-center gap-3 px-4 py-2.5">
