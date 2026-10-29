@@ -11,6 +11,7 @@
   "dependencies": {
     "@ai-sdk/gateway": "^4.0.123",
     "@supabase/supabase-js": "^2.118.0",
+    "@zip.js/zip.js": "^2.7.62",
     "ai": "^7.0.150",
     "fflate": "^0.8.2",
     "jsqr": "^1.4.0",

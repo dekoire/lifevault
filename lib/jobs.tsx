@@ -10,7 +10,7 @@ import type { Doc } from "@/lib/types";
  * Hintergrund-Aufgaben (Export, Mail-Abruf) mit Fortschritt – angezeigt unten rechts als lila Karte.
  * Fertige Exporte bleiben in diesem Browser gespeichert (IndexedDB, die letzten 20) und stehen unter Downloads.
  */
-export type Job = { id: string; kind: "export" | "mail"; title: string; detail?: string; done: number; total: number; state: "running" | "done" | "error"; downloadId?: string };
+export type Job = { id: string; kind: "export" | "mail"; title: string; detail?: string; done: number; total: number; state: "running" | "done" | "error"; downloadId?: string; password?: string };
 
 let jobs: Job[] = [];
 const subs = new Set<() => void>();
@@ -31,7 +31,7 @@ export function updateJob(id: string, patch: Partial<Job>) {
 export function dismissJob(id: string) { jobs = jobs.filter((j) => j.id !== id); emit(); }
 
 /* ---------- gespeicherte Downloads ---------- */
-export type SavedDownload = { id: string; name: string; created: string; count: number; size: number; blob: Blob };
+export type SavedDownload = { id: string; name: string; created: string; count: number; size: number; blob: Blob; password?: string };
 const DB = "lifevault-downloads", STORE = "zips", KEEP = 20;
 const db = () => new Promise<IDBDatabase>((ok, no) => {
   const r = indexedDB.open(DB, 1);
@@ -65,7 +65,7 @@ const topicOf = (d: Doc) => d.topic ?? "Ohne Thema";
 const clean = (s: string) => s.replace(/[\\/:*?"<>|\n\r]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 90);
 
 /** Startet den Export im Hintergrund; Fenster darf sofort zu */
-export function startExport(list: Doc[]) {
+export function startExport(list: Doc[], opts: { password?: string } = {}) {
   const name = `Lifevault-Export ${new Date().toISOString().slice(0, 10)}.zip`;
   const id = startJob({ kind: "export", title: "Export wird erstellt", detail: `${list.length} ${list.length === 1 ? "Dokument" : "Dokumente"}`, total: list.length });
   void (async () => {
@@ -97,12 +97,12 @@ export function startExport(list: Doc[]) {
       const csv = ["Datei;Bereich;Thema;Titel;Absender;Datum", ...index.sort((x, y) => x[0].localeCompare(y[0])).map(([p, d]) =>
         [p, clusterOf(d.cluster).label, topicOf(d), d.title ?? "", d.sender ?? "", dateOf(d)].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"))].join("\r\n");
       files["Übersicht.csv"] = [new TextEncoder().encode(`﻿${csv}`), { level: 0 }];
-      const blob = new Blob([zipSync(files) as BlobPart], { type: "application/zip" });
-      const saved: SavedDownload = { id: crypto.randomUUID(), name, created: new Date().toISOString(), count: index.length, size: blob.size, blob };
+      const blob = opts.password ? await encryptedZip(files, opts.password) : new Blob([zipSync(files) as BlobPart], { type: "application/zip" });
+      const saved: SavedDownload = { id: crypto.randomUUID(), name, created: new Date().toISOString(), count: index.length, size: blob.size, blob, password: opts.password };
       await saveDownload(saved);
       saveFile(blob, name);
       updateJob(id, {
-        state: failed.length && !index.length ? "error" : "done", downloadId: saved.id,
+        state: failed.length && !index.length ? "error" : "done", downloadId: saved.id, password: opts.password,
         title: index.length ? "Export fertig" : "Export fehlgeschlagen",
         detail: failed.length ? `${index.length} exportiert, ${failed.length} nicht ladbar` : `${index.length} ${index.length === 1 ? "Dokument" : "Dokumente"} · ${(blob.size / 1_048_576).toFixed(1).replace(".", ",")} MB`,
       });
@@ -110,4 +110,35 @@ export function startExport(list: Doc[]) {
       updateJob(id, { state: "error", title: "Export fehlgeschlagen", detail: (e as Error).message });
     }
   })();
+}
+
+/** ZIP mit Passwort (AES-256) – öffnet mit macOS/iOS-Dateien, 7-Zip, WinRAR; der Windows-Explorer kann AES-ZIPs nicht */
+async function encryptedZip(files: Record<string, [Uint8Array, unknown]>, password: string) {
+  const { BlobWriter, Uint8ArrayReader, ZipWriter, configure } = await import("@zip.js/zip.js");
+  configure({ useWebWorkers: false });
+  const w = new ZipWriter(new BlobWriter("application/zip"), { password, encryptionStrength: 3 });
+  for (const [path, [bytes]] of Object.entries(files)) await w.add(path, new Uint8ArrayReader(bytes), { level: 0 });
+  return w.close();
+}
+
+/** Lesbares Zufallspasswort, z. B. „Kq7m-Tz4p-Wd9x-Hn3r“ (ohne verwechselbare Zeichen) */
+export function newPassword() {
+  const abc = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const r = crypto.getRandomValues(new Uint8Array(16));
+  const s = Array.from(r, (b) => abc[b % abc.length]).join("");
+  return s.match(/.{4}/g)!.join("-");
+}
+
+/** Per Mail teilen: am Handy mit Datei im Teilen-Menü, sonst Mail-Programm mit Passwort (Datei liegt in den Downloads) */
+export async function shareExport(d: { blob: Blob; name: string; password?: string }) {
+  const text = d.password
+    ? `Hallo,\n\nanbei die Unterlagen als ZIP-Datei (${d.name}).\nDas Passwort zum Öffnen: ${d.password}\n\nViele Grüße`
+    : `Hallo,\n\nanbei die Unterlagen als ZIP-Datei (${d.name}).\n\nViele Grüße`;
+  const file = new File([d.blob], d.name, { type: "application/zip" });
+  const nav = navigator as Navigator & { canShare?: (x: ShareData) => boolean };
+  if (nav.canShare?.({ files: [file] })) {
+    try { await nav.share({ files: [file], title: "Unterlagen", text }); return; } catch (e) { if ((e as Error).name === "AbortError") return; }
+  }
+  saveFile(d.blob, d.name);
+  location.href = `mailto:?subject=${encodeURIComponent("Unterlagen")}&body=${encodeURIComponent(`${text}\n\n(Bitte die heruntergeladene Datei „${d.name}“ an diese Mail anhängen.)`)}`;
 }

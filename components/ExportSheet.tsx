@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowUp, Check, ChevronDown, Download, Loader2, Lock, Minus, Search, Sparkles, X } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, Copy, Download, RefreshCw, Loader2, Lock, Minus, Search, Sparkles, X } from "lucide-react";
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { SenderLogo } from "@/components/SenderLogo";
 import { LabelChip } from "@/components/Labels";
@@ -10,7 +10,7 @@ import { groupOf, LABEL_GROUPS } from "@/lib/labels";
 import { CLUSTERS, clusterOf } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
 import { useMe } from "@/lib/me";
-import { startExport } from "@/lib/jobs";
+import { newPassword, startExport } from "@/lib/jobs";
 import { authFetch } from "@/lib/supabase";
 import type { Doc } from "@/lib/types";
 
@@ -41,10 +41,15 @@ export function ExportSheet({ onClose }: { onClose: () => void }) {
   const lockedN = unlocked ? 0 : chosen.filter((d) => d.encrypted).length;
 
   // läuft im Hintergrund weiter (lila Karte unten rechts), das Fenster schließt sofort
+  // Passwort: Pflicht, sobald Tresor-Dokumente dabei sind, sonst wahlweise
+  const withVault = chosen.some((d) => d.encrypted && unlocked);
+  const [protect, setProtect] = useState(false);
+  const [pw, setPw] = useState(newPassword);
+  const locked = protect || withVault;
   const run = () => {
     const list = chosen.filter((d) => !d.encrypted || unlocked);
     if (!list.length) return;
-    startExport(list);
+    startExport(list, { password: locked ? pw : undefined });
     onClose();
   };
 
@@ -67,10 +72,23 @@ export function ExportSheet({ onClose }: { onClose: () => void }) {
           {tab === "ai" && <AiSearch byId={byId} sel={sel} setMany={setMany} />}
         </div>
         <div className="pb-safe border-t border-line px-6 pt-3 pb-4">
-          {lockedN > 0 && (
-            <div className="mb-3 rounded-2xl bg-surface-2 p-3">
-              <p className="mb-2 flex items-center gap-1.5 text-[13px] text-soft"><Lock size={14} /> {lockedN} verschlüsselte {lockedN === 1 ? "Datei wird" : "Dateien werden"} nur mit entsperrtem Tresor exportiert.</p>
-              <VaultUnlock compact title="Tresor entsperren" text="Die Dateien werden nur in deinem Browser entschlüsselt." />
+          {lockedN > 0 && <div className="mb-3"><VaultUnlock compact title={`${lockedN} verschlüsselte ${lockedN === 1 ? "Datei" : "Dateien"} dabei`} text="Zum Mitexportieren Tresor entsperren – sie werden nur im Browser entschlüsselt." /></div>}
+          {sel.size > 0 && (
+            <div className="mb-3 rounded-2xl bg-surface-2 px-3.5 py-2.5">
+              <div className="flex items-center gap-3">
+                <span className="min-w-0 flex-1">
+                  <b className="block text-[13.5px]">Mit Passwort schützen</b>
+                  <span className="block text-[12px] text-muted">{withVault ? "Pflicht, weil Tresor-Dokumente dabei sind" : "ZIP verschlüsselt (AES-256)"}</span>
+                </span>
+                <button type="button" role="switch" aria-checked={locked} disabled={withVault} onClick={() => setProtect(!protect)} className={`relative h-6 w-10 shrink-0 rounded-full transition disabled:opacity-60 ${locked ? "bg-brand-500" : "bg-surface-3 ring-1 ring-card-line"}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${locked ? "left-[1.125rem]" : "left-0.5"}`} /></button>
+              </div>
+              {locked && (
+                <div className="mt-2 flex items-center gap-2">
+                  <code className="tnum min-w-0 flex-1 truncate rounded-full border border-card-line bg-surface px-3 py-1.5 text-[13.5px] font-semibold tracking-wide">{pw}</code>
+                  <button type="button" onClick={() => void navigator.clipboard?.writeText(pw)} aria-label="Passwort kopieren" title="Kopieren" className="grid h-8 w-8 place-items-center rounded-full bg-surface hover:bg-surface-3"><Copy size={14} /></button>
+                  <button type="button" onClick={() => setPw(newPassword())} aria-label="Neues Passwort" title="Neues Passwort" className="grid h-8 w-8 place-items-center rounded-full bg-surface hover:bg-surface-3"><RefreshCw size={14} /></button>
+                </div>
+              )}
             </div>
           )}
           <div className="flex items-center gap-3">

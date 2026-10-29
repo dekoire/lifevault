@@ -117,12 +117,12 @@ function Chat() {
         <div className={`fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-page via-page to-page/0 px-3 pt-6 pb-3 lg:bottom-0 lg:pb-6 ${side ? "lg:left-[calc(var(--side,15rem)+18rem)]" : "lg:left-[var(--side,15rem)]"}`}>
           {chat.gate && (
             <div className="mx-auto mb-3 max-w-3xl">
-              <div className="rounded-3xl border border-card-line bg-surface p-4 shadow-card">
-                <p className="mb-3 text-[13.5px] text-soft">Für <b className="text-fg">„{chat.gate.q}“</b> brauche ich wahrscheinlich verschlüsselte Unterlagen. Entsperre den Tresor – oder frag ohne sie.</p>
+              <div className="rounded-2xl border border-card-line bg-surface p-3 shadow-card">
+                <p className="mb-2.5 px-1 text-[13px] text-soft">Für <b className="text-fg">„{chat.gate.q}“</b> brauche ich wahrscheinlich verschlüsselte Unterlagen. Entsperre den Tresor – oder frag ohne sie.</p>
                 <VaultUnlock compact title="Tresor entsperren" text="Danach geht deine Frage automatisch los. Die Inhalte werden nur für diese Antwort im Browser entschlüsselt." />
-                <div className="mt-3 flex flex-wrap justify-center gap-2">
-                  <button type="button" onClick={chat.skipGate} className="inline-flex h-9 items-center rounded-full border border-card-line px-4 text-[13px] font-semibold hover:bg-surface-2">Ohne verschlüsselte Dokumente fragen</button>
-                  <button type="button" onClick={chat.cancelGate} className="inline-flex h-9 items-center rounded-full px-4 text-[13px] font-semibold text-muted hover:text-fg">Abbrechen</button>
+                <div className="mt-2.5 flex flex-wrap justify-end gap-1.5">
+                  <button type="button" onClick={chat.skipGate} className="inline-flex h-8 items-center rounded-full border border-card-line px-3 text-[12.5px] font-semibold hover:bg-surface-2">Ohne verschlüsselte Dokumente fragen</button>
+                  <button type="button" onClick={chat.cancelGate} className="inline-flex h-8 items-center rounded-full px-3 text-[12.5px] font-semibold text-muted hover:text-fg">Abbrechen</button>
                 </div>
               </div>
             </div>

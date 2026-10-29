@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Download, FileArchive, FolderDown, Loader2, Trash2 } from "lucide-react";
+import { ArrowRight, Download, FileArchive, FolderDown, KeyRound, Loader2, Mail, Trash2 } from "lucide-react";
 import { CARD } from "@/components/ui";
-import { deleteDownload, listDownloads, saveFile, useJobs, type SavedDownload } from "@/lib/jobs";
+import { deleteDownload, listDownloads, saveFile, shareExport, useJobs, type SavedDownload } from "@/lib/jobs";
 
 const when = (iso: string) => new Date(iso).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 const mb = (n: number) => `${(n / 1_048_576).toFixed(1).replace(".", ",")} MB`;
@@ -40,8 +40,10 @@ function Row({ d, compact = false }: { d: SavedDownload; compact?: boolean }) {
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg text-canvas"><FileArchive size={17} /></span>
       <span className="min-w-0 flex-1">
         <b className="block truncate text-[14px]">{d.name}</b>
-        <span className="block truncate text-[12px] text-muted">{when(d.created)} · {d.count} {d.count === 1 ? "Dokument" : "Dokumente"} · {mb(d.size)}</span>
+        <span className="block truncate text-[12px] text-muted">{when(d.created)} · {d.count} {d.count === 1 ? "Dokument" : "Dokumente"} · {mb(d.size)}{d.password && " · mit Passwort"}</span>
       </span>
+      {d.password && <button type="button" onClick={() => void navigator.clipboard?.writeText(d.password!)} aria-label="Passwort kopieren" title={`Passwort kopieren (${d.password})`} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-soft hover:bg-surface-2"><KeyRound size={15} /></button>}
+      {!compact && <button type="button" onClick={() => void shareExport(d)} aria-label="Per Mail senden" title="Per Mail senden" className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-soft hover:bg-surface-2"><Mail size={15} /></button>}
       <button type="button" onClick={() => saveFile(d.blob, d.name)} aria-label="Herunterladen" title="Herunterladen" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-3 hover:bg-line"><Download size={16} /></button>
       {!compact && <button type="button" onClick={() => void deleteDownload(d.id)} aria-label="Löschen" title="Löschen" className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-negative-text"><Trash2 size={16} /></button>}
     </div>

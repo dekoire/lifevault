@@ -20,28 +20,55 @@ export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib de
     setError(undefined);
     try { try { localStorage.setItem("lifevault:vault-keep", keep ? "1" : "0"); } catch { /* egal */ } await unlockVault(pw, vault.salt, vault.verifier, keep ? REMEMBER_MIN : 0); } catch (err) { setError((err as Error).message); } finally { setBusy(false); }
   };
-  return (
-    <div className={`mx-auto w-full rounded-3xl border border-card-line bg-surface text-center shadow-card ${compact ? "p-5" : "max-w-md p-7"}`}>
-      <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-500 text-white"><LockKeyhole size={22} /></span>
-      <h2 className="mt-4 text-[20px] leading-7 font-bold">{vault ? title : "Noch kein Tresor"}</h2>
-      <p className="mt-1 text-[14px] text-soft">{vault ? text : "Lege einen Tresor an, um Dokumente Ende-zu-Ende zu verschlüsseln."}</p>
+  const field = (cls: string) => (
+    <label className={`relative block min-w-0 ${cls}`}>
+      <input type={show ? "text" : "password"} autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Tresor-Passwort" aria-label="Tresor-Passwort" autoFocus={!compact}
+        className={`h-10 w-full rounded-full border bg-surface pr-10 pl-4 text-[14px] outline-none focus:border-brand-500 ${error ? "border-negative" : "border-card-line"}`} />
+      <button type="button" onClick={() => setShow(!show)} aria-label={show ? "Passwort verbergen" : "Passwort zeigen"} className="absolute top-1/2 right-2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-muted hover:text-fg">{show ? <EyeOff size={15} /> : <Eye size={15} />}</button>
+    </label>
+  );
+  const keepBox = (
+    <label className="inline-flex cursor-pointer items-center gap-1.5 text-[12px] text-muted">
+      <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} className="h-3.5 w-3.5 accent-brand-500" />
+      {REMEMBER_MIN} Min. entsperrt lassen
+    </label>
+  );
+  const button = <button type="submit" disabled={busy || !pw} className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-brand-500 px-4 text-[13.5px] font-semibold text-white disabled:opacity-50">{busy && <Loader2 size={14} className="animate-spin" />} Entsperren</button>;
+
+  // kompakt: eine Zeile (Symbol, Text, Feld, Knopf) – für Chat, Export usw.
+  if (compact) return (
+    <div className="w-full rounded-2xl border border-card-line bg-surface px-3.5 py-3">
+      <div className="flex items-start gap-3">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-500 text-white"><LockKeyhole size={16} /></span>
+        <span className="min-w-0 flex-1 pt-0.5">
+          <b className="block text-[13.5px] leading-5">{vault ? title : "Noch kein Tresor"}</b>
+          <span className="block text-[12px] leading-4 text-muted">{vault ? text : "Lege einen Tresor an, um Dokumente zu verschlüsseln."}</span>
+        </span>
+      </div>
       {vault ? (
-        <form onSubmit={submit} className="mt-5 space-y-3">
-          <label className="relative block">
-            <input type={show ? "text" : "password"} autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Tresor-Passwort" aria-label="Tresor-Passwort" autoFocus={!compact}
-              className={`h-13 w-full rounded-2xl border-2 bg-surface pr-12 pl-4 text-center text-[16px] outline-none focus:border-brand-500 ${error ? "border-negative" : "border-card-line"}`} />
-            <button type="button" onClick={() => setShow(!show)} aria-label={show ? "Passwort verbergen" : "Passwort zeigen"} className="absolute top-1/2 right-3 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-muted hover:text-fg">{show ? <EyeOff size={17} /> : <Eye size={17} />}</button>
-          </label>
-          <button type="submit" disabled={busy || !pw} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-500 text-[15px] font-semibold text-white disabled:opacity-50">{busy && <Loader2 size={16} className="animate-spin" />} Entsperren</button>
-          <label className="flex cursor-pointer items-center justify-center gap-2 text-[13px] text-soft">
-            <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} className="h-4 w-4 accent-brand-500" />
-            {REMEMBER_MIN} Minuten entsperrt lassen
-          </label>
-          <p className="min-h-5 text-[13px] text-negative-text" role="alert">{error}</p>
-          <p className="text-[12px] text-muted">Das Passwort verlässt dein Gerät nicht. {keep ? `Nach ${REMEMBER_MIN} Minuten sperrt sich der Tresor wieder (auch nach Neuladen).` : "Der Tresor sperrt sich beim Neuladen oder Schließen."}</p>
+        <form onSubmit={submit} className="mt-2.5">
+          <div className="flex gap-2">{field("flex-1")}{button}</div>
+          <div className="mt-1.5 flex items-center justify-between gap-2 pl-1">{keepBox}{error && <span className="text-[12px] text-negative-text" role="alert">{error}</span>}</div>
+        </form>
+      ) : <Link href="/einstellungen/tresor" className="mt-2.5 inline-flex h-9 items-center rounded-full bg-brand-500 px-4 text-[13px] font-semibold text-white">Tresor einrichten</Link>}
+    </div>
+  );
+
+  return (
+    <div className="mx-auto w-full max-w-sm rounded-3xl border border-card-line bg-surface px-6 py-6 text-center shadow-card">
+      <span className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-brand-500 text-white"><LockKeyhole size={18} /></span>
+      <h2 className="mt-3 text-[16px] leading-6 font-semibold">{vault ? title : "Noch kein Tresor"}</h2>
+      <p className="mt-0.5 text-[13px] text-soft">{vault ? text : "Lege einen Tresor an, um Dokumente Ende-zu-Ende zu verschlüsseln."}</p>
+      {vault ? (
+        <form onSubmit={submit} className="mt-4 space-y-2.5">
+          {field("")}
+          <button type="submit" disabled={busy || !pw} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-brand-500 text-[14px] font-semibold text-white disabled:opacity-50">{busy && <Loader2 size={15} className="animate-spin" />} Entsperren</button>
+          <div>{keepBox}</div>
+          {error && <p className="text-[12.5px] text-negative-text" role="alert">{error}</p>}
+          <p className="text-[11.5px] text-muted">Das Passwort verlässt dein Gerät nicht.</p>
         </form>
       ) : (
-        <Link href="/einstellungen/tresor" className="mt-5 inline-flex h-11 items-center rounded-full bg-brand-500 px-5 text-[14px] font-semibold text-white">Tresor einrichten</Link>
+        <Link href="/einstellungen/tresor" className="mt-4 inline-flex h-10 items-center rounded-full bg-brand-500 px-5 text-[14px] font-semibold text-white">Tresor einrichten</Link>
       )}
     </div>
   );

@@ -9,7 +9,7 @@ import { SenderLogo } from "@/components/SenderLogo";
 import { CARD } from "@/components/ui";
 import { todos } from "@/lib/actions";
 import { chrono, useDocs } from "@/lib/docs";
-import { startExport } from "@/lib/jobs";
+import { newPassword, startExport } from "@/lib/jobs";
 import { groupOf, LABEL_GROUPS } from "@/lib/labels";
 import { useMe } from "@/lib/me";
 import { buildPartners, partnerKey } from "@/lib/partners";
@@ -171,7 +171,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
         <div className="sheet-up fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-xl items-center gap-3 rounded-full bg-fg py-2 pr-2 pl-5 text-canvas shadow-[0_12px_32px_rgba(16,24,40,.3)] lg:bottom-6 lg:left-[calc(var(--side,15rem)+1.5rem)]">
           <span className="min-w-0 flex-1 text-[14px]"><b className="tnum">{picked.size}</b> ausgewählt{lockedN > 0 && <span className="text-canvas/60"> · {lockedN} verschlüsselt (Tresor entsperren)</span>}</span>
           <button type="button" onClick={stopPicking} className="h-10 rounded-full px-3 text-[13.5px] font-semibold text-canvas/75 hover:text-canvas">Abbrechen</button>
-          <button type="button" disabled={picked.size - lockedN <= 0} onClick={() => { startExport(docs.filter((d) => picked.has(d.id) && (!d.encrypted || unlocked))); stopPicking(); }} className="inline-flex h-10 items-center gap-2 rounded-full bg-brand-500 px-4 text-[13.5px] font-semibold text-white disabled:opacity-40"><Download size={15} /> ZIP erstellen</button>
+          <button type="button" disabled={picked.size - lockedN <= 0} onClick={() => { const list = docs.filter((d) => picked.has(d.id) && (!d.encrypted || unlocked)); startExport(list, { password: list.some((d) => d.encrypted) ? newPassword() : undefined }); stopPicking(); }} className="inline-flex h-10 items-center gap-2 rounded-full bg-brand-500 px-4 text-[13.5px] font-semibold text-white disabled:opacity-40"><Download size={15} /> ZIP erstellen</button>
         </div>
       )}
     </div>
