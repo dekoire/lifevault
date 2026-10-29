@@ -125,7 +125,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
         <div className="relative z-20 hidden h-16 items-center gap-3 bg-page px-8 lg:ml-[var(--side,15rem)] lg:flex">
           <GlobalSearch />
           <span className="flex-1" />
-          <button type="button" onClick={() => setSheet(true)} className="inline-flex h-10 items-center gap-2 rounded-full border border-card-line bg-surface px-4 text-[14px] font-semibold text-fg hover:bg-surface-2"><Plus size={17} /> Hinzufügen</button>
+          <button type="button" onClick={() => setSheet(true)} aria-label="Hinzufügen" title="Hinzufügen" className="grid h-10 w-10 place-items-center rounded-full bg-brand-500 text-white transition-colors hover:bg-brand-600"><Plus size={19} /></button>
           <AvatarMenu email={email} />
         </div>
       )}
