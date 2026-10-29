@@ -67,15 +67,17 @@ function Chart({ body }: { body: string }) {
   );
 }
 
-export function Markdown({ text }: { text: string }) {
+export function Markdown({ text, widget }: { text: string; widget?: (kind: string, body: string) => React.ReactNode }) {
   // Infografik-Blöcke herauslösen, Rest normal darstellen
-  const parts = text.replace(/\r/g, "").split(/```(kpi|chart)\n([\s\S]*?)(?:```|$)/);
+  // Infografiken (kpi, chart) und Bausteine aus dem Chat (zahlung, partner, dokumente, aufgaben, uebersicht, gehalt)
+  const parts = text.replace(/\r/g, "").split(/```(kpi|chart|zahlung|partner|dokumente|aufgaben|uebersicht|gehalt)\n?([\s\S]*?)(?:```|$)/);
   if (parts.length > 1) {
     const out: React.ReactNode[] = [];
     for (let i = 0; i < parts.length; i += 3) {
       if (parts[i].trim()) out.push(<MarkdownText key={`t${i}`} text={parts[i]} />);
       if (parts[i + 1] === "kpi") out.push(<Kpis key={`k${i}`} body={parts[i + 2] ?? ""} />);
       if (parts[i + 1] === "chart") out.push(<Chart key={`c${i}`} body={parts[i + 2] ?? ""} />);
+      if (widget && !["kpi", "chart"].includes(parts[i + 1])) out.push(<div key={`w${i}`}>{widget(parts[i + 1], parts[i + 2] ?? "")}</div>);
     }
     return <div className="space-y-3">{out}</div>;
   }

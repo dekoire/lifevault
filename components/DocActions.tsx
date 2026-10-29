@@ -17,7 +17,7 @@ function CopyRow({ label, value, shown }: { label: string; value: string; shown?
 }
 
 /** QR-Code als Bild (für GiroCode und Links) */
-function Qr({ text, size = 148 }: { text: string; size?: number }) {
+export function Qr({ text, size = 148 }: { text: string; size?: number }) {
   const [src, setSrc] = useState<string>();
   useEffect(() => { void import("qrcode").then((q) => q.toDataURL(text, { margin: 1, width: size * 2, errorCorrectionLevel: "M" })).then(setSrc).catch(() => setSrc(undefined)); }, [text, size]);
   return src ? <img src={src} alt="QR-Code" width={size} height={size} className="rounded-lg bg-white p-1" /> : <span className="block rounded-lg bg-surface-2" style={{ width: size, height: size }} />;

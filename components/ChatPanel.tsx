@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Brain, Camera, Check, ChevronDown, CornerDownRight, ExternalLink, FileDown, Globe, Loader2, Mic, MicOff, Paperclip, Plus, Square, Telescope, X, Zap } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { Markdown } from "@/components/Markdown";
+import { ChatWidget } from "@/components/ChatWidgets";
 import { useDetail } from "@/components/DetailPanel";
 import { EntityLink } from "@/components/EntityLink";
 import { SenderLogo } from "@/components/SenderLogo";
@@ -182,7 +183,7 @@ export function MessageList({ msgs, compact, onResearch, onSave, onAsk, busy }: 
             <div className="min-w-0 flex-1">
               {m.content ? (() => {
                 const a = parseAnswer(m.content);
-                return <><Markdown text={a.text} /><Sources text={m.content} /><WebLinks links={a.links} />{onAsk && i === lastAnswer && !busy && !m.research && <FollowUps qs={a.followUps} onAsk={onAsk} />}</>;
+                return <><Markdown text={a.text} widget={(k, b) => <ChatWidget kind={k} body={b} />} /><Sources text={m.content} /><WebLinks links={a.links} />{onAsk && i === lastAnswer && !busy && !m.research && <FollowUps qs={a.followUps} onAsk={onAsk} />}</>;
               })() : <Typing />}
               {m.research && <ResearchCard r={m.research} onAnswer={(yes) => onResearch?.(i, yes)} />}
               {m.save && <SaveCard o={m.save} onAnswer={(yes) => onSave?.(i, yes)} />}
