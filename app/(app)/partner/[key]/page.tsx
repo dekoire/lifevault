@@ -196,7 +196,7 @@ function RenameModal({ p, others, onSave, onClose }: { p: { key: string; name: s
   const docsN = p.docs.length + others.filter((o) => merge.includes(o.key)).reduce((n, o) => n + o.n, 0);
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onClick={onClose}>
-      <form onSubmit={save} onClick={(e) => e.stopPropagation()} className="sheet-rise pb-safe max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface p-5 shadow-xl sm:rounded-3xl" role="dialog" aria-label="Partner umbenennen">
+      <form onSubmit={save} onClick={(e) => e.stopPropagation()} className="sheet-rise max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl sm:rounded-3xl" role="dialog" aria-label="Partner umbenennen">
         <div className="flex items-center gap-3">
           <SenderLogo domain={check?.domain ?? p.domain} sender={name || p.name} cluster={p.cluster} size={44} />
           <div className="min-w-0 flex-1"><h2 className="text-[17px] font-semibold">Partner umbenennen</h2><p className="truncate text-[12.5px] text-muted">bisher „{p.name}“</p></div>

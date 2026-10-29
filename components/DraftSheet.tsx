@@ -99,7 +99,7 @@ function DraftSheet({ doc, initial, onClose }: { doc: Doc; initial?: DraftPurpos
           )}
         </div>
         {draft && (
-          <div className="pb-safe flex flex-wrap items-center gap-2 border-t border-line px-5 pt-3 pb-4">
+          <div className="flex flex-wrap items-center gap-2 border-t border-line px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <button type="button" onClick={() => void copy()} className="inline-flex h-10 items-center gap-1.5 rounded-full border border-card-line px-3.5 text-[13px] font-semibold hover:bg-surface-2">{copied ? <Check size={15} /> : <Copy size={15} />} {copied ? "Kopiert" : "Kopieren"}</button>
             <button type="button" onClick={() => void letter()} className="inline-flex h-10 items-center gap-1.5 rounded-full border border-card-line px-3.5 text-[13px] font-semibold hover:bg-surface-2"><FileDown size={15} /> Brief als PDF</button>
             <button type="button" onClick={mail} className="ml-auto inline-flex h-10 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas"><Mail size={15} /> In Mail-App öffnen</button>

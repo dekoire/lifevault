@@ -72,7 +72,7 @@ export function ExportSheet({ onClose }: { onClose: () => void }) {
           {tab === "docs" && <Docs docs={docs} sel={sel} setMany={setMany} />}
           {tab === "ai" && <AiSearch byId={byId} sel={sel} setMany={setMany} />}
         </div>
-        <div className="pb-safe border-t border-line px-6 pt-3 pb-4">
+        <div className="border-t border-line px-6 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {lockedN > 0 && <div className="mb-3"><VaultUnlock compact title={`${lockedN} verschlüsselte ${lockedN === 1 ? "Datei" : "Dateien"} dabei`} text="Zum Mitexportieren Tresor entsperren – sie werden nur im Browser entschlüsselt." /></div>}
           {sel.size > 0 && (
             <div className="mb-2">
