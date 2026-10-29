@@ -130,7 +130,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
         </div>
       )}
       <main className={`lg:pl-[var(--side,15rem)] ${chat ? "" : "pb-28 lg:pb-12"}`}>
-        {chat ? children : <div className="mx-auto max-w-[90rem] px-4 pt-5 md:px-6 lg:pt-6 xl:px-8">{children}</div>}
+        {chat ? children : <div key={path} className="page-in mx-auto max-w-[90rem] px-4 pt-5 md:px-6 lg:pt-6 xl:px-8">{children}</div>}
       </main>
 
       {/* Handy: untere Leiste ohne Schatten – Start, +, Fragen */}
@@ -145,8 +145,8 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       </nav>
 
       {sheet && (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center" onClick={() => setSheet(false)}>
-          <div className="sheet-up pb-safe w-full max-w-md rounded-t-3xl bg-surface p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-backdrop fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center" onClick={() => setSheet(false)}>
+          <div className="sheet-rise pb-safe w-full max-w-md rounded-t-3xl bg-surface p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[18px] font-semibold">Dokument hinzufügen</h2>
               <button type="button" onClick={() => setSheet(false)} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3"><X size={18} /></button>

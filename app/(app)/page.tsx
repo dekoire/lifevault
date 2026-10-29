@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarClock, ChevronRight, FileText, Layers, ListChecks, Lock, Search, Sparkles } from "lucide-react";
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
@@ -53,14 +53,16 @@ export default function Home() {
     <div>
       <PageHeader title={currentProject?.name ?? "Deine Unterlagen"} subtitle={loading ? " " : `${ready.length} Dokumente in ${counts.size} Bereichen${archived ? ` · ${archived} archiviert` : ""}`} />
       <div className={`grid grid-cols-1 gap-5 lg:items-start ${side ? "lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]" : ""}`}>
-        <div className="min-w-0 space-y-5">
+        <div className="stagger min-w-0 space-y-5">
           {/* Kennzahlen: was bisher gesammelt ist */}
-          <section className={`${TILE} grid grid-cols-2 sm:grid-cols-4 [&>*:nth-child(odd)]:border-r [&>*:nth-child(-n+2)]:border-b sm:[&>*]:border-b-0 sm:[&>*:not(:last-child)]:border-r`}>
+          <section className="relative grid grid-cols-2 overflow-hidden rounded-2xl text-white shadow-card sm:grid-cols-4 [&>div:nth-of-type(odd)]:border-r [&>div:nth-of-type(-n+2)]:border-b sm:[&>div]:border-b-0 max-sm:[&>div:nth-of-type(even)]:border-r-0 sm:[&>div:not(:last-of-type)]:border-r" style={{ background: "linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%)" }}>
+            {/* dezenter Glanz wie bei Finastry */}
+            <span aria-hidden className="pointer-events-none absolute -top-24 -right-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
             {kpis.map(({ icon: Icon, value, label, sub }) => (
-              <div key={label} className="border-line p-4">
-                <span className="flex items-center gap-1.5 text-[12px] font-medium text-muted"><Icon size={14} /> {label}</span>
-                <span className="tnum mt-1 block text-[26px] leading-8 font-[650] tracking-tight text-brand-500">{loading ? "–" : value.toLocaleString("de-DE")}</span>
-                <span className="block text-[12px] text-muted">{sub}</span>
+              <div key={label} className="relative border-white/15 p-4">
+                <span className="flex items-center gap-1.5 text-[12px] font-medium text-white/75"><Icon size={14} /> {label}</span>
+                <span className="tnum mt-1 block text-[26px] leading-8 font-[650] tracking-tight">{loading ? "–" : <CountUp value={value} />}</span>
+                <span className="block text-[12px] text-white/70">{sub}</span>
               </div>
             ))}
           </section>
@@ -77,11 +79,14 @@ export default function Home() {
               {partners.length > 0 && (
                 <section>
                   <div className="mb-3 flex items-center justify-between"><h2 className="text-[17px] font-semibold">Deine Partner</h2><Link href="/partner" className="text-[13px] font-semibold text-selected">Alle {partners.length}</Link></div>
-                  <div className="-mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:px-0">
+                  <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pt-1 pb-2 [scrollbar-width:none] md:mx-0 md:px-0">
                     {partners.slice(0, 12).map((p) => (
-                      <Link key={p.key} href={`/partner/${p.key}`} className={`${TILE} flex w-[104px] shrink-0 flex-col items-center gap-2 p-3 text-center hover:bg-surface-2 ${p.active ? "" : "opacity-60"}`}>
-                        <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={44} bare />
-                        <span className="line-clamp-2 text-[12px] leading-4 font-semibold">{p.name}</span>
+                      <Link key={p.key} href={`/partner/${p.key}`} title={p.name} className={`${TILE} flex w-[128px] shrink-0 flex-col items-center gap-2.5 px-3 pt-4 pb-3 text-center ${p.active ? "" : "opacity-60"}`}>
+                        <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={52} bare />
+                        <span className="w-full min-w-0">
+                          <span className="block truncate text-[13px] leading-5 font-semibold">{p.name}</span>
+                          <span className="block text-[11.5px] text-muted">{p.docs.length} {p.docs.length === 1 ? "Dokument" : "Dokumente"}</span>
+                        </span>
                       </Link>
                     ))}
                   </div>
@@ -95,7 +100,7 @@ export default function Home() {
                   {[...CLUSTERS].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0)).map((c) => {
                     const n = counts.get(c.id) ?? 0;
                     return (
-                      <Link key={c.id} href={`/c/${c.id}`} className={`${TILE} flex flex-col gap-3 p-4 transition hover:bg-surface-2 active:scale-[.98] ${n ? "" : "opacity-60"}`}>
+                      <Link key={c.id} href={`/c/${c.id}`} className={`${TILE} flex flex-col gap-3 p-4 ${n ? "" : "opacity-60"}`}>
                         <span className="flex items-start justify-between gap-2"><ClusterIcon id={c.id} size={40} tone="plain" /><span className={`tnum inline-grid h-7 min-w-7 place-items-center rounded-full px-2 text-[12px] font-bold ${n ? "border border-card-line bg-surface-2 text-fg" : "border border-card-line text-muted"}`}>{n}</span></span>
                         <span>
                           <span className="block text-[15px] leading-5 font-semibold">{c.label}</span>
@@ -132,4 +137,22 @@ export default function Home() {
       </div>
     </div>
   );
+}
+
+/** Zahl beim Laden kurz hochzählen (ca. 0,6 s, abbremsend) */
+function CountUp({ value }: { value: number }) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setN(value); return; }
+    let raf = 0;
+    const start = performance.now();
+    const tick = (t: number) => {
+      const k = Math.min(1, (t - start) / 600);
+      setN(Math.round(value * (1 - Math.pow(1 - k, 3))));
+      if (k < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <>{n.toLocaleString("de-DE")}</>;
 }

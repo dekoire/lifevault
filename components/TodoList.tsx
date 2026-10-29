@@ -148,7 +148,7 @@ export function MultiSelect({ label, value, options, onChange, allLabel, name }:
         <Icon size={14} /><span className="text-muted">{label}:</span>{text}<ChevronDown size={14} className={`text-muted transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div role="listbox" aria-multiselectable="true" className="absolute left-0 z-30 mt-1.5 w-64 rounded-xl border border-card-line bg-surface p-1 shadow-lg">
+        <div role="listbox" aria-multiselectable="true" className="pop-in absolute left-0 z-30 mt-1.5 w-64 rounded-xl border border-card-line bg-surface p-1 shadow-lg">
           {options.map((o) => { const on = value.includes(o.id); return (
             <button key={o.id} type="button" role="option" aria-selected={on} onClick={() => toggle(o.id)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13.5px] hover:bg-surface-2">
               <span className={`grid h-4.5 w-4.5 shrink-0 place-items-center rounded-[5px] border-2 ${on ? "border-fg bg-fg text-canvas" : "border-line-strong"}`}>{on && <Check size={11} strokeWidth={3} />}</span>

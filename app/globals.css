@@ -78,11 +78,14 @@ body {
   color: transparent;
   animation: text-shimmer 1.8s linear infinite;
 }
-@keyframes sheet-up { from { opacity: 0; transform: translateY(8px); } }
-.sheet-up { animation: sheet-up .28s var(--ease-out) both; }
+/* Menüs, Dropdowns, Popover: kurz einblenden, leicht wachsen (eigener Name – „sheet-up“ ist das Bottom-Sheet) */
+@keyframes pop-in { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
+@keyframes rise { from { opacity: 0; transform: translateY(28px); } }
+.sheet-rise { animation: rise .32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.sheet-up, .pop-in { animation: pop-in .2s var(--ease-spring, cubic-bezier(0.22, 1, 0.36, 1)) both; transform-origin: top; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .typing-dot, .text-shimmer, .sheet-up { animation: none; }
+  .typing-dot, .text-shimmer, .sheet-up, .sheet-rise, .pop-in, .page-in, .stagger > * { animation: none; }
   .text-shimmer { color: var(--color-muted); background: none; }
 }
 
@@ -113,3 +116,44 @@ html, body { overflow-x: clip; }
   .sheet-panel { animation-name: sheet-in-right; }
   .sheet-panel[data-closing] { animation-name: sheet-out-right; }
 }
+
+/* ───────── Bewegung: dezent, schnell, wie eine App ───────── */
+:root { --ease-spring: cubic-bezier(0.22, 1, 0.36, 1); }
+a, button, [role="button"], summary, input, select, textarea {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 0.16s;
+  transition-timing-function: var(--ease-out);
+}
+:focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 2px; border-radius: 10px; }
+@media (prefers-reduced-motion: no-preference) {
+  /* Antippen: kurz eindrücken */
+  button:not(:disabled):active, [role="button"]:active, summary:active { transform: scale(0.97); }
+  a:active { transform: scale(0.985); }
+  /* anklickbare Karten heben sich beim Überfahren leicht an */
+  @media (hover: hover) {
+    a.shadow-card:hover, button.shadow-card:hover, .lift:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(16, 24, 40, 0.08), 0 2px 5px rgba(16, 24, 40, 0.04);
+    }
+  }
+  a.shadow-card:active, button.shadow-card:active, .lift:active { transform: translateY(0) scale(0.985); }
+
+  /* Seitenwechsel und Abschnitte: sanft einblenden, nacheinander */
+  @keyframes page-in { from { opacity: 0; transform: translateY(8px); } }
+  .page-in { animation: page-in 0.36s var(--ease-spring) both; }
+  .stagger > * { animation: page-in 0.42s var(--ease-spring) both; }
+  .stagger > *:nth-child(2) { animation-delay: 0.04s; }
+  .stagger > *:nth-child(3) { animation-delay: 0.08s; }
+  .stagger > *:nth-child(4) { animation-delay: 0.12s; }
+  .stagger > *:nth-child(5) { animation-delay: 0.16s; }
+  .stagger > *:nth-child(n + 6) { animation-delay: 0.2s; }
+
+  /* Aufklappen */
+  @keyframes fold-in { from { opacity: 0; transform: translateY(-4px); } }
+  details[open] > *:not(summary) { animation: fold-in 0.22s var(--ease-out) both; }
+
+  /* Listenzeilen: Hover-Fläche gleitet weich */
+  li > a, li > button { transition-duration: 0.12s; }
+}
+/* Logos/Bilder laden weich */
+img { transition: opacity 0.25s var(--ease-out); }
