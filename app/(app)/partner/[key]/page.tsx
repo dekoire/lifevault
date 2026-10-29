@@ -3,6 +3,7 @@ import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 import { ArrowRight, CalendarClock, ExternalLink, GitBranch, Hash, History, MessageSquare, PanelRight, PencilLine, ShoppingBag, X, Loader2, ChevronDown, Sparkles, Check } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
+import { PartnerRelevance } from "@/components/PartnerRelevance";
 import { DocTable } from "@/components/DocTable";
 import { PartnerSheet } from "@/components/PartnerInfo";
 import { MergeHistory } from "@/components/PartnerDupes";
@@ -154,7 +155,8 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
           )}
           <MergeHistory pkey={p.key} compact />
         </div>
-        <DocTable title="Dokumente" limit={8} docs={p.docs} sender={false} archiveToggle={false} restrict={restrict} onClearRestrict={() => setPick(null)} />
+        {/* nach Relevanz gegliedert (Hauptdokument, Wichtiges, Laufendes, Info, Erledigtes, Doppeltes); Nummer angetippt → Tabelle mit Treffern */}
+        {restrict || p.isShop ? <DocTable title="Dokumente" limit={8} docs={p.docs} sender={false} archiveToggle={false} restrict={restrict} onClearRestrict={() => setPick(null)} /> : <PartnerRelevance docs={p.docs} />}
       </div>
       {info && <PartnerSheet p={p} onClose={() => setInfo(false)} />}
       {renaming && <RenameModal p={p} others={partners.filter((x) => x.key !== p.key).map((x) => ({ key: x.key, name: x.name, domain: x.domain, cluster: x.cluster, n: x.docs.length }))} onSave={rename} onClose={() => setRenaming(false)} />}

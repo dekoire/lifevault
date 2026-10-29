@@ -1,0 +1,97 @@
+"use client";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { Archive, ChevronDown, Copy, FileText, Info, Receipt, Star } from "lucide-react";
+import { ImportanceDots } from "@/components/Importance";
+import { KindTag } from "@/components/KindTag";
+import { CARD } from "@/components/ui";
+import { fmtDate } from "@/lib/docs";
+import { findDuplicates } from "@/lib/dupes";
+import { importanceOf, roleLabel } from "@/lib/importance";
+import type { Doc } from "@/lib/types";
+
+type Bucket = "wichtig" | "laufend" | "info" | "erledigt" | "doppelt";
+const BUCKETS: { id: Bucket; title: string; hint: string; icon: React.ReactNode; open: boolean }[] = [
+  { id: "wichtig", title: "Das Wichtige", hint: "Hier steht, was gilt – das schaust du nach, wenn etwas ist.", icon: <Star size={16} />, open: true },
+  { id: "laufend", title: "Laufend", hint: "Rechnungen, Abrechnungen und Schreiben aus dem laufenden Vertrag.", icon: <Receipt size={16} />, open: true },
+  { id: "info", title: "Zur Info", hint: "Bedingungen, Infoblätter, Werbung – gut zu haben, selten gebraucht.", icon: <Info size={16} />, open: false },
+  { id: "erledigt", title: "Erledigt & veraltet", hint: "Bezahlt, überholt oder gekündigt – bleibt zum Nachweis im Archiv.", icon: <Archive size={16} />, open: false },
+  { id: "doppelt", title: "Doppelt", hint: "Gleicher Inhalt wie ein anderes Dokument – kann weg.", icon: <Copy size={16} />, open: false },
+];
+const dateOf = (d: Doc) => d.doc_date ?? d.received_at.slice(0, 10);
+
+/** Einordnung eines Dokuments beim Partner – mit Grund in einem Satz */
+function sortDocs(docs: Doc[]) {
+  const out = new Map<string, { bucket: Bucket; why: string }>();
+  // doppelt: alle außer dem, das man behalten sollte
+  for (const g of findDuplicates(docs)) for (const d of g.docs.slice(1)) out.set(d.id, { bucket: "doppelt", why: `wie „${g.docs[0].title ?? g.docs[0].file_name}“${g.why ? ` – ${g.why}` : ""}` });
+  // neueste Änderung je Grundlage gilt, ältere sind überholt
+  const newestChange = new Map<string, string>();
+  for (const d of docs) if (d.partner_role === "aenderung" && !d.archived) { const k = d.basis_id ?? ""; if (dateOf(d) > (newestChange.get(k) ?? "")) newestChange.set(k, dateOf(d)); }
+  for (const d of docs) {
+    if (out.has(d.id)) continue;
+    const imp = importanceOf(d);
+    if (d.archived) out.set(d.id, { bucket: "erledigt", why: d.archived_reason ?? "archiviert" });
+    else if (d.partner_role === "grundlage") out.set(d.id, { bucket: "wichtig", why: `Grundlage – ${d.importance_reason ?? "hier steht, was gilt"}` });
+    else if (d.partner_role === "aenderung" && newestChange.get(d.basis_id ?? "") === dateOf(d)) out.set(d.id, { bucket: "wichtig", why: `aktuell gültige Änderung${d.importance_reason ? ` – ${d.importance_reason}` : ""}` });
+    else if (d.partner_role === "nebensache" || imp <= 1) out.set(d.id, { bucket: "info", why: d.importance_reason ?? "nur zur Information" });
+    else if (imp >= 4 && d.partner_role !== "laufend") out.set(d.id, { bucket: "wichtig", why: d.importance_reason ?? "sehr wichtig" });
+    else out.set(d.id, { bucket: "laufend", why: [roleLabel(d.partner_role), d.importance_reason].filter(Boolean).join(" – ") || "laufender Vorgang" });
+  }
+  return out;
+}
+
+/**
+ * Dokumente eines Partners nach Relevanz statt nur nach Datum: das Hauptdokument oben, darunter das Wichtige,
+ * Laufendes, Infos, Erledigtes und Doppeltes – jeweils mit einem Satz, warum es dort steht.
+ */
+export function PartnerRelevance({ docs }: { docs: Doc[] }) {
+  const sorted = useMemo(() => sortDocs(docs), [docs]);
+  const [open, setOpen] = useState<Record<Bucket, boolean>>(Object.fromEntries(BUCKETS.map((b) => [b.id, b.open])) as Record<Bucket, boolean>);
+  const of = (b: Bucket) => docs.filter((d) => sorted.get(d.id)?.bucket === b).sort((a, b2) => importanceOf(b2) - importanceOf(a) || dateOf(b2).localeCompare(dateOf(a)));
+  // Hauptdokument: wichtigste gültige Grundlage (sonst das Wichtigste überhaupt)
+  const main = of("wichtig").find((d) => d.partner_role === "grundlage") ?? of("wichtig")[0];
+  return (
+    <div className="space-y-3">
+      {main && (
+        <Link href={`/d/${main.id}`} className="block rounded-2xl bg-brand-500 p-4 text-white shadow-card transition hover:brightness-105">
+          <span className="flex items-center gap-1.5 text-[12px] font-semibold tracking-wide text-white/80 uppercase"><FileText size={14} /> Hauptdokument</span>
+          <b className="mt-1 block text-[17px] leading-6">{main.title ?? main.file_name}</b>
+          <span className="mt-0.5 block text-[13px] text-white/85">{main.doc_type ?? ""}{main.doc_type ? " · " : ""}{fmtDate(dateOf(main))} · das schaust du nach, wenn etwas ist</span>
+        </Link>
+      )}
+      {BUCKETS.map((b) => {
+        const list = of(b.id).filter((d) => d.id !== main?.id);
+        if (!list.length) return null;
+        return (
+          <section key={b.id} className={`${CARD} overflow-hidden`}>
+            <button type="button" onClick={() => setOpen({ ...open, [b.id]: !open[b.id] })} aria-expanded={open[b.id]} className="flex w-full items-start gap-3 px-4 py-3.5 text-left hover:bg-surface-2/60">
+              <span className="mt-0.5 text-muted">{b.icon}</span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2 text-[15px] font-semibold">{b.title}<span className="tnum rounded-full border border-card-line px-2 py-px text-[11.5px] text-soft">{list.length}</span></span>
+                <span className="block text-[12.5px] text-muted">{b.hint}</span>
+              </span>
+              <ChevronDown size={16} className={`mt-1 shrink-0 text-muted transition-transform ${open[b.id] ? "rotate-180" : ""}`} />
+            </button>
+            {open[b.id] && (
+              <ul className="divide-y divide-line border-t border-line">
+                {list.map((d) => (
+                  <li key={d.id}>
+                    <Link href={`/d/${d.id}`} className={`flex items-start gap-3 px-4 py-3 hover:bg-surface-2/70 ${b.id === "erledigt" || b.id === "doppelt" ? "opacity-75" : ""}`}>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-1.5"><KindTag d={d} /><span className="truncate text-[14px] font-semibold">{d.title ?? d.file_name}</span></span>
+                        <span className="mt-0.5 block text-[12.5px] leading-5 text-soft">{sorted.get(d.id)?.why}</span>
+                        <span className="block text-[11.5px] text-muted">{fmtDate(dateOf(d))}</span>
+                      </span>
+                      {d.importance != null && <span className="mt-1.5"><ImportanceDots value={d.importance} /></span>}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+}

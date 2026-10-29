@@ -41,6 +41,8 @@ export function RankingSettings() {
       if (r.next >= r.total || r.next === cursor) { setProgress("Fertig."); break; }
       cursor = r.next;
     }
+    // danach Alterung: alte Rechnungen, überholte Änderungen, Info-Post aussortieren
+    await authFetch("/api/age", { method: "POST" }).catch(() => undefined);
     await refresh();
     setBusy("");
   };

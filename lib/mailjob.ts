@@ -6,6 +6,7 @@ import { processDocument } from "@/lib/processDoc";
 import { extFor, realMime } from "@/lib/sniff";
 import { triageMails } from "@/lib/triage";
 import { unifyMailDocs } from "@/lib/unify";
+import { applyAging } from "@/lib/agingServer";
 
 /**
  * Mail-Job auf dem Server: holt für jede Weiterleitungsadresse (mit „Automatisch abrufen“) neue Mails ab, ohne dass
@@ -43,6 +44,8 @@ export async function runMailJob(deadline: number): Promise<JobResult> {
     out.users++;
     try {
       const r = await runInbox(admin, inbox, deadline);
+      // Alterung (ohne KI): alte Rechnungen, überholte Änderungen … – läuft so auch ohne offene App
+      await applyAging(admin, inbox.user_id).catch(() => undefined);
       out.mails += r.mails;
       out.docs += r.docs;
       if (r.cut) { out.cut = true; break; }
