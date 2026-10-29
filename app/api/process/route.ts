@@ -72,7 +72,7 @@ export async function POST(req: Request) {
   // Teile einer schon getrennten PDF nicht erneut trennen (außer ausdrücklich gewünscht)
   const isPart = !!doc.split_from || / – Teil \d+ \(S\. /.test(doc.file_name);
   if (!inline && mediaType === "application/pdf" && (body?.split === true || (!isPart && body?.split !== false))) {
-    const plan = await splitPlan(data).catch(() => undefined);
+    const plan = await splitPlan(data, body?.split === true).catch(() => undefined);
     if (plan) {
       const ids: string[] = [];
       try {
@@ -99,7 +99,8 @@ export async function POST(req: Request) {
   }
 
   try {
-    const o = await extract({ data, mediaType });
+    // bei Überlast/Aussetzer einmal erneut versuchen
+    const o = await extract({ data, mediaType }).catch(async (e) => { console.error("process retry", (e as Error).message); await new Promise((r) => setTimeout(r, 4000)); return extract({ data, mediaType }); });
     if (!o) return fail("Das Dokument konnte nicht gelesen werden.");
     const { meta, content } = toColumns(o);
     // von Hand gesetzte Einordnung beim erneuten Auslesen nicht überschreiben

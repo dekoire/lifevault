@@ -6,10 +6,11 @@ import type { GatewayProviderOptions } from "@ai-sdk/gateway";
  * Kein Training mit deinen Daten (disallowPromptTraining).
  */
 export const MODELS = {
-  read: { model: "anthropic/claude-sonnet-5.5", fallbacks: ["anthropic/claude-haiku-5.5"] },
+  // Auslesen läuft für jede Datei – günstiges Modell (ca. 20× billiger als Sonnet), liest PDFs und Fotos zuverlässig
+  read: { model: "anthropic/claude-haiku-5.5", fallbacks: ["google/gemini-3.1-flash-lite"] },
   chat: { model: "anthropic/claude-sonnet-5.5", fallbacks: ["anthropic/claude-haiku-5.5"] },
-  classify: { model: "anthropic/claude-haiku-5.5", fallbacks: ["google/gemini-3.5-flash"] },
-  profile: { model: "anthropic/claude-sonnet-5.5", fallbacks: ["anthropic/claude-haiku-5.5"] },
+  classify: { model: "anthropic/claude-haiku-5.5", fallbacks: ["google/gemini-3.1-flash-lite"] },
+  profile: { model: "anthropic/claude-haiku-5.5", fallbacks: ["google/gemini-3.1-flash-lite"] },
   mail: { model: "anthropic/claude-haiku-5.5", fallbacks: ["google/gemini-2.5-flash-lite"] },
 } as const;
 export type AiTask = keyof typeof MODELS;

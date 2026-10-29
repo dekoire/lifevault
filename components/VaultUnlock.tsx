@@ -48,9 +48,12 @@ export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib de
       </div>
       {vault ? (
         <form onSubmit={submit} className="mt-2.5">
-          <div className="flex gap-2 [&_input]:border-transparent [&_input]:text-fg">{field("flex-1")}<button type="submit" disabled={busy || !pw} className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-white px-4 text-[13.5px] font-semibold text-brand-600 disabled:opacity-60">{busy && <Loader2 size={14} className="animate-spin" />} Entsperren</button></div>
+          <div className="[&_input]:border-transparent [&_input]:text-fg">{field("")}</div>
+          <div className="mt-2 flex gap-2 [&>*]:h-10 [&>*]:flex-1">
+            {footer}
+            <button type="submit" disabled={busy || !pw} className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#14111f] px-4 text-[13.5px] font-semibold text-white disabled:opacity-60">{busy && <Loader2 size={14} className="animate-spin" />} Entsperren</button>
+          </div>
           <div className="mt-1.5 flex items-center justify-between gap-2 pl-1 [&_label]:text-white/80">{keepBox}{error && <span className="rounded-full bg-white px-2 py-0.5 text-[12px] text-negative-text" role="alert">{error}</span>}</div>
-          {footer}
         </form>
       ) : <Link href="/einstellungen/tresor" className="mt-2.5 inline-flex h-9 items-center rounded-full bg-white px-4 text-[13px] font-semibold text-brand-600">Tresor einrichten</Link>}
     </div>

@@ -119,7 +119,7 @@ function Chat() {
             <div className="mx-auto max-w-md">
               <VaultUnlock compact title="Tresor entsperren" onClose={chat.cancelGate}
                 text={<>Für <b className="text-white">„{chat.gate.q}“</b> brauche ich wahrscheinlich verschlüsselte Unterlagen. Danach geht die Frage automatisch los.</>}
-                footer={<button type="button" onClick={chat.skipGate} className="mt-2.5 w-full rounded-full border border-white/30 py-1.5 text-[12.5px] font-semibold text-white hover:bg-white/10">Ohne verschlüsselte Dokumente fragen</button>} />
+                footer={<button type="button" onClick={chat.skipGate} className="rounded-full bg-white px-4 text-[13.5px] font-semibold text-[#14111f] hover:bg-white/90">Ohne Tresor fragen</button>} />
             </div>
           )}
           <div className={`mx-auto max-w-3xl ${chat.gate ? "hidden" : ""}`}><Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} onFiles={(f) => void chat.attach(f)} attachments={chat.attachments} onRemoveAttachment={chat.removeAttachment} depth={chat.depth} onDepth={chat.setDepth} /></div>

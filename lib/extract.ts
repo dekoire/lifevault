@@ -69,10 +69,10 @@ export async function extract(input: { data: Uint8Array; mediaType: string }): P
     const letters = raw.replace(/--- Seite \d+ ---/g, "").replace(/\s+/g, "").length;
     if (letters > 400) {
       const pages = await PDFDocument.load(input.data, { ignoreEncryption: true }).then((p) => p.getPageCount()).catch(() => 0);
-      // bis 100 Seiten sieht die KI die PDF selbst (Tabellen, Layout); darüber nur den Text
-      const content: ModelMessage["content"] = pages > 0 && pages <= 100
+      // kurze PDFs sieht die KI selbst (Tabellen, Layout); längere nur als Text – Seitenbilder kosten ein Vielfaches
+      const content: ModelMessage["content"] = pages > 0 && pages <= 6
         ? [{ type: "file", data: input.data, mediaType: "application/pdf" }, { type: "text", text: "Lies dieses Dokument aus und strukturiere es. Den Volltext brauchst du nicht zurückzugeben." }]
-        : [{ type: "text", text: `Lies dieses Dokument aus und strukturiere es. Den Volltext brauchst du nicht zurückzugeben.\n\n---\n${raw.slice(0, 300_000)}` }];
+        : [{ type: "text", text: `Lies dieses Dokument aus und strukturiere es. Den Volltext brauchst du nicht zurückzugeben.\n\n---\n${raw.slice(0, 120_000)}` }];
       const r = await generateText({
         ...aiFor("read"),
         system: SYSTEM.replace("Gib den gesamten Text wortgetreu zurück – nichts weglassen, nichts erfinden.", "Nichts erfinden."),
@@ -158,10 +158,13 @@ Folgeseiten desselben Briefs, Anlagen zu einem Vertrag und Rechnungen mit Folges
  * Lange PDFs werden in Abschnitten zu 20 Seiten geprüft (je mit der letzten Seite davor als Kontext).
  * Gibt die Seitenbereiche zurück, wenn es mindestens zwei sind – sonst undefined.
  */
-export async function splitPlan(data: Uint8Array): Promise<{ fromPage: number; toPage: number; what: string }[] | undefined> {
+export async function splitPlan(data: Uint8Array, force = false): Promise<{ fromPage: number; toPage: number; what: string }[] | undefined> {
   let pages = 0;
   try { pages = (await PDFDocument.load(data, { ignoreEncryption: true })).getPageCount(); } catch { return undefined; }
   if (pages < 2 || pages > 400) return undefined;
+  // PDFs mit Textebene (Mail-Anhänge, Downloads) sind fast immer ein einziges Dokument – nur Scans prüfen (spart einen ganzen KI-Durchlauf)
+  const letters = (await pdfText(data)).replace(/--- Seite \d+ ---/g, "").replace(/\s+/g, "").length;
+  if (!force && letters > pages * 300) return undefined;
   const chunks: { from: number; to: number; ctx: boolean }[] = [];
   for (let a = 1; a <= pages; a += CHUNK) chunks.push({ from: a === 1 ? 1 : a - 1, to: Math.min(pages, a + CHUNK - 1), ctx: a > 1 });
   const found: { page: number; what: string }[] = [];

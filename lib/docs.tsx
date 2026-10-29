@@ -48,6 +48,16 @@ async function prepare(file: File): Promise<File> {
   }
 }
 
+/** höchstens 3 Dateien gleichzeitig auslesen – 20 parallele KI-Aufrufe (z. B. Mail mit vielen Anhängen) liefen in Fehler */
+const MAX_PARALLEL = 3;
+let running = 0;
+const waiting: (() => void)[] = [];
+async function queued<T>(fn: () => Promise<T>): Promise<T> {
+  if (running >= MAX_PARALLEL) await new Promise<void>((r) => waiting.push(r));
+  running++;
+  try { return await fn(); } finally { running--; waiting.shift()?.(); }
+}
+
 export function DocsProvider({ userId, children }: { userId: string; children: React.ReactNode }) {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [parts, setParts] = useState<Doc[]>([]);
@@ -82,7 +92,7 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
   // split: true = jetzt trennen, false = nie trennen (z. B. bewusst zusammengeführt), undefined = automatisch
   const process = async (id: string, split?: boolean): Promise<void> => {
     try {
-      const res = await authFetch("/api/process", { method: "POST", body: JSON.stringify({ id, ...(split !== undefined ? { split } : {}) }) });
+      const res = await queued(() => authFetch("/api/process", { method: "POST", body: JSON.stringify({ id, ...(split !== undefined ? { split } : {}) }) }));
       const json = (await res.json().catch(() => ({}))) as { split?: string[] };
       await refresh();
       if (json.split?.length) for (let i = 0; i < json.split.length; i += 2) await Promise.all(json.split.slice(i, i + 2).map((x) => process(x)));
