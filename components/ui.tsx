@@ -59,7 +59,7 @@ export function TileMenu({ tiles }: { tiles: { href: string; title: string; text
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {tiles.map((t) => (
         <Link key={t.href} href={t.href} className="group flex items-center gap-4 rounded-2xl border border-card-line bg-surface px-5 py-5 transition hover:bg-surface-2">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-card-line bg-surface text-fg">{t.icon}</span>
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-fg text-canvas">{t.icon}</span>
           <span className="min-w-0 flex-1"><span className="block font-semibold">{t.title}</span><span className="block text-sm text-muted">{t.text}</span></span>
           <span className="shrink-0 text-muted transition group-hover:translate-x-0.5">›</span>
         </Link>

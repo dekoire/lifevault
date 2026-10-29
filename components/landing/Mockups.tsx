@@ -16,7 +16,7 @@ export function HomeMock() {
       <div className="grid grid-cols-3 gap-2">
         {CLUSTERS.filter((c) => counts[c.id]).map((c) => (
           <div key={c.id} className={`${card} p-3`}>
-            <span className="flex items-start justify-between"><ClusterIcon id={c.id} size={30} /><span className="rounded-full border border-card-line px-1.5 text-[10px] font-semibold text-soft">{counts[c.id]}</span></span>
+            <span className="flex items-start justify-between"><ClusterIcon id={c.id} size={30} tone="plain" /><span className="rounded-full border border-card-line px-1.5 text-[10px] font-semibold text-soft">{counts[c.id]}</span></span>
             <b className="mt-2 block text-[12px] font-semibold">{c.label}</b>
           </div>
         ))}

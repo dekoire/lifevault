@@ -48,7 +48,7 @@ export default function Home() {
           return (
             <li key={i}>
               <Link href={`/d/${x.d.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2/70">
-                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full border text-center leading-none ${n <= 7 ? "border-negative/40 text-negative-text" : "border-card-line text-fg"}`}><span><span className="tnum block text-[15px] font-bold">{n}</span><span className="block text-[9px] font-semibold">{n === 1 ? "Tag" : "Tage"}</span></span></span>
+                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-center leading-none ${n <= 7 ? "bg-urgent text-white" : "bg-fg text-canvas"}`}><span><span className="tnum block text-[15px] font-bold">{n}</span><span className="block text-[9px] font-semibold">{n === 1 ? "Tag" : "Tage"}</span></span></span>
                 <span className="min-w-0 flex-1"><span className="block truncate text-[14px] font-semibold">{x.what}</span><span className="block truncate text-[12px] text-muted">{fmtDate(x.date)} · {x.d.title}</span></span>
                 <ChevronRight size={16} className="text-muted" />
               </Link>
@@ -112,7 +112,7 @@ export default function Home() {
                     const n = counts.get(c.id) ?? 0;
                     return (
                       <Link key={c.id} href={`/c/${c.id}`} className={`${CARD} flex flex-col gap-3 p-4 transition hover:border-brand-500/40 active:scale-[.98] ${n ? "" : "opacity-60"}`}>
-                        <span className="flex items-start justify-between gap-2"><ClusterIcon id={c.id} size={40} /><span className="tnum rounded-full border border-card-line px-2 py-0.5 text-[12px] font-semibold text-soft">{n}</span></span>
+                        <span className="flex items-start justify-between gap-2"><ClusterIcon id={c.id} size={40} tone="plain" /><span className="tnum rounded-full border border-card-line px-2 py-0.5 text-[12px] font-semibold text-soft">{n}</span></span>
                         <span>
                           <span className="block text-[15px] leading-5 font-semibold">{c.label}</span>
                           <span className="mt-0.5 line-clamp-2 block text-[12px] leading-4 text-muted">{c.hint}</span>
@@ -137,7 +137,7 @@ export default function Home() {
           <UploadCard />
           {pendingProtect > 0 && (
             <Link href="/einstellungen/tresor" className={`${CARD} flex items-center gap-3 p-4`}>
-              <span className="grid h-10 w-10 place-items-center rounded-full border border-card-line bg-surface text-fg"><Lock size={18} /></span>
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-fg text-canvas"><Lock size={18} /></span>
               <span className="text-[13px]"><b className="block text-[14px]">{pendingProtect} warten auf Verschlüsselung</b><span className="text-muted">Tresor entsperren, dann werden sie geschützt.</span></span>
             </Link>
           )}

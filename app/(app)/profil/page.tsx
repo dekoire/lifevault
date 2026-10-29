@@ -82,7 +82,7 @@ export default function ProfilPage() {
         <div className="grid h-40 place-items-center"><Loader2 className="animate-spin text-muted" /></div>
       ) : !profile ? (
         <section className={`${CARD} p-8 text-center`}>
-          <span className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-card-line bg-surface text-fg"><UserRound size={26} /></span>
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-fg text-canvas"><UserRound size={26} /></span>
           <h2 className="mt-4 text-[18px] font-semibold">Noch kein Profil</h2>
           <p className="mx-auto mt-1 max-w-md text-[14px] text-muted">Die KI liest deine {ready} Dokumente und stellt zusammen: Arbeitgeber, Wohnung, Versicherungen, laufende Verträge, Fahrzeug – und was früher war.</p>
         </section>
@@ -100,7 +100,7 @@ export default function ProfilPage() {
               const Icon = ICONS[s.id] ?? UserRound;
               return (
                 <section key={s.id} className={`${CARD} overflow-hidden ${s.id === "offen" ? "lg:col-span-2" : ""}`}>
-                  <h2 className="flex items-center gap-2.5 px-5 pt-4 pb-2 text-[16px] font-semibold"><span className={`grid h-8 w-8 place-items-center rounded-full border border-card-line bg-surface ${s.id === "offen" ? "text-negative-text" : "text-fg"}`}><Icon size={16} /></span>{s.title}</h2>
+                  <h2 className="flex items-center gap-2.5 px-5 pt-4 pb-2 text-[16px] font-semibold"><span className={`grid h-8 w-8 place-items-center rounded-full ${s.id === "offen" ? "bg-urgent text-white" : "bg-fg text-canvas"}`}><Icon size={16} /></span>{s.title}</h2>
                   <ul className="divide-y divide-line">
                     {items.map((it, i) => (
                       <li key={i} className={`grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 px-5 py-3 text-[14px] ${it.status === "früher" ? "opacity-60" : ""}`}>

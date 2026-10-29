@@ -203,3 +203,12 @@ export const fmtMoney = (v: number, cur = "EUR") => { try { return v.toLocaleStr
 /** Zeitliche Reihenfolge: älteste zuerst (Dokumentdatum, sonst Eingang) */
 export const dateOf = (d: Pick<Doc, "doc_date" | "received_at">) => d.doc_date ?? d.received_at.slice(0, 10);
 export const chrono = <T extends Pick<Doc, "doc_date" | "received_at">>(list: T[]) => [...list].sort((a, b) => dateOf(a).localeCompare(dateOf(b)) || a.received_at.localeCompare(b.received_at));
+
+/** Dringend: Mahnung oder Frist in den nächsten 7 Tagen (nicht archiviert) */
+export function isUrgent(d: Pick<Doc, "archived" | "doc_type" | "deadlines" | "doc_date" | "received_at">) {
+  if (d.archived) return false;
+  const today = new Date().toISOString().slice(0, 10);
+  const in7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+  if ((d.deadlines ?? []).some((x) => x.date >= today && x.date <= in7)) return true;
+  return /mahnung/i.test(d.doc_type ?? "") && (d.deadlines ?? []).some((x) => x.date >= today);
+}

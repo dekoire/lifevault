@@ -4,9 +4,10 @@ import { ClusterIcon } from "@/components/ClusterIcon";
 import { domainFor } from "@/lib/partners";
 
 /** Firmenlogo zur Absender-Domain (z. B. Vodafone), sonst das Symbol des Bereichs */
-export function SenderLogo({ domain: given, sender, cluster, size = 40 }: { domain?: string | null; sender?: string | null; cluster?: string | null; size?: number }) {
+export function SenderLogo({ domain: given, sender, cluster, size = 40, urgent = false }: { domain?: string | null; sender?: string | null; cluster?: string | null; size?: number; urgent?: boolean }) {
   const [failed, setFailed] = useState(false);
   const domain = domainFor(sender, given);
+  if (urgent) return <ClusterIcon id={cluster} size={size} tone="urgent" />;
   if (!domain || failed) return <ClusterIcon id={cluster} size={size} />;
   return (
     <span className="grid shrink-0 place-items-center overflow-hidden rounded-full border border-card-line bg-white" style={{ width: size, height: size }}>

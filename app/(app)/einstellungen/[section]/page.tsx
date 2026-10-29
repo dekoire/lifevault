@@ -111,7 +111,7 @@ function Vault() {
             <ul className="divide-y divide-line">
               {CLUSTERS.map((c) => (
                 <li key={c.id} className="flex items-center gap-3 px-5 py-3">
-                  <ClusterIcon id={c.id} size={34} />
+                  <ClusterIcon id={c.id} size={34} tone="plain" />
                   <span className="min-w-0 flex-1"><span className="block text-[14px] font-semibold">{c.label}</span><span className="block truncate text-[12px] text-muted">{c.hint}</span></span>
                   <Switch on={vault.protected_clusters.includes(c.id)} onChange={(v) => void setProtected(c.id, v)} label={`${c.label} verschlüsseln`} />
                 </li>

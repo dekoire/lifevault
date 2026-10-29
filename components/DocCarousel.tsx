@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import { SenderLogo } from "@/components/SenderLogo";
-import { dateOf, fmtDate, fmtMoney } from "@/lib/docs";
+import { dateOf, fmtDate, fmtMoney, isUrgent } from "@/lib/docs";
 import type { Doc } from "@/lib/types";
 
 /** Dokumente als Karten zum Wischen, zeitlich sortiert (links älter, rechts neuer) – startet beim neuesten */
@@ -36,7 +36,7 @@ export function DocCarousel({ docs }: { docs: Doc[] }) {
         {docs.map((d) => (
           <Link key={d.id} href={`/d/${d.id}`} className="flex w-[84%] shrink-0 snap-center flex-col rounded-2xl border border-card-line bg-surface p-4 transition hover:border-brand-500/40 sm:w-[340px] sm:snap-start">
             <span className="flex items-center gap-3">
-              <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={40} />
+              <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} urgent={isUrgent(d)} size={40} />
               <span className="min-w-0 flex-1">
                 <b className="line-clamp-2 text-[15px] leading-5">{d.title ?? d.file_name}</b>
                 <span className="block truncate text-[12px] text-muted">{fmtDate(dateOf(d))}{d.sender ? ` · ${d.sender}` : ""}</span>

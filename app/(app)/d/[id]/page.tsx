@@ -8,7 +8,7 @@ import { SenderLogo } from "@/components/SenderLogo";
 import { CARD, ICON_BTN, KeyValueTable, Section } from "@/components/ui";
 import { VaultUnlock } from "@/components/VaultUnlock";
 import { clusterOf } from "@/lib/clusters";
-import { chrono, fmtDate, fmtMoney, useDocs } from "@/lib/docs";
+import { chrono, fmtDate, fmtMoney, isUrgent, useDocs } from "@/lib/docs";
 import { useProjects } from "@/lib/projects";
 import { useMe } from "@/lib/me";
 import { openDoc, protectDoc, unprotectDoc } from "@/lib/protect";
@@ -122,7 +122,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
       {/* Kopf: Logo, Titel, Kennzeichen, kleine Aktionen */}
       <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="flex min-w-0 items-start gap-3.5">
-          <SenderLogo domain={doc.sender_domain} sender={doc.sender} cluster={doc.cluster} size={52} />
+          <SenderLogo domain={doc.sender_domain} sender={doc.sender} cluster={doc.cluster} urgent={isUrgent(doc)} size={52} />
           <div className="min-w-0">
             <h1 className="text-[24px] leading-8 font-[650] tracking-tight md:text-[28px] md:leading-9">{doc.title ?? doc.file_name}</h1>
             <div className="mt-2 flex flex-wrap gap-1.5">

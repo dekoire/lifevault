@@ -58,7 +58,7 @@ export default function Landing() {
         <h2 className="text-[28px] leading-9 font-[650] tracking-tight">13 Bereiche, alles hat seinen Platz</h2>
         <p className="mt-2 max-w-2xl text-[15px] text-muted">Du musst nichts vorsortieren. Was nicht passt, landet unter „Sonstiges“ – verloren geht nichts.</p>
         <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {CLUSTERS.map((c) => <li key={c.id} className="flex items-center gap-2.5 rounded-2xl border border-card-line p-3"><ClusterIcon id={c.id} size={32} /><span className="text-[14px] font-semibold">{c.label}</span></li>)}
+          {CLUSTERS.map((c) => <li key={c.id} className="flex items-center gap-2.5 rounded-2xl border border-card-line p-3"><ClusterIcon id={c.id} size={32} tone="plain" /><span className="text-[14px] font-semibold">{c.label}</span></li>)}
         </ul>
       </section>
 
