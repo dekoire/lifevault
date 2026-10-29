@@ -95,7 +95,7 @@ export function InboxCard({ mode, from, to }: { mode: "since" | "range"; from: s
       <div className="flex flex-wrap items-center gap-4 border-t border-line p-5">
         <span className="min-w-0 flex-1">
           <b className="block text-[14px]">Automatisch abrufen</b>
-          <span className="text-[12.5px] text-muted">Beim Öffnen der App und alle {30} Minuten – nur, was seit dem letzten Abruf neu ist. Zuletzt: {inbox.last_sync_at ? new Date(inbox.last_sync_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }) : "noch nie"}</span>
+          <span className="text-[12.5px] text-muted">Alle 15 Minuten auf dem Server, auch wenn die App zu ist – nur, was seit dem letzten Abruf neu ist. Zuletzt: {inbox.last_sync_at ? new Date(inbox.last_sync_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }) : "noch nie"}</span>
         </span>
         <Switch on={inbox.auto_sync} onChange={(v) => void save({ auto_sync: v })} label="Automatisch abrufen" />
       </div>

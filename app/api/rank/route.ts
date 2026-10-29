@@ -14,7 +14,7 @@ export async function POST(req: Request) {
   if (!auth) return unauthorized();
   await loadAiSettings(auth.sb);
   const body = (await req.json().catch(() => null)) as { all?: unknown; cursor?: unknown } | null;
-  const groups = await loadGroups(auth.sb);
+  const groups = await loadGroups(auth.sb, auth.user.id);
   let done = 0;
 
   if (body?.all === true) {
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       const targets = group.slice(0, key ? 60 : 30);
       if (n && n + targets.length > 60) break;
       n += targets.length;
-      done += await rankDocs(auth.sb, targets, group, !!key);
+      done += await rankDocs(auth.sb, targets, group, !!key, auth.user.id);
     }
     return Response.json({ done, next, total: list.length });
   }
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   for (const [key, group] of open.slice(0, 3)) {
     // ganzer Partner: auch Bewertete bekommen so ihren Bezug zur (vielleicht neuen) Grundlage
     const targets = (key ? group : group.filter((d) => d.importance === null)).slice(0, key ? 60 : 30);
-    done += await rankDocs(auth.sb, targets, group, !!key);
+    done += await rankDocs(auth.sb, targets, group, !!key, auth.user.id);
   }
   const { count } = await auth.sb.from("documents").select("id", { count: "exact", head: true }).eq("status", "ready").is("merged_into", null).is("importance", null);
   return Response.json({ done, left: count ?? 0 });

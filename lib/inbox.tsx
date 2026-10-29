@@ -19,7 +19,8 @@ export const MAIL_MODES: { id: MailMode; label: string; hint: string }[] = [
 ];
 export type Inbox = { token: string; allowed: string[]; auto_sync: boolean; last_sync_at: string | null; mode?: MailMode };
 export const inboxAddress = (token: string) => `lv-${token}@${INBOX_DOMAIN}`;
-const EVERY_MIN = 10;
+// der Mail-Job auf dem Server (lib/mailjob.ts) holt alle 15 Minuten ab; die App springt nur ein, wenn er länger nicht lief
+const EVERY_MIN = 45;
 
 const newToken = () => Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join("");
 
