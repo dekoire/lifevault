@@ -1,20 +1,28 @@
 "use client";
 import Link from "next/link";
-import { use, useMemo } from "react";
-import { CalendarClock, ExternalLink, Hash, MessageSquare, ShoppingBag } from "lucide-react";
+import { use, useMemo, useState } from "react";
+import { CalendarClock, ExternalLink, Filter, Hash, MessageSquare, ShoppingBag } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
 import { DocTable } from "@/components/DocTable";
 import { SenderLogo } from "@/components/SenderLogo";
 import { BackLink, CARD, PageHeader } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
 import { fmtDate, fmtMoney, useDocs } from "@/lib/docs";
-import { buildPartners } from "@/lib/partners";
+import { buildPartners, docsWithValue, type PartnerId } from "@/lib/partners";
 
 /** Ein Partner: alle Kennungen zum Kopieren, Fristen, Einkäufe und Dokumente */
 export default function PartnerPage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = use(params);
   const { docs, loading } = useDocs();
   const p = useMemo(() => buildPartners(docs).find((x) => x.key === key), [docs, key]);
+  // angeklickte Kennung → rechts nur Dokumente, die sie enthalten
+  const [pick, setPick] = useState<PartnerId | null>(null);
+  const restrict = useMemo(() => {
+    if (!pick || !p) return null;
+    const ids = docsWithValue(p.docs, pick.value);
+    ids.add(pick.docId);
+    return { label: `${pick.label}: ${pick.value}`, ids };
+  }, [pick, p]);
   const today = new Date().toISOString().slice(0, 10);
   if (!p) return <p className="py-20 text-center text-muted">{loading ? "Lädt …" : "Nicht gefunden."}</p>;
 
@@ -47,20 +55,31 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
           <section className={CARD}>
             <h2 className="flex items-center gap-2 px-5 pt-4 pb-2 text-[16px] font-semibold"><Hash size={17} /> Kennungen & Nummern</h2>
             {p.ids.length ? (
-              <ul className="divide-y divide-line">
-                {p.ids.map((i, n) => {
-                  const old = latestByLabel.get(i.label.toLowerCase()) !== i.value;
-                  return (
-                    <li key={n} className={`grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 px-5 py-2.5 text-[14px] ${old ? "opacity-55" : ""}`}>
-                      <span className="min-w-0 break-words hyphens-auto text-muted" lang="de">{i.label}{old && <span className="ml-1.5 rounded-full border border-card-line px-1.5 text-[10px]">früher</span>}</span>
-                      <span className="min-w-0">
-                        <CopyValue value={i.value} />
-                        <Link href={`/d/${i.docId}`} className="block truncate text-[11px] text-muted hover:text-selected">aus {i.docTitle} · {fmtDate(i.date)}</Link>
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
+              <>
+                <p className="px-5 pb-2 text-[12.5px] text-muted">Antippen zeigt rechts die Dokumente mit dieser Nummer.</p>
+                {[...new Set(p.ids.map((i) => i.topic))].map((topic) => (
+                  <div key={topic}>
+                    <h3 className="border-t border-line bg-surface-2/60 px-5 py-1.5 text-[12px] font-semibold tracking-wide text-soft uppercase">{topic}</h3>
+                    <ul className="divide-y divide-line">
+                      {p.ids.filter((i) => i.topic === topic).map((i) => {
+                        const old = latestByLabel.get(i.label.toLowerCase()) !== i.value;
+                        const on = pick?.value === i.value && pick.label === i.label;
+                        return (
+                          <li key={`${i.label}|${i.value}|${i.docId}`} role="button" tabIndex={0} aria-pressed={on}
+                            onClick={() => setPick(on ? null : i)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPick(on ? null : i); } }}
+                            className={`grid cursor-pointer grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 px-5 py-2.5 text-[14px] transition-colors ${on ? "bg-lavender shadow-[inset_3px_0_0_var(--color-brand-500)]" : "hover:bg-surface-2/70"} ${old && !on ? "opacity-55" : ""}`}>
+                            <span className="min-w-0 break-words hyphens-auto text-muted" lang="de">{i.label}{old && <span className="ml-1.5 rounded-full border border-card-line px-1.5 text-[10px]">früher</span>}</span>
+                            <span className="min-w-0">
+                              <CopyValue value={i.value} />
+                              <Link href={`/d/${i.docId}`} onClick={(e) => e.stopPropagation()} className="block truncate text-[11px] text-muted hover:text-selected">aus {i.docTitle} · {fmtDate(i.date)}</Link>
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+              </>
             ) : <p className="px-5 pb-4 text-[13px] text-muted">Keine Nummern gefunden. Neu ausgelesene Dokumente sammeln Kunden-, Vertrags- und Versicherungsnummern automatisch.</p>}
           </section>
           {deadlines.length > 0 && (
@@ -72,7 +91,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
         </div>
         <section className="space-y-3">
           <h2 className="text-[16px] font-semibold">Dokumente</h2>
-          <DocTable docs={p.docs} sender={false} archiveToggle={false} />
+          <DocTable docs={p.docs} sender={false} archiveToggle={false} restrict={restrict} onClearRestrict={() => setPick(null)} />
         </section>
       </div>
     </div>

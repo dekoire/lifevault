@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlertCircle, Archive, Building2, CalendarDays, FileText, LayoutGrid, Lock } from "lucide-react";
+import { AlertCircle, Archive, Building2, CalendarDays, FileText, Hash, LayoutGrid, Lock, X } from "lucide-react";
 import { ClusterTag } from "@/components/ClusterIcon";
 import { compare, FilterBar, FilterSelect, FilterToggle, SortHeader, SortMenu, type Col, type Sort } from "@/components/ListControls";
 import { SenderLogo } from "@/components/SenderLogo";
@@ -17,7 +17,9 @@ const dateOf = (d: Doc) => d.doc_date ?? d.received_at.slice(0, 10);
  * Dokumentliste mit sortierbarem Kopf (Dokument, Bereich, Absender, Datum) und Filtern (Suche, Bereich, Absender, Jahr, Archiv).
  * `cluster` blendet Spalte und Filter „Bereich“ aus, wenn die Liste schon nur einen Bereich zeigt; dasselbe gilt für `sender`.
  */
-export function DocTable({ docs, cluster = true, sender = true, archiveToggle = true, empty = "Keine Dokumente." }: { docs: Doc[]; cluster?: boolean; sender?: boolean; archiveToggle?: boolean; empty?: string }) {
+export function DocTable({ docs, cluster = true, sender = true, archiveToggle = true, empty = "Keine Dokumente.", restrict, onClearRestrict }: { docs: Doc[]; cluster?: boolean; sender?: boolean; archiveToggle?: boolean; empty?: string; restrict?: { label: string; ids: Set<string> } | null; onClearRestrict?: () => void }) {
+  // Spalte „Bereich“ nur, wenn die Dokumente aus mehreren Bereichen stammen
+  cluster = cluster && new Set(docs.map((d) => clusterOf(d.cluster).id)).size > 1;
   const [sort, setSort] = useState<Sort<Key>>({ key: "date", dir: "desc" });
   const [q, setQ] = useState("");
   const [fCluster, setFCluster] = useState("");
@@ -43,6 +45,7 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
 
   const term = q.trim().toLowerCase();
   const list = docs
+    .filter((d) => !restrict || restrict.ids.has(d.id))
     .filter((d) => withArchive || !archiveToggle || !d.archived)
     .filter((d) => !fCluster || clusterOf(d.cluster).id === fCluster)
     .filter((d) => !fSender || d.sender === fSender)
@@ -63,6 +66,13 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
         {opts.years.length > 1 && <FilterSelect label="Jahr" value={fYear} onChange={setFYear} options={opts.years} />}
         {hasArchive && <FilterToggle label="Mit Archiv" on={withArchive} onChange={setWithArchive} />}
       </FilterBar>
+      {restrict && (
+        <div className="flex items-center gap-2 rounded-2xl border border-brand-500/40 bg-lavender px-3.5 py-2 text-[13.5px]">
+          <Hash size={15} className="shrink-0 text-brand-500" />
+          <span className="min-w-0 flex-1 truncate">Nur Dokumente mit <b className="font-semibold">{restrict.label}</b></span>
+          <button type="button" onClick={onClearRestrict} aria-label="Kennungs-Filter entfernen" className="grid h-7 w-7 shrink-0 place-items-center rounded-full hover:bg-surface"><X size={15} /></button>
+        </div>
+      )}
       <div className={`${CARD} overflow-hidden`} role="table">
         <SortHeader cols={cols} sort={sort} onSort={setSort} grid={grid} />
         {list.length === 0 ? <p className="px-4 py-6 text-center text-[14px] text-muted">{filtered ? "Nichts gefunden – Filter zurücksetzen?" : empty}</p> : (

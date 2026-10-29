@@ -2,7 +2,7 @@ import type { Doc, Fact } from "@/lib/types";
 
 /** Bekannte Firmen → Webadresse, falls die KI keine Domain geliefert hat (für das Logo) */
 const KNOWN: [RegExp, string][] = [
-  [/mercedes|daimler/i, "mercedes-benz.de"], [/\bbmw\b/i, "bmw.de"], [/\bbosch\b/i, "bosch.de"], [/porsche/i, "porsche.com"], [/volkswagen|\bvw\b/i, "volkswagen.de"], [/\baudi\b/i, "audi.de"], [/\bsap\b/i, "sap.com"], [/siemens/i, "siemens.com"],
+  [/mercedes.?benz bkk|\bmb.?bkk/i, "mercedes-benz-bkk.com"], [/mercedes|daimler/i, "mercedes-benz.de"], [/\bbmw\b/i, "bmw.de"], [/\bbosch\b/i, "bosch.de"], [/porsche/i, "porsche.com"], [/volkswagen|\bvw\b/i, "volkswagen.de"], [/\baudi\b/i, "audi.de"], [/\bsap\b/i, "sap.com"], [/siemens/i, "siemens.com"],
   [/telekom/i, "telekom.de"], [/vodafone/i, "vodafone.de"], [/\bo2\b|telef[oó]nica/i, "o2online.de"], [/1\s?&\s?1/i, "1und1.de"], [/congstar/i, "congstar.de"],
   [/huk/i, "huk.de"], [/allianz/i, "allianz.de"], [/\baxa\b/i, "axa.de"], [/ergo/i, "ergo.de"], [/debeka/i, "debeka.de"], [/generali/i, "generali.de"], [/signal iduna/i, "signal-iduna.de"], [/w[uü]rttembergische/i, "wuerttembergische.de"], [/r\+v|r und v/i, "ruv.de"], [/devk/i, "devk.de"], [/check24/i, "check24.de"],
   [/techniker|\btk\b/i, "tk.de"], [/\baok\b/i, "aok.de"], [/barmer/i, "barmer.de"], [/\bdak\b/i, "dak.de"], [/ikk/i, "ikk-classic.de"],
@@ -25,14 +25,46 @@ export function partnerKey(sender: string) {
   return sender.toLowerCase()
     .replace(/\b(gmbh|ag|se|kg|ohg|mbh|co|e\.?\s?v\.?|& co\.?|deutschland|germany|vertriebs|niederlassung)\b/g, " ")
     .replace(/\(.*?\)/g, " ")
-    .replace(/[^a-z0-9äöüß]+/g, " ").trim().split(" ").slice(0, 2).join("-") || "unbekannt";
+    .replace(/[^a-z0-9äöüß]+/g, " ").trim().split(" ")
+    // eigenständige Stellen unter gleichem Namen getrennt halten: „Mercedes-Benz BKK“ ≠ „Mercedes-Benz AG“
+    .filter((w, i) => i < 2 || DISTINCT.test(w)).join("-") || "unbekannt";
+}
+const DISTINCT = /^(bkk|krankenkasse|bank|versicherung|versicherungen|leasing|pensionskasse|stiftung|betriebsrat|kantine|verpflegungsbetriebe)$/;
+
+/** Thema einer Kennung aus ihrem Quelldokument – damit Arbeitsvertrag, Kantine, Krankenkasse usw. getrennt stehen */
+const TOPICS: [RegExp, string][] = [
+  [/bkk|krankenkasse|krankenversicherung|versicherung|police|beitrag/i, "Versicherung & Krankenkasse"],
+  [/verpflegung|kantine|gastro|lastschrift|sepa/i, "Kantine & Lastschrift"],
+  [/entgelt|gehalt|lohn|abrechnung|lohnsteuer|steuer-?id|sozialversicherung/i, "Gehalt & Abrechnung"],
+  [/sterbegeld|umlage|altersversorgung|pension|rente/i, "Vorsorge & Umlagen"],
+  [/werksausweis|ausweis|zutritt/i, "Werksausweis"],
+  [/arbeitsvertrag|dienstzeit|personal|onboarding|eintritt|verhaltens|arbeitsordnung|vertraulich/i, "Arbeitsverhältnis"],
+  [/vertrag|kunden|tarif/i, "Vertrag"],
+  [/rechnung|beleg|bon|quittung/i, "Rechnungen & Belege"],
+  [/befund|arzt|klinik|labor|diagnose|patient/i, "Behandlung"],
+];
+export function idTopic(d: Pick<Doc, "title" | "doc_type" | "sender">) {
+  const t = `${d.title ?? ""} ${d.doc_type ?? ""} ${d.sender ?? ""}`;
+  return TOPICS.find(([re]) => re.test(t))?.[1] ?? d.doc_type ?? "Sonstiges";
+}
+
+/** Keine echten Kennungen: leere Formularfelder, ganze Sätze */
+const NO_ID = /nicht ausgefüllt|nicht angegeben|nicht vorhanden|^leer$|unbekannt|^[-–—]$|^n\/a$/i;
+export const isIdValue = (v: string) => !NO_ID.test(v.trim()) && (/\d/.test(v) ? v.length <= 60 : v.length <= 30 && v.trim().split(/\s+/).length <= 3);
+
+/** Dokumente, in denen eine Kennung vorkommt (Key-Fakten, Zusammenfassung, Volltext; ohne Leerzeichen verglichen) */
+export function docsWithValue(docs: Doc[], value: string) {
+  const norm = (x: string) => x.toLowerCase().replace(/\s+/g, "");
+  const v = norm(value);
+  if (v.length < 3) return new Set<string>();
+  return new Set(docs.filter((d) => [...(d.key_facts ?? []).map((f) => f.value), d.summary ?? "", d.full_text ?? ""].some((x) => norm(x ?? "").includes(v))).map((d) => d.id));
 }
 
 /** Kennungen: Kunden-, Vertrags-, Versicherungs-, Rufnummer, IBAN, Zählernummer, Login … */
 const ID_LABEL = /(nummer|\bnr\b|\bnr\.|kennung|kennwort|\bid\b|iban|\bbic\b|kunden|vertrags|versicherungs|police|versicherungsschein|rufnummer|zähler|mitglied|aktenzeichen|referenz|benutzer|login|tarif-?id|steuernummer|identifikation|personal|kontonummer|kennzeichen|fahrgestell|fin\b)/i;
 export const isIdFact = (f: Fact) => ID_LABEL.test(f.label) || /kennung|nummer/i.test(f.group ?? "");
 
-export type PartnerId = { label: string; value: string; docId: string; docTitle: string; date: string };
+export type PartnerId = { label: string; value: string; docId: string; docTitle: string; date: string; topic: string };
 export type Partner = {
   key: string; name: string; domain: string | null; cluster: string | null; docs: Doc[];
   ids: PartnerId[]; first: string; last: string; active: boolean; isShop: boolean;
@@ -63,11 +95,11 @@ export function buildPartners(docs: Doc[]): Partner[] {
     p.isShop = p.docs.every((d) => d.cluster === "belege" || d.cluster === "mobilitaet" && /beleg|bon|quittung/i.test(d.doc_type ?? ""));
     const seen = new Set<string>();
     for (const d of p.docs) for (const f of d.key_facts ?? []) {
-      if (!isIdFact(f) || !f.value?.trim()) continue;
+      if (!isIdFact(f) || !f.value?.trim() || !isIdValue(f.value)) continue;
       const k = `${f.label.toLowerCase()}|${f.value.replace(/\s/g, "")}`;
       if (seen.has(k)) continue;
       seen.add(k);
-      p.ids.push({ label: f.label, value: f.value, docId: d.id, docTitle: d.title ?? d.file_name, date: dateOf(d) });
+      p.ids.push({ label: f.label, value: f.value, docId: d.id, docTitle: d.title ?? d.file_name, date: dateOf(d), topic: idTopic(d) });
     }
   }
   return [...map.values()].sort((a, b) => Number(b.active) - Number(a.active) || b.last.localeCompare(a.last));

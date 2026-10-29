@@ -98,7 +98,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
 
       {/* Handy: Kopf mit Logo */}
       {!chat && (
-        <header className="pt-safe sticky top-0 z-20 border-b border-card-line/70 bg-page/90 backdrop-blur-xl lg:hidden">
+        <header className="pt-safe sticky top-0 z-20 bg-page/90 backdrop-blur-xl lg:hidden">
           <div className="flex h-14 items-center justify-between px-4">
             <Link href="/" aria-label="Start"><Logo size={28} /></Link>
             <span className="flex items-center gap-2">
@@ -111,7 +111,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       )}
       {/* Desktop: oben rechts Hinzufügen und Avatar */}
       {!chat && (
-        <div className="sticky top-0 z-20 hidden h-16 items-center gap-3 border-b border-card-line/70 bg-page/90 px-8 backdrop-blur-xl lg:ml-[var(--side,15rem)] lg:flex">
+        <div className="sticky top-0 z-20 hidden h-16 items-center gap-3 bg-page/90 px-8 backdrop-blur-xl lg:ml-[var(--side,15rem)] lg:flex">
           <GlobalSearch />
           <span className="flex-1" />
           <button type="button" onClick={() => setSheet(true)} className="inline-flex h-10 items-center gap-2 rounded-full border border-card-line bg-surface px-4 text-[14px] font-semibold text-fg hover:bg-surface-2"><Plus size={17} /> Hinzufügen</button>
