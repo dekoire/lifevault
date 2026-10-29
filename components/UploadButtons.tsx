@@ -31,13 +31,13 @@ export function UploadCard() {
     if (list.length) void upload(list);
   };
   return (
-    <section onDragOver={(e) => e.preventDefault()} onDrop={onDrop} className="rounded-3xl p-5 text-white shadow-md md:p-6" style={{ background: "linear-gradient(135deg, #7c5cff 0%, #6d4aff 45%, #4a2fc4 100%)" }}>
+    <section onDragOver={(e) => e.preventDefault()} onDrop={onDrop} className="rounded-2xl p-5 text-white md:p-6" style={{ background: "linear-gradient(135deg, #7c5cff 0%, #6d4aff 45%, #4a2fc4 100%)" }}>
       {inputs}
       <h2 className="text-[19px] leading-7 font-semibold">Dokumente hinzufügen</h2>
       <p className="mt-1 text-[14px] leading-5 text-white/80">Foto oder PDF – Lifevault liest alles aus und sortiert es für dich.</p>
       <div className="mt-4 grid grid-cols-2 gap-2.5">
-        <button type="button" onClick={openCamera} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-white text-[15px] font-semibold text-brand-600 shadow-sm active:scale-[.98]"><Camera size={18} /> Fotografieren</button>
-        <button type="button" onClick={openFiles} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-white/15 text-[15px] font-semibold text-white ring-1 ring-white/25 active:scale-[.98]"><FileUp size={18} /> Dateien</button>
+        <button type="button" onClick={openCamera} className="flex h-12 items-center justify-center gap-2 rounded-full bg-white text-[15px] font-semibold text-brand-600 shadow-sm active:scale-[.98]"><Camera size={18} /> Fotografieren</button>
+        <button type="button" onClick={openFiles} className="flex h-12 items-center justify-center gap-2 rounded-full bg-white/15 text-[15px] font-semibold text-white ring-1 ring-white/25 active:scale-[.98]"><FileUp size={18} /> Dateien</button>
       </div>
       {uploading > 0 && <p className="mt-3 text-[13px] text-white/85">Lade {uploading} {uploading === 1 ? "Datei" : "Dateien"} hoch …</p>}
     </section>

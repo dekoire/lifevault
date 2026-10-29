@@ -8,6 +8,8 @@ import type { GatewayProviderOptions } from "@ai-sdk/gateway";
 const MODELS = {
   read: { model: "anthropic/claude-sonnet-5.5", fallbacks: ["anthropic/claude-haiku-5.5"] },
   chat: { model: "anthropic/claude-sonnet-5.5", fallbacks: ["anthropic/claude-haiku-5.5"] },
+  classify: { model: "anthropic/claude-haiku-5.5", fallbacks: ["google/gemini-3.5-flash"] },
+  profile: { model: "anthropic/claude-sonnet-5.5", fallbacks: ["anthropic/claude-haiku-5.5"] },
 } as const;
 
 export function aiFor(task: keyof typeof MODELS) {

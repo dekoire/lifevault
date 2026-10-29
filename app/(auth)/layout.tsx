@@ -1,4 +1,5 @@
 import { FileSearch, FolderTree, HeartPulse, KeyRound, MessageSquare, Receipt, ScanLine, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { Logo } from "@/components/Logo";
 
 const FEATURES = [
@@ -21,7 +22,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="relative grid min-h-dvh bg-canvas lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <div className="pt-safe flex flex-col px-5 py-8 md:px-10">
-        <Logo />
+        <Link href="/willkommen" aria-label="Startseite" className="w-fit"><Logo /></Link>
         <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-center py-10">{children}</div>
         <p className="pb-safe flex items-center justify-center gap-1.5 text-xs text-muted">
           <ShieldCheck size={14} className="text-positive" /> Verschlüsselte Verbindung · Server in der EU

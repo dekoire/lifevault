@@ -10,9 +10,9 @@
   --color-surface: #ffffff;
   --color-surface-2: #f5f6f8;
   --color-surface-3: #eef0f3;
-  --color-line: #f0f1f4;
+  --color-line: #eceef2;
   --color-line-strong: #cdcdcd;
-  --color-card-line: #e6e8ec;
+  --color-card-line: #dcdfe5;
   --color-fg: #111111;
   --color-soft: #4a4a4a;
   --color-muted: #767676;
@@ -28,7 +28,7 @@
   --color-negative: #e3173e;
   --color-negative-text: #cc1238;
   --color-amber: #b45309;
-  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.04);
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04);
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 

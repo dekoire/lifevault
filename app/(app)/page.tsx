@@ -1,16 +1,17 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { CalendarClock, ChevronRight, FileText, Layers, ListChecks, Search, Sparkles } from "lucide-react";
+import { CalendarClock, ChevronRight, FileText, Layers, ListChecks, Lock, Search, Sparkles, UserRound } from "lucide-react";
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
 import { UploadCard } from "@/components/UploadButtons";
+import { PageHeader } from "@/components/ui";
 import { CLUSTERS } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
 
 /** Start: Hochladen, Suche, Fristen, Cluster und zuletzt hinzugefügt */
 export default function Home() {
-  const { docs, loading } = useDocs();
+  const { docs, loading, pendingProtect } = useDocs();
   const [q, setQ] = useState("");
   const today = new Date().toISOString().slice(0, 10);
   const counts = useMemo(() => {
@@ -32,84 +33,104 @@ export default function Home() {
   ];
   const daysTo = (iso: string) => Math.round((Date.parse(iso) - Date.parse(today)) / 86_400_000);
 
+  const archived = docs.filter((d) => d.archived).length;
+  const deadlineCard = deadlines.length > 0 && (
+    <section className={CARD}>
+      <h2 className="flex items-center gap-2 px-4 pt-4 pb-1 text-[16px] font-semibold"><CalendarClock size={18} /> Nächste Fristen</h2>
+      <ul className="divide-y divide-line">
+        {deadlines.map((x, i) => {
+          const n = daysTo(x.date);
+          return (
+            <li key={i}>
+              <Link href={`/d/${x.d.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2/70">
+                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-center leading-none ${n <= 7 ? "bg-negative/10 text-negative-text" : "bg-surface-3 text-fg"}`}><span><span className="tnum block text-[15px] font-bold">{n}</span><span className="block text-[9px] font-semibold">{n === 1 ? "Tag" : "Tage"}</span></span></span>
+                <span className="min-w-0 flex-1"><span className="block truncate text-[14px] font-semibold">{x.what}</span><span className="block truncate text-[12px] text-muted">{fmtDate(x.date)} · {x.d.title}</span></span>
+                <ChevronRight size={16} className="text-muted" />
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+
   return (
-    <div className="space-y-5">
-      <h1 className="text-[28px] leading-9 font-[650] tracking-tight">Deine Unterlagen</h1>
-
-      {/* Kennzahlen: was bisher gesammelt ist */}
-      <section className={`${CARD} grid grid-cols-2 divide-line sm:grid-cols-4 [&>*:nth-child(odd)]:border-r [&>*:nth-child(-n+2)]:border-b sm:[&>*]:border-b-0 sm:[&>*:not(:last-child)]:border-r border-line`}>
-        {kpis.map(({ icon: Icon, value, label, sub }) => (
-          <div key={label} className="border-line p-4">
-            <span className="flex items-center gap-1.5 text-[12px] font-medium text-muted"><Icon size={14} /> {label}</span>
-            <span className="tnum mt-1 block text-[26px] leading-8 font-[650] tracking-tight">{loading ? "–" : value.toLocaleString("de-DE")}</span>
-            <span className="block text-[12px] text-muted">{sub}</span>
-          </div>
-        ))}
-      </section>
-
-      <label className="flex h-12 items-center gap-2.5 rounded-full border border-card-line bg-surface px-4 shadow-card focus-within:border-brand-500">
-        <Search size={18} className="text-muted" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Suchen: Titel, Absender, Stichwort …" className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted" />
-      </label>
-
-      {term ? (
-        <section className={CARD}>
-          <h2 className="px-4 pt-4 pb-2 text-[13px] font-semibold text-muted">{found.length} {found.length === 1 ? "Treffer" : "Treffer"}</h2>
-          <div className="divide-y divide-line">{found.map((d) => <DocRow key={d.id} d={d} />)}</div>
-          <Link href={`/chat?q=${encodeURIComponent(q)}`} className="flex items-center gap-2 border-t border-line px-4 py-3.5 text-[14px] font-semibold text-selected"><Sparkles size={16} /> „{q}“ im Chat fragen</Link>
-        </section>
-      ) : (
-        <>
-          <UploadCard />
-
-          {deadlines.length > 0 && (
-            <section className={CARD}>
-              <h2 className="flex items-center gap-2 px-4 pt-4 pb-1 text-[17px] font-semibold"><CalendarClock size={18} /> Nächste Fristen</h2>
-              <ul className="divide-y divide-line">
-                {deadlines.map((x, i) => {
-                  const n = daysTo(x.date);
-                  return (
-                    <li key={i}>
-                      <Link href={`/d/${x.d.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2/70">
-                        <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl text-center leading-none ${n <= 7 ? "bg-negative/10 text-negative-text" : "bg-surface-3 text-fg"}`}><span><span className="tnum block text-[16px] font-bold">{n}</span><span className="block text-[9px] font-semibold">{n === 1 ? "Tag" : "Tage"}</span></span></span>
-                        <span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-semibold">{x.what}</span><span className="block truncate text-[13px] text-muted">{fmtDate(x.date)} · {x.d.title}</span></span>
-                        <ChevronRight size={16} className="text-muted" />
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          )}
-
-          <section>
-            <h2 className="mb-3 text-[17px] font-semibold">Bereiche</h2>
-            {counts.size === 0 && !loading && <p className="mb-3 text-[14px] text-muted">Noch nichts abgelegt. Fotografiere ein Dokument oder lade ein PDF hoch – Lifevault sortiert es automatisch in einen dieser Bereiche.</p>}
-            {/* alle Bereiche: belegte zuerst, leere blass mit Beschreibung, was hineingehört */}
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              {[...CLUSTERS].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0)).map((c) => {
-                const n = counts.get(c.id) ?? 0;
-                return (
-                  <Link key={c.id} href={`/c/${c.id}`} className={`${CARD} flex flex-col gap-3 p-4 transition hover:-translate-y-0.5 active:scale-[.98] ${n ? "" : "opacity-60"}`}>
-                    <span className="flex items-start justify-between gap-2"><ClusterIcon id={c.id} size={40} /><span className="tnum rounded-full bg-surface-3 px-2 py-0.5 text-[12px] font-semibold text-soft">{n}</span></span>
-                    <span>
-                      <span className="block text-[15px] leading-5 font-semibold">{c.label}</span>
-                      <span className="mt-0.5 line-clamp-2 block text-[12px] leading-4 text-muted">{c.hint}</span>
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
+    <div>
+      <PageHeader title="Deine Unterlagen" subtitle={loading ? " " : `${ready.length} Dokumente in ${counts.size} Bereichen${archived ? ` · ${archived} archiviert` : ""}`} />
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+        <div className="min-w-0 space-y-5">
+          {/* Kennzahlen: was bisher gesammelt ist */}
+          <section className={`${CARD} grid grid-cols-2 sm:grid-cols-4 [&>*:nth-child(odd)]:border-r [&>*:nth-child(-n+2)]:border-b sm:[&>*]:border-b-0 sm:[&>*:not(:last-child)]:border-r`}>
+            {kpis.map(({ icon: Icon, value, label, sub }) => (
+              <div key={label} className="border-line p-4">
+                <span className="flex items-center gap-1.5 text-[12px] font-medium text-muted"><Icon size={14} /> {label}</span>
+                <span className="tnum mt-1 block text-[26px] leading-8 font-[650] tracking-tight">{loading ? "–" : value.toLocaleString("de-DE")}</span>
+                <span className="block text-[12px] text-muted">{sub}</span>
+              </div>
+            ))}
           </section>
 
-          {recent.length > 0 && (
+          <label className="flex h-12 items-center gap-2.5 rounded-full border border-card-line bg-surface px-4 focus-within:border-brand-500">
+            <Search size={18} className="text-muted" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Suchen: Titel, Absender, Stichwort …" className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted" />
+          </label>
+
+          {term ? (
             <section className={CARD}>
-              <h2 className="px-4 pt-4 pb-1 text-[17px] font-semibold">Zuletzt hinzugefügt</h2>
-              <div className="divide-y divide-line">{recent.map((d) => <DocRow key={d.id} d={d} />)}</div>
+              <h2 className="px-4 pt-4 pb-2 text-[13px] font-semibold text-muted">{found.length} Treffer</h2>
+              <div className="divide-y divide-line">{found.map((d) => <DocRow key={d.id} d={d} />)}</div>
+              <Link href={`/chat?q=${encodeURIComponent(q)}`} className="flex items-center gap-2 border-t border-line px-4 py-3.5 text-[14px] font-semibold text-selected"><Sparkles size={16} /> „{q}“ im Chat fragen</Link>
             </section>
+          ) : (
+            <>
+              <div className="lg:hidden"><UploadCard /></div>
+              <div className="lg:hidden">{deadlineCard}</div>
+              <section>
+                <h2 className="mb-3 text-[17px] font-semibold">Bereiche</h2>
+                {counts.size === 0 && !loading && <p className="mb-3 text-[14px] text-muted">Noch nichts abgelegt. Fotografiere ein Dokument oder lade ein PDF hoch – Lifevault sortiert es automatisch in einen dieser Bereiche.</p>}
+                {/* alle Bereiche: belegte zuerst, leere blass mit Beschreibung, was hineingehört */}
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4">
+                  {[...CLUSTERS].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0)).map((c) => {
+                    const n = counts.get(c.id) ?? 0;
+                    return (
+                      <Link key={c.id} href={`/c/${c.id}`} className={`${CARD} flex flex-col gap-3 p-4 transition hover:border-brand-500/40 active:scale-[.98] ${n ? "" : "opacity-60"}`}>
+                        <span className="flex items-start justify-between gap-2"><ClusterIcon id={c.id} size={40} /><span className="tnum rounded-full bg-surface-3 px-2 py-0.5 text-[12px] font-semibold text-soft">{n}</span></span>
+                        <span>
+                          <span className="block text-[15px] leading-5 font-semibold">{c.label}</span>
+                          <span className="mt-0.5 line-clamp-2 block text-[12px] leading-4 text-muted">{c.hint}</span>
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+              {recent.length > 0 && (
+                <section className={CARD}>
+                  <h2 className="px-4 pt-4 pb-1 text-[16px] font-semibold">Zuletzt hinzugefügt</h2>
+                  <div className="divide-y divide-line">{recent.map((d) => <DocRow key={d.id} d={d} />)}</div>
+                </section>
+              )}
+            </>
           )}
-        </>
-      )}
+        </div>
+
+        {/* Desktop: rechte Spalte mit Hochladen, Fristen, Hinweisen */}
+        <aside className="hidden space-y-5 lg:sticky lg:top-6 lg:block">
+          <UploadCard />
+          {pendingProtect > 0 && (
+            <Link href="/einstellungen/tresor" className={`${CARD} flex items-center gap-3 p-4`}>
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-lavender text-selected"><Lock size={18} /></span>
+              <span className="text-[13px]"><b className="block text-[14px]">{pendingProtect} warten auf Verschlüsselung</b><span className="text-muted">Tresor entsperren, dann werden sie geschützt.</span></span>
+            </Link>
+          )}
+          {deadlineCard}
+          <Link href="/profil" className={`${CARD} flex items-center gap-3 p-4 hover:border-brand-500/40`}>
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-fg text-canvas"><UserRound size={18} /></span>
+            <span className="min-w-0 flex-1 text-[13px]"><b className="block text-[14px]">Dein Profil</b><span className="text-muted">Was aktuell gilt: Arbeit, Wohnen, Versicherungen</span></span>
+            <ChevronRight size={16} className="text-muted" />
+          </Link>
+        </aside>
+      </div>
     </div>
   );
 }
