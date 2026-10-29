@@ -1,4 +1,4 @@
-import { generateText, Output } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 import { aiFor, loadAiSettings, todayLine } from "@/lib/ai";
 import { DRAFT_PURPOSES } from "@/lib/drafts";
@@ -36,13 +36,17 @@ export async function POST(req: Request) {
     d.encrypted ? (context ?? "").slice(0, 6000) : [`Kurzfassung: ${d.summary ?? ""}`, ...facts.slice(0, 60).map((f) => `${f.label}: ${f.value}`), ...((d.deadlines ?? []) as { date: string; what: string }[]).map((x) => `Frist ${x.date}: ${x.what}`), ...((d.amounts ?? []) as { label: string; value: number; currency?: string }[]).map((a) => `${a.label}: ${a.value} ${a.currency ?? "EUR"}`)].join("\n"),
   ].join("\n");
   try {
+    // schlichter Text statt JSON-Schema (robuster bei kleinen Modellen): BETREFF / TEXT / HINWEISE
     const r = await generateText({
-      ...aiFor("mail"), system: `${SYSTEM}\n${todayLine()}`, maxOutputTokens: 1500,
+      ...aiFor("mail"), system: `${SYSTEM}\n${todayLine()}\nAntworte genau in diesem Format:\nBETREFF: <eine Zeile>\nTEXT:\n<der Text>\nHINWEISE:\n- <Hinweis>\n(HINWEISE nur, wenn sinnvoll)`, maxOutputTokens: 1500,
       prompt: `<wunsch>${p.label} – ${p.prompt}. Kanal: ${channel === "brief" ? "Brief" : "E-Mail"}.${note ? ` Zusatz: ${note.slice(0, 500)}` : ""}</wunsch>\n<dokument>\n${doc}\n</dokument>`,
-      output: Output.object({ schema: Draft, name: "schreiben" }),
     });
-    if (!r.output) throw new Error("leer");
-    return Response.json(r.output);
+    const out = r.text.trim();
+    const subject = out.match(/BETREFF:\s*(.+)/)?.[1]?.trim() ?? `${p.label}: ${d.title ?? ""}`;
+    const body = (out.split(/TEXT:\s*\n?/)[1] ?? out).split(/\n\s*HINWEISE:/)[0].trim();
+    const hints = (out.split(/\n\s*HINWEISE:\s*\n?/)[1] ?? "").split("\n").map((x) => x.replace(/^[-•*]\s*/, "").trim()).filter(Boolean).slice(0, 3);
+    if (!body) throw new Error("leer");
+    return Response.json(Draft.parse({ subject, body, hints }));
   } catch (e) {
     console.error("draft", (e as Error).message);
     return Response.json({ error: "Das Vorformulieren hat gerade nicht geklappt. Bitte noch einmal versuchen.", detail: (e as Error).message.slice(0, 300) }, { status: 502 });
