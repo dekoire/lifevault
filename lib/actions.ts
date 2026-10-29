@@ -1,3 +1,4 @@
+import { recheckOf } from "@/lib/recheck";
 import type { Doc, Fact } from "@/lib/types";
 
 /** Was aus einem Dokument direkt nutzbar ist: Überweisung, Kontakt, Links – aus Key-Fakten und Volltext */
@@ -83,6 +84,9 @@ export function todos(docs: Doc[], today: string, opts: { pastDays?: number; ahe
   const out: Todo[] = [];
   for (const d of docs) {
     if (d.archived || d.status !== "ready") continue;
+    // aus dem Internet geholt: rechtzeitig (30 Tage vorher) auf Aktualität prüfen
+    const rc = recheckOf(d);
+    if (rc && day(rc.date) <= 30) out.push({ doc: d, date: rc.date, what: `Aktualität prüfen (${rc.reason})`, more: 0, days: day(rc.date) });
     const list = (d.deadlines ?? []).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x.date) && ACTION.test(x.what) && !INFO.test(x.what) && day(x.date) >= -past && day(x.date) <= ahead);
     if (!list.length) continue;
     // je Dokument eine Zeile: die nächste anstehende Frist, sonst die zuletzt verpasste

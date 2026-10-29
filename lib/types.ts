@@ -31,10 +31,13 @@ export interface Doc {
   secret: { iv: string; ct: string } | null;
   project_id: string | null;
   split_from: string | null;
+  /** aus der Internetrecherche: Suchanfrage, Quelle, wann geholt und zuletzt geprüft */
+  web_source?: WebSource | null;
 }
 
 /** Inhalt, der bei verschlüsselten Dokumenten im Tresor liegt */
 export type SecretPart = Pick<Doc, "summary" | "key_facts" | "deadlines" | "amounts" | "full_text">;
 
 /** Spalten für Listen (ohne Volltext) */
-export const LIST_COLS = "id,file_path,file_name,mime_type,size_bytes,status,error,cluster,title,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,tags,sender_domain,archived,archived_reason,encrypted,secret,project_id,split_from";
+export type WebSource = { query: string; url?: string; title?: string; imported_at: string; checked_at: string };
+export const LIST_COLS = "id,file_path,file_name,mime_type,size_bytes,status,error,cluster,title,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,tags,sender_domain,archived,archived_reason,encrypted,secret,project_id,split_from,web_source";

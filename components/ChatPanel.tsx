@@ -18,7 +18,7 @@ import { authFetch, supabase } from "@/lib/supabase";
 /** Vorschlag, im Internet zu suchen (vom Chat erkannt, Nutzer muss zustimmen) */
 export type Research = { query: string; reason: string; docId?: string; state: "ask" | "declined" | "running" | "done" | "failed"; error?: string };
 /** Gefundenes Dokument ablegen? */
-export type SaveOffer = { title: string; pdfUrl: string; markdown: string; relatedId?: string; state: "ask" | "declined" | "saving" | "saved" | "failed"; error?: string };
+export type SaveOffer = { title: string; pdfUrl: string; markdown: string; relatedId?: string; query?: string; sourceUrl?: string; state: "ask" | "declined" | "saving" | "saved" | "failed"; error?: string };
 export type Msg = { role: "user" | "assistant"; content: string; research?: Research; save?: SaveOffer; attachments?: { id: string; name: string }[] };
 
 const MARKER = /\n?\[\[RECHERCHE:\s*([^|\]]+?)\s*\|\s*([^|\]]*?)\s*(?:\|\s*([^\]]*?)\s*)?\]\]\s*$/;
@@ -445,7 +445,7 @@ export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; 
       const answer: Msg = {
         role: "assistant",
         content: `${r.answer}${sources ? `\n\n### Quellen im Internet\n${sources}` : ""}`,
-        ...(r.document ? { save: { ...r.document, relatedId: m.research.docId, state: "ask" as const } } : {}),
+        ...(r.document ? { save: { ...r.document, relatedId: m.research.docId, query: m.research.query, sourceUrl: r.document.pdfUrl || r.sources?.[0]?.url, state: "ask" as const } } : {}),
       };
       await update([...running.map((x, k) => (k === i ? { ...x, research: { ...m.research!, state: "done" as const } } : x)), answer]);
     } catch (e) {
@@ -472,7 +472,10 @@ export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; 
         const head = `# ${m.save.title}\n\n_Internetrecherche vom ${new Date().toLocaleDateString("de-DE")}${m.save.relatedId ? ` · Ergänzung zu Dokument /d/${m.save.relatedId}` : ""}_\n\n`;
         file = new File([head + m.save.markdown], `${name}.md`, { type: "text/markdown" });
       }
-      await upload([file]);
+      const ids = await upload([file]);
+      // als „aus dem Internet“ markieren: wird regelmäßig auf Aktualität geprüft
+      const now = new Date().toISOString();
+      if (ids.length) await supabase.from("documents").update({ web_source: { query: m.save.query ?? m.save.title, url: m.save.sourceUrl, title: m.save.title, imported_at: now, checked_at: now } }).in("id", ids);
       await update(msgs.map((x, k) => (k === i ? { ...x, save: { ...m.save!, state: "saved" } } : x)));
     } catch (e) {
       await update(msgs.map((x, k) => (k === i ? { ...x, save: { ...m.save!, state: "failed", error: (e as Error).message } } : x)));
