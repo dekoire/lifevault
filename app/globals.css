@@ -90,3 +90,8 @@ html, body { overflow-x: clip; }
 /* Seitenpanel von rechts */
 @keyframes panel-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 .panel-in { animation: panel-in 0.2s ease-out; }
+
+/* laufender Fortschritts-Abschnitt (Hochladen/Auslesen) */
+@keyframes progress-run { from { left: -50%; } to { left: 100%; } }
+.progress-run { animation: progress-run 1.3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .progress-run { animation: none; left: 0; width: 100%; opacity: .35; } }
