@@ -131,7 +131,7 @@ function ResearchCard({ r, onAnswer }: { r: Research; onAnswer?: (yes: boolean) 
         <div className="min-w-0 flex-1">
           <b className="block text-[15px]">Soll ich im Internet recherchieren?</b>
           {r.reason && <span className="mt-0.5 block text-[13px] text-soft">Fehlt: {r.reason}</span>}
-          <span className="mt-2 inline-block rounded-full border border-card-line px-2.5 py-1 text-[12px] font-medium">„{r.query}“</span>
+          <span className="mt-2 flex items-start gap-1.5 text-[13px] text-brand-600 italic"><Globe size={14} className="mt-0.5 shrink-0 not-italic" />{r.query}</span>
           <span className="mt-2 block text-[12px] text-muted">Gesendet wird nur diese Suchanfrage – keine persönlichen Daten.</span>
           {r.state === "failed" && <span className="mt-2 block text-[13px] text-negative-text">{r.error ?? "Das hat nicht geklappt."}</span>}
         </div>
@@ -148,7 +148,7 @@ function SaveCard({ o, onAnswer }: { o: SaveOffer; onAnswer?: (yes: boolean) => 
   const { allDocs } = useDocs();
   const related = o.relatedId ? allDocs.find((d) => d.id === o.relatedId) : undefined;
   if (o.state === "declined") return <p className="mt-3 text-[13px] text-muted">Nicht abgelegt.</p>;
-  if (o.state === "saved") return <p className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-positive-text"><Check size={15} /> Abgelegt{related ? ` – zu „${related.title}“` : ""}. Wird jetzt ausgelesen.</p>;
+  if (o.state === "saved") return <p className="mt-3 text-[12.5px] text-positive-text">Abgelegt{related ? ` zu „${related.title}“` : ""} · wird ausgelesen</p>;
   return (
     <div className="mt-4 rounded-2xl border border-card-line bg-surface p-4">
       <div className="flex items-start gap-3">
