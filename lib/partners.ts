@@ -23,13 +23,15 @@ export function domainFor(sender?: string | null, domain?: string | null) {
 /** Absender vereinheitlichen: „Telekom Deutschland GmbH“ und „Telekom“ → gleicher Partner */
 export function partnerKey(sender: string) {
   return sender.toLowerCase()
+    // Titel zählen nicht: sonst landen alle „Dr. med. …“ beim selben Partner
+    .replace(/\b(dr|med|prof|pd|dipl|ing|univ|priv|doz)\b\.?/g, " ")
     .replace(/\b(gmbh|ag|se|kg|ohg|mbh|co|e\.?\s?v\.?|& co\.?|deutschland|germany|vertriebs|niederlassung)\b/g, " ")
     .replace(/\(.*?\)/g, " ")
     .replace(/[^a-z0-9äöüß]+/g, " ").trim().split(" ")
     // eigenständige Stellen unter gleichem Namen getrennt halten: „Mercedes-Benz BKK“ ≠ „Mercedes-Benz AG“
     .filter((w, i) => i < 2 || DISTINCT.test(w)).join("-") || "unbekannt";
 }
-const DISTINCT = /^(bkk|krankenkasse|bank|versicherung|versicherungen|leasing|pensionskasse|stiftung|betriebsrat|kantine|verpflegungsbetriebe)$/;
+export const DISTINCT = /^(bkk|krankenkasse|bank|versicherung|versicherungen|leasing|pensionskasse|stiftung|betriebsrat|kantine|verpflegungsbetriebe)$/;
 
 /** Thema einer Kennung aus ihrem Quelldokument – damit Arbeitsvertrag, Kantine, Krankenkasse usw. getrennt stehen */
 const TOPICS: [RegExp, string][] = [

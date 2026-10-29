@@ -5,6 +5,7 @@ import { ChevronRight, Copy, FileImage, FileText, GitMerge, Loader2, X } from "l
 import { useDetail } from "@/components/DetailPanel";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD } from "@/components/ui";
+import { usePartnerDuplicates } from "@/components/PartnerDupes";
 import { explain, findDuplicates, pairKeys, type DupGroup } from "@/lib/dupes";
 import { clusterOf } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
@@ -33,18 +34,25 @@ function where(g: DupGroup) {
 /** Startseite: nur ein Hinweis mit kurzer Erklärung, zusammengeführt wird auf /doppelt */
 export function DuplicateHint({ docs }: { docs: Doc[] }) {
   const { groups } = useDuplicates(docs);
-  if (!groups.length) return null;
+  const { groups: partnerGroups } = usePartnerDuplicates(docs);
+  if (!groups.length && !partnerGroups.length) return null;
   return (
     <section className={`${CARD} overflow-hidden`}>
       <Link href="/doppelt" className="flex items-center gap-3 px-4 pt-4 pb-2 hover:opacity-80">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2"><Copy size={16} /></span>
         <span className="min-w-0 flex-1">
-          <b className="block text-[15px]">{groups.length === 1 ? "1 Dokument ist wohl doppelt" : `${groups.length} Dokumente sind wohl doppelt`}</b>
-          <span className="block text-[12.5px] text-muted">Gleicher Absender und gleiches Briefdatum – prüfen und zusammenführen</span>
+          <b className="block text-[15px]">{[groups.length ? (groups.length === 1 ? "1 Dokument wohl doppelt" : `${groups.length} Dokumente wohl doppelt`) : null, partnerGroups.length ? (partnerGroups.length === 1 ? "1 Partner unter mehreren Namen" : `${partnerGroups.length} Partner unter mehreren Namen`) : null].filter(Boolean).join(" · ")}</b>
+          <span className="block text-[12.5px] text-muted">Prüfen und zusammenführen</span>
         </span>
         <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold text-selected">Prüfen <ChevronRight size={15} /></span>
       </Link>
       <ul className="px-4 pb-3">
+        {partnerGroups.slice(0, 2).map((g) => (
+          <li key={g.key} className="flex items-start gap-2 py-1 text-[12.5px]">
+            <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${g.sure ? "bg-fg" : "bg-line-strong"}`} />
+            <span className="min-w-0"><b className="font-semibold">{g.partners.map((p) => p.name).slice(0, 3).join(" · ")}{g.partners.length > 3 ? ` +${g.partners.length - 3}` : ""}</b><span className="block text-muted">{g.reasons.join(" · ")}</span></span>
+          </li>
+        ))}
         {groups.slice(0, 3).map((g) => (
           <li key={g.key} className="flex items-start gap-2 py-1 text-[12.5px]">
             <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${g.sure ? "bg-fg" : "bg-line-strong"}`} />
