@@ -36,6 +36,8 @@ export function buildPerson(docs: Doc[]): PersonField[] {
       if (!f.re.test(k.label.trim()) || !k.value?.trim()) continue;
       // Steuer-ID hat 11 Ziffern – Gläubiger-ID (SEPA) und USt-IdNr. („DE…“) sind es nicht
       if (f.id === "taxid" && (/gläubiger|creditor|ust|umsatzsteuer/i.test(k.label) || k.value.replace(/\s/g, "").replace(/\D/g, "").length !== 11 || /[a-z]/i.test(k.value))) continue;
+      // IBAN im Steckbrief nur deine eigene: Konten von Empfängern/Gläubigern gehören zum Partner, Platzhalter („noch nicht ausgefüllt“) raus
+      if (f.id === "iban" && (/empf(ä|ae)nger|gl(ä|ae)ubiger|beg(ü|ue)nstigt|kreditor|stadtkasse|zahlungsziel/i.test(k.label) || !/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(k.value.replace(/\s/g, "").toUpperCase()))) continue;
       if (f.personalOnly && !k.personal && !/persönlich|personal|mitarbeiter|versichert|patient/i.test(k.group ?? "")) continue;
       if (seen.has(norm(k.value))) continue;
       seen.add(norm(k.value));
