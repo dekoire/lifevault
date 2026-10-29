@@ -12,12 +12,12 @@ export function SenderLogo({ domain: given, sender, cluster, size = 40, urgent =
   if (!domain || failed) return <ClusterIcon id={cluster} size={size} />;
   if (bare) return (
     <span className="grid shrink-0 place-items-center" style={{ width: size, height: size }}>
-      <img src={`/api/logo?d=${encodeURIComponent(domain)}`} alt="" width={Math.round(size * 0.86)} height={Math.round(size * 0.86)} onError={() => setFailed(true)} className="rounded-lg object-contain" />
+      <img src={`/api/logo?d=${encodeURIComponent(domain)}`} alt="" width={Math.round(size * 0.86)} height={Math.round(size * 0.86)} onError={() => setFailed(true)} onLoad={(e) => { if (e.currentTarget.naturalWidth <= 16) setFailed(true); }} className="rounded-lg object-contain" />
     </span>
   );
   return (
     <span className="grid shrink-0 place-items-center overflow-hidden rounded-full border border-card-line bg-white" style={{ width: size, height: size }}>
-      <img src={`/api/logo?d=${encodeURIComponent(domain)}`} alt="" width={Math.round(size * 0.6)} height={Math.round(size * 0.6)} onError={() => setFailed(true)} className="object-contain" />
+      <img src={`/api/logo?d=${encodeURIComponent(domain)}`} alt="" width={Math.round(size * 0.6)} height={Math.round(size * 0.6)} onError={() => setFailed(true)} onLoad={(e) => { if (e.currentTarget.naturalWidth <= 16) setFailed(true); }} className="object-contain" />
     </span>
   );
 }
