@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     return `- id: ${d.id} | ${d.cluster}/${d.topic ?? ""} | ${d.doc_type ?? ""} | ${d.title ?? ""} | ${d.sender ?? "–"} | ${d.doc_date ?? d.received_at.slice(0, 10)}${(d.labels ?? []).length ? ` | Tags: ${(d.labels as string[]).join(", ")}` : ""}${amounts ? ` | Beträge: ${amounts}` : ""}${dl ? ` | Fristen: ${dl}` : ""}${!d.encrypted && d.summary ? ` | ${d.summary.slice(0, 180).replace(/\s+/g, " ")}` : ""}`;
   };
   try {
-    const r = await generateText({ ...aiFor("classify"), system: `${SYSTEM}\n${todayLine()}`, prompt: `<docs>\n${docs.map(line).join("\n")}\n</docs>`, output: Output.object({ schema: Advice, name: "empfehlungen" }), maxOutputTokens: 2500 });
+    const r = await generateText({ ...aiFor("classify"), system: `${SYSTEM}\n${todayLine()}`, prompt: `<docs>\n${docs.map(line).join("\n")}\n</docs>`, output: Output.object({ schema: Advice, name: "empfehlungen" }), maxOutputTokens: 9000 });
     const known = new Set(docs.map((d) => d.id));
     const items = (r.output?.items ?? []).slice(0, 6).map((i) => ({ ...i, doc_ids: i.doc_ids.filter((x) => known.has(x)) }));
     return Response.json({ items, at: new Date().toISOString() });

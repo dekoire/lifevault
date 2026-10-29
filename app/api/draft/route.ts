@@ -38,7 +38,7 @@ export async function POST(req: Request) {
   try {
     // schlichter Text statt JSON-Schema (robuster bei kleinen Modellen): BETREFF / TEXT / HINWEISE
     const r = await generateText({
-      ...aiFor("mail"), system: `${SYSTEM}\n${todayLine()}\nAntworte genau in diesem Format:\nBETREFF: <eine Zeile>\nTEXT:\n<der Text>\nHINWEISE:\n- <Hinweis>\n(HINWEISE nur, wenn sinnvoll)`, maxOutputTokens: 1500,
+      ...aiFor("mail"), system: `${SYSTEM}\n${todayLine()}\nAntworte genau in diesem Format:\nBETREFF: <eine Zeile>\nTEXT:\n<der Text>\nHINWEISE:\n- <Hinweis>\n(HINWEISE nur, wenn sinnvoll)`, maxOutputTokens: 4000,
       prompt: `<wunsch>${p.label} – ${p.prompt}. Kanal: ${channel === "brief" ? "Brief" : "E-Mail"}.${note ? ` Zusatz: ${note.slice(0, 500)}` : ""}</wunsch>\n<dokument>\n${doc}\n</dokument>`,
     });
     const out = r.text.trim();
