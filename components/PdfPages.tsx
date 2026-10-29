@@ -55,7 +55,7 @@ export function PdfPages({ url, card = false, compact = false, bare = false }: {
             <button type="button" onClick={() => setZoom(i)} className={`block w-full ${bare ? "bg-black" : ""}`} aria-label={`${label(i)} groß ansehen`}>
               <img src={u} alt={label(i)} className={`mx-auto block w-full object-contain ${compact ? "h-64" : "h-[55vh]"}`} />
             </button>
-            {total > 1 && <figcaption className={`bg-surface px-2.5 py-1 text-[11.5px] font-semibold text-soft ${bare ? "pt-2" : "border-t border-line"}`}>{label(i)}</figcaption>}
+            {total > 1 && <figcaption className={`px-2.5 py-1 text-[11.5px] font-semibold text-soft ${bare ? "bg-surface-2 pt-2" : "border-t border-line bg-surface"}`}>{label(i)}</figcaption>}
           </figure>
         ))}
         {loading && <p className={`flex w-full shrink-0 items-center justify-center gap-2 text-[12.5px] text-muted ${compact ? "h-64" : "h-[55vh]"}`}><Loader2 size={14} className="animate-spin" /> {total ? `Seite ${pages.length + 1} von ${total} …` : "Lade Seiten …"}</p>}

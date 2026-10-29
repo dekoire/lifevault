@@ -110,8 +110,8 @@ function DocDetail({ id, open, close }: { id: string; open: (d: Detail) => void;
         <>
           {doc.summary && <Clamp lines={3} className="text-[14px] leading-6 text-soft">{doc.summary}</Clamp>}
           {url && (
-            <div className="overflow-hidden rounded-xl border border-card-line bg-surface-2">
-              {image ? <a href={`/d/${doc.id}`} onClick={close} className="block"><img src={url} alt={doc.title ?? ""} className="mx-auto block h-64 w-full object-contain p-2 sm:h-72" /></a> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={url} mime={doc.mime_type} name={doc.file_name} compact /> : doc.mime_type === "application/pdf" ? <PdfPages url={url} card={isCardDoc(doc)} compact /> : <iframe src={`${url}#toolbar=0&view=FitH`} title="Vorschau" className="h-80 w-full" />}
+            <div className="overflow-hidden rounded-xl bg-surface-2">
+              {image ? <a href={`/d/${doc.id}`} onClick={close} className="block bg-black"><img src={url} alt={doc.title ?? ""} className="mx-auto block h-64 w-full object-contain sm:h-72" /></a> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={url} mime={doc.mime_type} name={doc.file_name} compact /> : doc.mime_type === "application/pdf" ? <PdfPages url={url} card={isCardDoc(doc)} compact bare /> : <iframe src={`${url}#toolbar=0&view=FitH`} title="Vorschau" className="h-80 w-full" />}
             </div>
           )}
           {doc.deadlines?.length > 0 && (
