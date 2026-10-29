@@ -90,12 +90,3 @@ html, body { overflow-x: clip; }
 /* Seitenpanel von rechts */
 @keyframes panel-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 .panel-in { animation: panel-in 0.2s ease-out; }
-
-/* Knöpfe überall mit 5 px Radius (ohne Ebene → stärker als die Tailwind-Klassen); Schalter bleiben rund */
-button:not([role="switch"]),
-a[class*="rounded-full"],
-a[class*="rounded-xl"],
-[data-btn],
-span[class~="p-1"][class*="rounded-full"] {
-  border-radius: 5px;
-}
