@@ -78,6 +78,8 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
     setLoading(false);
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
+  // von außen geändert (z. B. Mail-Anhänge unter einen Partner gelegt) → neu laden
+  useEffect(() => { const on = () => void refresh(); window.addEventListener("lifevault:docs-changed", on); return () => window.removeEventListener("lifevault:docs-changed", on); }, [refresh]);
 
   // solange etwas ausgelesen wird: alle 3 s nachsehen
   const busy = docs.some((d) => d.status === "processing") || uploading > 0;

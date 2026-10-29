@@ -112,6 +112,8 @@ export async function importInbox(opts: { since: Date; until?: Date; upload: (fi
           if (r.ok) files.push(new File([await r.blob()], a.name, { type: fixMime(a.name, a.mime) }));
         }
         docIds = files.length ? await upload(files, { silent: opts.silent }) : [];
+        // alles aus einer Mail gehört zusammen → nach dem Auslesen gleicher Partner (im Hintergrund)
+        if (docIds.length > 1) void unifyWhenReady(docIds, m.subject, m.from);
         if (docIds.length) { out.imported++; out.files += docIds.length; }
       } else out.withoutDocs++;
       await supabase.from("mail_seen").upsert({
@@ -128,6 +130,19 @@ export async function importInbox(opts: { since: Date; until?: Date; upload: (fi
   window.dispatchEvent(new Event("lifevault:inbox"));
   onStep?.("Fertig", fresh.length, fresh.length);
   return out;
+}
+
+/** Wartet, bis alle Anhänge einer Mail ausgelesen sind, und legt sie unter einen Partner (den Anbieter, nicht den Vermittler) */
+async function unifyWhenReady(ids: string[], subject: string, from: string) {
+  const list = `(${ids.join(",")})`;
+  const t0 = Date.now();
+  while (Date.now() - t0 < 10 * 60_000) {
+    await new Promise((r) => setTimeout(r, 8000));
+    const { data } = await supabase.from("documents").select("status").or(`id.in.${list},split_from.in.${list}`);
+    if (data?.length && !data.some((d) => d.status === "processing")) break;
+  }
+  await authFetch("/api/mail/unify", { method: "POST", body: JSON.stringify({ ids, subject, from }) }).catch(() => undefined);
+  window.dispatchEvent(new Event("lifevault:docs-changed"));
 }
 
 /** Läuft im App-Rahmen: holt automatisch ab, solange die App offen ist */

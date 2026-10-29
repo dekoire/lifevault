@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
-import { ArrowRight, CalendarClock, ExternalLink, GitBranch, Hash, History, MessageSquare, PanelRight, PencilLine, ShoppingBag, X, Loader2, ChevronDown } from "lucide-react";
+import { ArrowRight, CalendarClock, ExternalLink, GitBranch, Hash, History, MessageSquare, PanelRight, PencilLine, ShoppingBag, X, Loader2, ChevronDown, Sparkles, Check } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
 import { DocTable } from "@/components/DocTable";
 import { PartnerSheet } from "@/components/PartnerInfo";
@@ -11,7 +11,7 @@ import { ClusterIcon } from "@/components/ClusterIcon";
 import { BackLink, CARD, PageHeader } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
 import { fmtDate, fmtMoney, useDocs } from "@/lib/docs";
-import { supabase } from "@/lib/supabase";
+import { authFetch, supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { buildPartners, docsWithValue, partnerKey, type PartnerId } from "@/lib/partners";
 import { CHANGE_LABEL, span, useHistoryLinks } from "@/lib/history";
@@ -57,13 +57,17 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
   const total = p.docs.map((d) => d.amounts?.find((a) => /summe|gesamt|betrag|total/i.test(a.label)) ?? d.amounts?.[0]).filter(Boolean) as { value: number; currency: string }[];
   const spent = total.reduce((s, a) => s + a.value, 0);
 
-  // Umbenennen: alle Dokumente bekommen den neuen Absender; alter Name bleibt im Verlauf (rückgängig machbar)
-  const rename = async (raw: string) => {
+  // Umbenennen: alle Dokumente (auch die zusammengelegter Partner) bekommen den neuen Absender und ggf. die geprüfte Webadresse (Logo);
+  // alte Namen bleiben im Verlauf (rückgängig machbar)
+  const rename = async (raw: string, domain: string | null, mergeKeys: string[]) => {
     const name = raw.trim();
-    if (!name || name === p.name) { setRenaming(false); return; }
-    const entries = p.docs.map((d) => ({ doc_id: d.id, sender: d.sender, sender_domain: d.sender_domain }));
-    const { data: log } = await supabase.from("partner_merges").insert({ target_name: name.slice(0, 300), target_domain: p.domain, kind: "rename", entries }).select("id").single();
-    const { error } = await supabase.from("documents").update({ sender: name.slice(0, 300) }).in("id", entries.map((e) => e.doc_id));
+    const merged = partners.filter((x) => mergeKeys.includes(x.key) && x.key !== p.key);
+    if (!name || (name === p.name && !merged.length && (!domain || domain === p.domain))) { setRenaming(false); return; }
+    const all = [...p.docs, ...merged.flatMap((x) => x.docs)];
+    const entries = all.map((d) => ({ doc_id: d.id, sender: d.sender, sender_domain: d.sender_domain }));
+    const target = domain ?? p.domain;
+    const { data: log } = await supabase.from("partner_merges").insert({ target_name: name.slice(0, 300), target_domain: target, kind: merged.length ? "merge" : "rename", entries }).select("id").single();
+    const { error } = await supabase.from("documents").update({ sender: name.slice(0, 300), ...(target ? { sender_domain: target } : {}) }).in("id", entries.map((e) => e.doc_id));
     if (error) { if (log) await supabase.from("partner_merges").delete().eq("id", log.id); throw new Error("Umbenennen hat nicht geklappt. Bitte erneut versuchen."); }
     setRenaming(false);
     await refresh();
@@ -153,38 +157,82 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
         <DocTable title="Dokumente" limit={8} docs={p.docs} sender={false} archiveToggle={false} restrict={restrict} onClearRestrict={() => setPick(null)} />
       </div>
       {info && <PartnerSheet p={p} onClose={() => setInfo(false)} />}
-      {renaming && <RenameModal p={p} onSave={rename} onClose={() => setRenaming(false)} />}
+      {renaming && <RenameModal p={p} others={partners.filter((x) => x.key !== p.key).map((x) => ({ key: x.key, name: x.name, domain: x.domain, cluster: x.cluster, n: x.docs.length }))} onSave={rename} onClose={() => setRenaming(false)} />}
     </div>
   );
 }
 
-/** Umbenennen als eigenes Fenster: Logo, neuer Name, was passiert */
-function RenameModal({ p, onSave, onClose }: { p: { name: string; domain: string | null; cluster: string | null; docs: unknown[] }; onSave: (name: string) => Promise<void>; onClose: () => void }) {
+type Other = { key: string; name: string; domain: string | null; cluster: string | null; n: number };
+
+/**
+ * Umbenennen als eigenes Fenster in zwei Schritten: Namen eingeben → prüfen (richtiger Name, Webadresse fürs Logo,
+ * ähnliche Partner zum Zusammenlegen) → übernehmen.
+ */
+function RenameModal({ p, others, onSave, onClose }: { p: { key: string; name: string; domain: string | null; cluster: string | null; docs: unknown[] }; others: Other[]; onSave: (name: string, domain: string | null, merge: string[]) => Promise<void>; onClose: () => void }) {
   const [name, setName] = useState(p.name);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [check, setCheck] = useState<{ suggested: string; domain: string | null; similar: Other[] } | null>(null);
+  const [merge, setMerge] = useState<string[]>([]);
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); addEventListener("keydown", k); return () => removeEventListener("keydown", k); }, [onClose]);
+  const verify = async () => {
+    const res = await authFetch("/api/partner/resolve", { method: "POST", body: JSON.stringify({ name: name.trim(), old: p.name, others: others.map((o) => o.name) }) });
+    const j = (await res.json().catch(() => ({}))) as { name?: string; domain?: string | null; same?: string[] };
+    // ähnlich: von der KI erkannt, gleiche Webadresse oder gleiches erstes Namenswort
+    const first = (k: string) => k.split("-")[0];
+    const nk = partnerKey(j.name ?? name);
+    const sure = new Set(others.filter((o) => (j.same ?? []).includes(o.name) || (j.domain && o.domain === j.domain)).map((o) => o.key));
+    const maybe = others.filter((o) => !sure.has(o.key) && first(o.key).length >= 3 && (first(o.key) === first(nk) || first(o.key) === first(partnerKey(name))));
+    const similar = [...others.filter((o) => sure.has(o.key)), ...maybe].slice(0, 8);
+    setCheck({ suggested: j.name ?? name.trim(), domain: j.domain ?? null, similar });
+    setMerge([...sure]);
+  };
   const save = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true); setError(undefined);
-    try { await onSave(name); } catch (err) { setError((err as Error).message); setBusy(false); }
+    try { if (!check) await verify(); else await onSave(name, check.domain, merge); } catch (err) { setError((err as Error).message); }
+    setBusy(false);
   };
-  const changed = name.trim() && name.trim() !== p.name;
+  const changed = !!name.trim();
+  const docsN = p.docs.length + others.filter((o) => merge.includes(o.key)).reduce((n, o) => n + o.n, 0);
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onClick={onClose}>
-      <form onSubmit={save} onClick={(e) => e.stopPropagation()} className="sheet-rise pb-safe w-full max-w-md rounded-t-3xl bg-surface p-5 shadow-xl sm:rounded-3xl" role="dialog" aria-label="Partner umbenennen">
+      <form onSubmit={save} onClick={(e) => e.stopPropagation()} className="sheet-rise pb-safe max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface p-5 shadow-xl sm:rounded-3xl" role="dialog" aria-label="Partner umbenennen">
         <div className="flex items-center gap-3">
-          <SenderLogo domain={p.domain} sender={name || p.name} cluster={p.cluster} size={44} />
+          <SenderLogo domain={check?.domain ?? p.domain} sender={name || p.name} cluster={p.cluster} size={44} />
           <div className="min-w-0 flex-1"><h2 className="text-[17px] font-semibold">Partner umbenennen</h2><p className="truncate text-[12.5px] text-muted">bisher „{p.name}“</p></div>
           <button type="button" onClick={onClose} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full hover:bg-surface-2"><X size={17} /></button>
         </div>
         <label className="mt-4 block text-[12.5px] font-semibold text-soft">Neuer Name
-          <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onFocus={(e) => e.currentTarget.select()} maxLength={300} className="mt-1.5 h-11 w-full rounded-xl border border-card-line bg-surface px-3.5 text-[15px] font-normal text-fg outline-none focus:border-brand-500" />
+          <input autoFocus value={name} onChange={(e) => { setName(e.target.value); setCheck(null); }} onFocus={(e) => e.currentTarget.select()} maxLength={300} className="mt-1.5 h-11 w-full rounded-xl border border-card-line bg-surface px-3.5 text-[15px] font-normal text-fg outline-none focus:border-brand-500" />
         </label>
-        <p className="mt-2 text-[12.5px] text-muted">{p.docs.length} {p.docs.length === 1 ? "Dokument bekommt" : "Dokumente bekommen"} den neuen Absendernamen. Der alte Name bleibt im Verlauf und lässt sich zurückholen.</p>
+        {check && (
+          <div className="mt-3 space-y-3">
+            {check.suggested && check.suggested !== name.trim() && (
+              <button type="button" onClick={() => setName(check.suggested)} className="flex w-full items-center gap-2 rounded-xl border border-card-line px-3 py-2 text-left text-[13px] hover:bg-surface-2"><Sparkles size={14} className="shrink-0 text-brand-500" /><span className="min-w-0 flex-1">Vorschlag: <b>{check.suggested}</b></span><span className="text-[12px] font-semibold text-selected">Übernehmen</span></button>
+            )}
+            <p className="flex items-center gap-2 text-[12.5px] text-muted">{check.domain ? <><Check size={14} className="text-positive-text" /> Logo von <b className="text-fg">{check.domain}</b></> : "Keine Webadresse gefunden – Logo bleibt wie es ist."}</p>
+            {check.similar.length > 0 && (
+              <div>
+                <p className="mb-1.5 text-[12.5px] font-semibold text-soft">Ähnliche Partner – mit zusammenlegen?</p>
+                <div className="divide-y divide-line rounded-xl border border-card-line">
+                  {check.similar.map((o) => { const on = merge.includes(o.key); return (
+                    <label key={o.key} className="flex cursor-pointer items-center gap-2.5 px-3 py-2">
+                      <input type="checkbox" checked={on} onChange={() => setMerge(on ? merge.filter((k) => k !== o.key) : [...merge, o.key])} className="h-4 w-4 accent-brand-500" />
+                      <SenderLogo domain={o.domain} sender={o.name} cluster={o.cluster} size={26} bare />
+                      <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold">{o.name}</span>
+                      <span className="text-[12px] text-muted">{o.n} Dok.</span>
+                    </label>
+                  ); })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        <p className="mt-3 text-[12.5px] text-muted">{check ? `${docsN} ${docsN === 1 ? "Dokument bekommt" : "Dokumente bekommen"} den Namen „${name.trim()}“.` : "Wir prüfen den Namen, laden das passende Logo und suchen ähnliche Partner."} Alte Namen bleiben im Verlauf und lassen sich zurückholen.</p>
         {error && <p role="alert" className="mt-2 text-[13px] text-negative-text">{error}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="inline-flex h-10 items-center rounded-full border border-card-line px-4 text-[14px] font-semibold hover:bg-surface-2">Abbrechen</button>
-          <button type="submit" disabled={busy || !changed} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-fg px-5 text-[14px] font-semibold text-canvas disabled:opacity-40">{busy && <Loader2 size={15} className="animate-spin" />} Umbenennen</button>
+          <button type="submit" disabled={busy || !changed} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-fg px-5 text-[14px] font-semibold text-canvas disabled:opacity-40">{busy && <Loader2 size={15} className="animate-spin" />} {check ? "Übernehmen" : "Prüfen"}</button>
         </div>
       </form>
     </div>
