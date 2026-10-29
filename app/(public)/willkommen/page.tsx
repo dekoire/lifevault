@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, FileSearch, FolderTree, KeyRound, Lock, MessageSquare, ScanLine, ShieldCheck, UserRound } from "lucide-react";
+import { ArrowRight, FileSearch, FolderOutput, FolderTree, KeyRound, Lightbulb, Lock, Mail, MessageSquare, Monitor, PenLine, ScanLine, ShieldCheck, Smartphone, Tags, UserRound } from "lucide-react";
 import { ChatMock, HomeMock } from "@/components/landing/Mockups";
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { CLUSTERS } from "@/lib/clusters";
@@ -16,6 +16,24 @@ const TRUST = [
   { icon: ShieldCheck, t: "Nur du siehst deine Daten", d: "Jede Datei liegt in deinem privaten Bereich. Die Datenbank gibt nur dir deine Zeilen heraus." },
   { icon: Lock, t: "Tresor mit eigenem Passwort", d: "Arztbriefe und andere sensible Bereiche verschlüsselt dein Gerät – ohne dein Tresor-Passwort kann sie niemand lesen." },
   { icon: KeyRound, t: "Zwei-Faktor", d: "Anmeldung zusätzlich mit Code aus der Authenticator-App." },
+];
+
+const PHONES = [
+  { src: "/screens/mobile-home.png", t: "Alles auf einen Blick", d: "Kennzahlen, Partner, Bereiche", alt: "Lifevault am Handy: Startseite" },
+  { src: "/screens/mobile-bereich.png", t: "Nach Jahr sortiert", d: "Filter, Tags und Export je Bereich", alt: "Lifevault am Handy: Bereich Arbeit & Gehalt" },
+  { src: "/screens/mobile-chat.png", t: "Einfach fragen", d: "Antwort mit Quelle, auch per Sprache", alt: "Lifevault am Handy: Chat" },
+];
+const WIDE = [
+  { src: "/screens/desktop-bereich.png", t: "Bereiche mit Karten oder Liste", d: "Jedes Dokument mit Kurzfassung und den wichtigsten Angaben – chronologisch, mit Filtern nach Absender, Thema und Tags.", alt: "Bereichsseite mit Dokument-Karten" },
+  { src: "/screens/desktop-export.png", t: "Exportieren, wie du es brauchst", d: "Nach Bereich, Thema oder per KI-Suche auswählen – als einzelne Dateien oder zusammengefasst als PDF, auf Wunsch mit Passwort.", alt: "Export-Fenster mit Formatwahl" },
+];
+const NEW = [
+  { icon: ScanLine, t: "Scan-Modus", d: "Fotos werden geradegezogen und wie gescannt aufgehellt – mit Hinweis, ob das Blatt gut im Bild ist." },
+  { icon: Tags, t: "Tags", d: "Relevant fürs Finanzamt, Arztbesuch, Behörde, Datenschutz … – farbig und filterbar." },
+  { icon: PenLine, t: "Schreiben vorbereiten", d: "Widerspruch, Kündigung oder Rückfrage – die KI formuliert vor, du schickst per Mail oder Brief." },
+  { icon: Lightbulb, t: "Handlungsempfehlungen", d: "Kosten senken, Geld zurückholen, Fristen nutzen – abgewogen nach Nutzen und Aufwand." },
+  { icon: FolderOutput, t: "Export & Downloads", d: "ZIP oder PDF, verschlüsselt mit Passwort, direkt per Mail teilen." },
+  { icon: Mail, t: "E-Mail-Import", d: "Rechnungen einfach an deine Lifevault-Adresse weiterleiten – sie landen automatisch im Tresor." },
 ];
 
 /** Öffentliche Startseite (Kurzfassung), Details unter /funktionen */
@@ -43,6 +61,43 @@ export default function Landing() {
             <p className="mt-1 text-[15px] leading-6 text-muted">{d}</p>
           </div>
         ))}
+      </section>
+
+      {/* echte Ansichten der App (Beispieldaten unkenntlich gemacht) */}
+      <section className="py-20">
+        <div className="text-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-card-line bg-surface px-3 py-1 text-[13px] font-semibold"><Monitor size={14} /> Am Computer <span className="text-muted">·</span> <Smartphone size={14} /> am Handy</span>
+          <h2 className="mt-4 text-[32px] leading-10 font-[650] tracking-tight">So sieht Lifevault aus</h2>
+          <p className="mx-auto mt-2 max-w-2xl text-[15px] text-muted">Echte Ansichten aus der App – mit unkenntlich gemachten Beispieldaten.</p>
+        </div>
+        <figure className="mt-10 overflow-hidden rounded-2xl border border-card-line bg-surface shadow-[0_24px_64px_rgba(16,24,40,.14)]">
+          <div className="flex items-center gap-1.5 border-b border-line bg-surface-2 px-4 py-2.5"><span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" /><span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" /><span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" /><span className="ml-3 truncate rounded-full bg-surface px-3 py-0.5 text-[12px] text-muted">lifevault.app</span></div>
+          <img src="/screens/desktop-home.png" alt="Startseite von Lifevault am Computer: Kennzahlen, Partner mit Logos und Bereiche" className="block w-full" loading="lazy" />
+        </figure>
+        <div className="mt-12 grid items-start gap-6 sm:grid-cols-3">
+          {PHONES.map((ph) => (
+            <figure key={ph.src} className="mx-auto w-full max-w-[260px]">
+              <div className="overflow-hidden rounded-[2.2rem] border-[7px] border-fg bg-fg shadow-[0_20px_48px_rgba(16,24,40,.22)]"><img src={ph.src} alt={ph.alt} className="block w-full rounded-[1.7rem]" loading="lazy" /></div>
+              <figcaption className="mt-3 text-center text-[14px] font-semibold">{ph.t}<span className="block text-[13px] font-normal text-muted">{ph.d}</span></figcaption>
+            </figure>
+          ))}
+        </div>
+        <div className="mt-14 grid gap-6 lg:grid-cols-2">
+          {WIDE.map((w) => (
+            <figure key={w.src} className="overflow-hidden rounded-2xl border border-card-line bg-surface">
+              <img src={w.src} alt={w.alt} className="block w-full border-b border-line" loading="lazy" />
+              <figcaption className="p-5"><b className="block text-[16px]">{w.t}</b><span className="mt-1 block text-[14px] leading-6 text-muted">{w.d}</span></figcaption>
+            </figure>
+          ))}
+        </div>
+        <ul className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {NEW.map(({ icon: Icon, t, d }) => (
+            <li key={t} className="flex gap-3 rounded-2xl border border-card-line bg-surface p-4">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-500 text-white"><Icon size={18} /></span>
+              <span><b className="block text-[15px]">{t}</b><span className="block text-[13.5px] leading-5 text-muted">{d}</span></span>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="grid items-center gap-10 py-20 lg:grid-cols-2">
