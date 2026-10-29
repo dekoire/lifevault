@@ -5,6 +5,7 @@ import { CalendarClock, ChevronRight, FileText, Layers, ListChecks, Lock, Search
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
 import { TodoList } from "@/components/TodoList";
+import { RecentTable } from "@/components/RecentTable";
 import { DuplicateHint } from "@/components/Duplicates";
 import { todos } from "@/lib/actions";
 import { PageHeader } from "@/components/ui";
@@ -106,9 +107,9 @@ export default function Home() {
               <DuplicateHint docs={docs} />
               <TodoList docs={docs} />
               {recent.length > 0 && (
-                <section className={CARD}>
-                  <h2 className="px-4 pt-4 pb-1 text-[16px] font-semibold">Zuletzt hinzugefügt</h2>
-                  <div className="divide-y divide-line">{recent.map((d) => <DocRow key={d.id} d={d} />)}</div>
+                <section className={`${CARD} overflow-hidden`}>
+                  <h2 className="px-4 pt-4 pb-3 text-[16px] font-semibold">Zuletzt hinzugefügt</h2>
+                  <RecentTable docs={recent} />
                 </section>
               )}
             </>

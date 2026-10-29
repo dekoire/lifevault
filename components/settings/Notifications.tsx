@@ -79,7 +79,7 @@ export function NotificationSettings() {
             <span className="block text-[12.5px] text-muted">Nur diese Arten von Aufgaben</span>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {ALL_KINDS.map((k) => { const K = KIND[k]; const sel = prefs.kinds.includes(k); return (
-                <button key={k} type="button" aria-pressed={sel} onClick={() => void update({ ...prefs, kinds: sel ? prefs.kinds.filter((x) => x !== k) : [...prefs.kinds, k] })} className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${sel ? K.cls : "border border-card-line text-muted line-through"}`}><K.icon size={13} strokeWidth={2.4} />{K.label}</button>
+                <button key={k} type="button" aria-pressed={sel} onClick={() => void update({ ...prefs, kinds: sel ? prefs.kinds.filter((x) => x !== k) : [...prefs.kinds, k] })} className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${sel ? "border border-fg text-fg" : "border border-card-line text-muted line-through"}`}><K.icon size={13} strokeWidth={2.4} />{K.label}</button>
               ); })}
             </div>
           </div>
