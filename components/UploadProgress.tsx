@@ -30,7 +30,7 @@ export function UploadProgress() {
   const close = (home: boolean) => { clearBatch(); setMin(false); if (home) router.push("/"); };
 
   if (min) return (
-    <button type="button" onClick={() => setMin(false)} className="sheet-up fixed right-4 bottom-24 z-40 inline-flex h-11 items-center gap-2 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas shadow-[0_8px_24px_rgba(16,24,40,.25)] lg:bottom-6">
+    <button type="button" onClick={() => setMin(false)} className="sheet-up fixed right-4 bottom-24 z-40 inline-flex h-11 items-center gap-2 rounded-full bg-brand-500 px-4 text-[13px] font-semibold text-white shadow-[0_8px_24px_rgba(85,48,201,.35)] lg:bottom-6">
       {done ? <Check size={16} /> : <Loader2 size={16} className="animate-spin" />} {done ? "Fertig – ansehen" : `${working} ${working === 1 ? "wird" : "werden"} verarbeitet`}
     </button>
   );

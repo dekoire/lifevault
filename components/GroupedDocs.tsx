@@ -1,13 +1,16 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Building2, CalendarDays, Check, ChevronDown, Search, Tag, Users, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Building2, Download, CalendarDays, Check, ChevronDown, Search, Tag, Users, type LucideIcon } from "lucide-react";
 import { DocCarousel } from "@/components/DocCarousel";
 import { DocRow } from "@/components/DocRow";
+import { Box, stateOf } from "@/components/ExportSheet";
 import { FilterBar, FilterSelect, FilterToggle } from "@/components/ListControls";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD } from "@/components/ui";
 import { todos } from "@/lib/actions";
 import { chrono, useDocs } from "@/lib/docs";
+import { startExport } from "@/lib/jobs";
+import { useMe } from "@/lib/me";
 import { buildPartners, partnerKey } from "@/lib/partners";
 import { guessPurpose, PURPOSES } from "@/lib/topics";
 import type { Doc } from "@/lib/types";
@@ -37,6 +40,12 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   const [f, setF] = useState<Filter>(NONE);
   const set = (p: Partial<Filter>) => setF((x) => ({ ...x, ...p }));
   const [closed, setClosed] = useState<string[]>([]);
+  // Auswahl zum Export: Kästchen links vor dem Logo, unten eine Leiste
+  const [picking, setPicking] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const { unlocked } = useMe();
+  const pickMany = (ids: string[], on: boolean) => setPicked((s) => { const n = new Set(s); for (const id of ids) (on ? n.add(id) : n.delete(id)); return n; });
+  const stopPicking = () => { setPicking(false); setPicked(new Set()); };
 
   // Zweck je Dokument: „erledigt“, wenn nichts mehr offen ist
   const today = new Date().toISOString().slice(0, 10);
@@ -88,7 +97,15 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   const topicOpts = [...topicN.keys()].sort((a, b) => (topicN.get(b) ?? 0) - (topicN.get(a) ?? 0) || a.localeCompare(b, "de")).map((t) => ({ value: t, label: `${t} (${topicN.get(t)})` }));
   const senders = [...senderN.entries()].filter(([k]) => k).map(([k, n]) => { const p = partners.get(k); return { key: k, name: p?.name ?? k, n, domain: p?.domain ?? null, cluster: p?.cluster ?? cluster }; }).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name, "de"));
   const active = Number(!!f.purpose) + Number(!!f.topic) + Number(!!f.sender) + Number(f.range !== "all") + Number(f.encOnly);
-  const rows = (ds: Doc[]) => view === "list"
+  const lockedN = unlocked ? 0 : docs.filter((d) => picked.has(d.id) && d.encrypted).length;
+  const rows = (ds: Doc[]) => picking
+    ? <div className="divide-y divide-line">{ds.map((d) => (
+        <div key={d.id} role="checkbox" aria-checked={picked.has(d.id)} tabIndex={0} onClick={() => pickMany([d.id], !picked.has(d.id))} onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); pickMany([d.id], !picked.has(d.id)); } }} className={`flex w-full cursor-pointer items-center gap-3 pl-4 text-left ${picked.has(d.id) ? "bg-brand-500/[0.06]" : ""}`}>
+          <Box state={picked.has(d.id) ? "on" : "off"} />
+          <span className="pointer-events-none min-w-0 flex-1 [&>a]:pl-0">{<DocRow d={d} />}</span>
+        </div>
+      ))}</div>
+    : view === "list"
     ? <div className="divide-y divide-line">{ds.map((d) => <DocRow key={d.id} d={d} />)}</div>
     : <div className="px-4 pt-3 pb-4"><DocCarousel docs={chrono(ds)} /></div>;
 
@@ -96,7 +113,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   return (
     <div className="space-y-4">
       {/* Steuerung schlicht: Suche + „Filter“; alles Weitere als Auswahlfelder im Seitenpanel rechts */}
-      <FilterBar q={q} onQ={setQ} placeholder="In diesem Bereich suchen" activeCount={active} onReset={() => setF(NONE)} count={`${list.length} von ${docs.length} Dokumenten`}>
+      <FilterBar q={q} onQ={setQ} placeholder="In diesem Bereich suchen" actions={<button type="button" onClick={() => (picking ? stopPicking() : setPicking(true))} aria-pressed={picking} className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-[14px] font-semibold ${picking ? "border-brand-500 bg-brand-500 text-white" : "border-card-line bg-surface text-fg hover:bg-surface-2"}`}><Download size={16} /> Export</button>} activeCount={active} onReset={() => setF(NONE)} count={`${list.length} von ${docs.length} Dokumenten`}>
         <FilterSelect label="Je Jahr unterteilen nach" value={sub} onChange={(v) => pickSub(v as Sub)} options={SUBS.slice(1)} empty="Nicht unterteilen" />
         {senders.length > 1 && <SenderPick value={f.sender} onChange={(v) => set({ sender: v })} options={senders} />}
         {topicOpts.length > 1 && <FilterSelect label="Thema" value={f.topic} onChange={(v) => set({ topic: v })} options={topicOpts} />}
@@ -104,19 +121,30 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
         <FilterSelect label="Zeitraum" value={f.range === "all" ? "" : f.range} onChange={(v) => set({ range: (v || "all") as Range })} options={[{ value: "year", label: "Dieses Jahr" }, { value: "12m", label: "Letzte 12 Monate" }]} />
         {docs.some((d) => d.encrypted) && <FilterToggle label="Nur verschlüsselte" on={f.encOnly} onChange={(v) => set({ encOnly: v })} />}
       </FilterBar>
+      {picking && (
+        <div className="flex items-center gap-3 rounded-2xl bg-brand-500/[0.08] px-4 py-2.5 text-[14px]">
+          <button type="button" onClick={() => pickMany(list.map((d) => d.id), stateOf(list.map((d) => d.id), picked) !== "on")} className="inline-flex items-center gap-2.5 font-semibold">
+            <Box state={stateOf(list.map((d) => d.id), picked)} /> {stateOf(list.map((d) => d.id), picked) === "on" ? "Alle abwählen" : `Alle ${list.length} auswählen`}
+          </button>
+          <span className="ml-auto text-[13px] text-soft">Antippen zum Aus- oder Abwählen</span>
+        </div>
+      )}
 
       {sections.length === 0 && <p className={`${CARD} p-6 text-center text-[14px] text-muted`}>Nichts gefunden – Filter zurücksetzen?</p>}
       {sections.map((s) => {
         const isOpen = !closed.includes(s.year) || !!term;
         return (
           <section key={s.year} className={`${CARD} overflow-hidden`}>
-            <button type="button" aria-expanded={isOpen} onClick={() => setClosed((c) => (c.includes(s.year) ? c.filter((x) => x !== s.year) : [...c, s.year]))} className="flex w-full items-center gap-2.5 bg-surface-3 px-4 py-3 text-left hover:shadow-[inset_0_0_0_999px_rgba(0,0,0,0.035)]">
+            <div className="flex items-center bg-surface-3">
+              {picking && <button type="button" onClick={() => pickMany(s.docs.map((d) => d.id), stateOf(s.docs.map((d) => d.id), picked) !== "on")} aria-label={`${s.year} auswählen`} className="py-3 pl-4"><Box state={stateOf(s.docs.map((d) => d.id), picked)} /></button>}
+              <button type="button" aria-expanded={isOpen} onClick={() => setClosed((c) => (c.includes(s.year) ? c.filter((x) => x !== s.year) : [...c, s.year]))} className="flex min-w-0 flex-1 items-center gap-2.5 px-4 py-3 text-left hover:shadow-[inset_0_0_0_999px_rgba(0,0,0,0.035)]">
               <Placeholder icon={CalendarDays} size={30} />
               <span className="tnum min-w-0 flex-1 truncate text-[17px] font-semibold">{s.year}</span>
               {s.open > 0 && <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-negative/10 px-2 py-0.5 text-[11.5px] font-semibold text-negative-text"><AlertTriangle size={11} /> {s.open} offen</span>}
               <span className="tnum shrink-0 rounded-full bg-surface-2 px-2 py-px text-[12px] font-semibold text-soft">{s.docs.length}</span>
               <ChevronDown size={17} className={`shrink-0 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
             </button>
+            </div>
             {isOpen && (
               <div className="border-t border-line">
                 {sub ? s.groups.map((g) => (
@@ -134,6 +162,13 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
           </section>
         );
       })}
+      {picking && (
+        <div className="sheet-up fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-xl items-center gap-3 rounded-full bg-fg py-2 pr-2 pl-5 text-canvas shadow-[0_12px_32px_rgba(16,24,40,.3)] lg:bottom-6 lg:left-[calc(var(--side,15rem)+1.5rem)]">
+          <span className="min-w-0 flex-1 text-[14px]"><b className="tnum">{picked.size}</b> ausgewählt{lockedN > 0 && <span className="text-canvas/60"> · {lockedN} verschlüsselt (Tresor entsperren)</span>}</span>
+          <button type="button" onClick={stopPicking} className="h-10 rounded-full px-3 text-[13.5px] font-semibold text-canvas/75 hover:text-canvas">Abbrechen</button>
+          <button type="button" disabled={picked.size - lockedN <= 0} onClick={() => { startExport(docs.filter((d) => picked.has(d.id) && (!d.encrypted || unlocked))); stopPicking(); }} className="inline-flex h-10 items-center gap-2 rounded-full bg-brand-500 px-4 text-[13.5px] font-semibold text-white disabled:opacity-40"><Download size={15} /> ZIP erstellen</button>
+        </div>
+      )}
     </div>
   );
 }

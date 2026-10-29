@@ -2,16 +2,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUp, Check, ChevronDown, Download, Loader2, Lock, Minus, Search, Sparkles, X } from "lucide-react";
-import { zipSync } from "fflate";
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { SenderLogo } from "@/components/SenderLogo";
 import { VaultUnlock } from "@/components/VaultUnlock";
 import { CLUSTERS, clusterOf } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
 import { useMe } from "@/lib/me";
-import { downloadFile } from "@/lib/protect";
+import { startExport } from "@/lib/jobs";
 import { authFetch } from "@/lib/supabase";
-import { openBytes } from "@/lib/vault";
 import type { Doc } from "@/lib/types";
 
 /**
@@ -31,65 +29,30 @@ export function ExportSheet({ onClose }: { onClose: () => void }) {
   const byId = useMemo(() => new Map(docs.map((d) => [d.id, d])), [docs]);
   const [tab, setTab] = useState<Tab>("areas");
   const [sel, setSel] = useState<Set<string>>(new Set());
-  const [progress, setProgress] = useState<{ done: number; total: number }>();
-  const [error, setError] = useState("");
   useEffect(() => {
-    const k = (e: KeyboardEvent) => e.key === "Escape" && !progress && onClose();
+    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     addEventListener("keydown", k); return () => removeEventListener("keydown", k);
-  }, [onClose, progress]);
+  }, [onClose]);
 
   const setMany = (ids: string[], on: boolean) => setSel((s) => { const n = new Set(s); for (const id of ids) (on ? n.add(id) : n.delete(id)); return n; });
   const chosen = [...sel].map((id) => byId.get(id)).filter((d): d is Doc => !!d);
   const lockedN = unlocked ? 0 : chosen.filter((d) => d.encrypted).length;
 
-  const run = async () => {
+  // läuft im Hintergrund weiter (lila Karte unten rechts), das Fenster schließt sofort
+  const run = () => {
     const list = chosen.filter((d) => !d.encrypted || unlocked);
     if (!list.length) return;
-    setError(""); setProgress({ done: 0, total: list.length });
-    const files: Record<string, [Uint8Array, { level: 0 }]> = {};
-    const used = new Set<string>();
-    const index: [string, Doc][] = [];
-    const clean = (s: string) => s.replace(/[\\/:*?"<>|\n\r]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 90);
-    const failed: string[] = [];
-    let done = 0;
-    const queue = [...list];
-    const worker = async () => {
-      for (let d = queue.shift(); d; d = queue.shift()) {
-        try {
-          const raw = await downloadFile(d.file_path);
-          const bytes = d.encrypted ? await openBytes(raw) : raw;
-          const ext = d.file_name.includes(".") ? d.file_name.slice(d.file_name.lastIndexOf(".")) : "";
-          const base = `${clean(clusterOf(d.cluster).label)}/${clean(topicOf(d))}/${dateOf(d)} ${clean(d.title ?? d.file_name.replace(/\.[^.]+$/, ""))}`;
-          let path = `${base}${ext}`;
-          for (let i = 2; used.has(path); i++) path = `${base} (${i})${ext}`;
-          used.add(path);
-          files[path] = [bytes, { level: 0 }];
-          index.push([path, d]);
-        } catch { failed.push(d.title ?? d.file_name); }
-        setProgress({ done: ++done, total: list.length });
-      }
-    };
-    await Promise.all([worker(), worker(), worker(), worker()]);
-    // Übersicht als CSV (öffnet in Excel/Numbers)
-    const csv = ["Datei;Bereich;Thema;Titel;Absender;Datum", ...index.sort((x, y) => x[0].localeCompare(y[0])).map(([p, d]) =>
-      [p, clusterOf(d.cluster).label, topicOf(d), d.title ?? "", d.sender ?? "", dateOf(d)].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"))].join("\r\n");
-    files["Übersicht.csv"] = [new TextEncoder().encode(`﻿${csv}`), { level: 0 }];
-    const zip = zipSync(files);
-    const url = URL.createObjectURL(new Blob([zip as BlobPart], { type: "application/zip" }));
-    Object.assign(document.createElement("a"), { href: url, download: `Lifevault-Export ${new Date().toISOString().slice(0, 10)}.zip` }).click();
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    setProgress(undefined);
-    if (failed.length) setError(`${failed.length} ${failed.length === 1 ? "Datei ließ" : "Dateien ließen"} sich nicht laden: ${failed.slice(0, 3).join(", ")}${failed.length > 3 ? " …" : ""}`);
-    else onClose();
+    startExport(list);
+    onClose();
   };
 
   const TABS: { id: Tab; label: string }[] = [{ id: "areas", label: "Bereiche & Themen" }, { id: "docs", label: "Einzelne Dokumente" }, { id: "ai", label: "Mit KI suchen" }];
   return createPortal(
-    <div className="sheet-backdrop fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-6" onClick={() => !progress && onClose()}>
+    <div className="sheet-backdrop fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-6" onClick={onClose}>
       <div role="dialog" aria-label="Exportieren" onClick={(e) => e.stopPropagation()} className="sheet-rise flex h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-surface shadow-[0_24px_64px_rgba(16,24,40,.25)] sm:h-[min(52rem,90dvh)] sm:rounded-3xl">
         <div className="flex items-center justify-between px-6 pt-5 pb-3">
           <span><b className="block text-[19px] font-semibold">Exportieren</b><span className="text-[13px] text-muted">Wähle aus, was in die ZIP-Datei soll</span></span>
-          <button type="button" onClick={onClose} disabled={!!progress} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3 disabled:opacity-40"><X size={18} /></button>
+          <button type="button" onClick={onClose} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3 disabled:opacity-40"><X size={18} /></button>
         </div>
         <div className="px-6 pb-3">
           <div className="flex gap-1 rounded-full bg-surface-3 p-1">
@@ -108,11 +71,10 @@ export function ExportSheet({ onClose }: { onClose: () => void }) {
               <VaultUnlock compact title="Tresor entsperren" text="Die Dateien werden nur in deinem Browser entschlüsselt." />
             </div>
           )}
-          {error && <p className="mb-2 text-[13px] text-negative-text">{error}</p>}
           <div className="flex items-center gap-3">
-            <span className="min-w-0 flex-1 text-[14px]"><b className="tnum">{sel.size}</b> {sel.size === 1 ? "Dokument" : "Dokumente"} ausgewählt{sel.size > 0 && !progress && <> · <button type="button" onClick={() => setSel(new Set())} className="font-semibold text-selected">leeren</button></>}</span>
-            <button type="button" onClick={() => void run()} disabled={!!progress || sel.size - lockedN <= 0} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-fg px-5 text-[14px] font-semibold text-canvas disabled:opacity-40">
-              {progress ? <><Loader2 size={16} className="animate-spin" /> {progress.done} von {progress.total}</> : <><Download size={16} /> Fertig – ZIP laden</>}
+            <span className="min-w-0 flex-1 text-[14px]"><b className="tnum">{sel.size}</b> {sel.size === 1 ? "Dokument" : "Dokumente"} ausgewählt{sel.size > 0 && <> · <button type="button" onClick={() => setSel(new Set())} className="font-semibold text-selected">leeren</button></>}</span>
+            <button type="button" onClick={run} disabled={sel.size - lockedN <= 0} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-fg px-5 text-[14px] font-semibold text-canvas disabled:opacity-40">
+              <Download size={16} /> Fertig – ZIP erstellen
             </button>
           </div>
         </div>
@@ -125,14 +87,14 @@ export function ExportSheet({ onClose }: { onClose: () => void }) {
 type SelProps = { sel: Set<string>; setMany: (ids: string[], on: boolean) => void };
 
 /** Kästchen: an, aus oder teilweise */
-function Box({ state }: { state: "on" | "off" | "some" }) {
+export function Box({ state }: { state: "on" | "off" | "some" }) {
   return (
     <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border ${state === "off" ? "border-line-strong bg-surface" : "border-fg bg-fg text-canvas"}`}>
       {state === "on" ? <Check size={13} strokeWidth={3} /> : state === "some" ? <Minus size={13} strokeWidth={3} /> : null}
     </span>
   );
 }
-const stateOf = (ids: string[], sel: Set<string>) => { const n = ids.filter((id) => sel.has(id)).length; return n === 0 ? "off" : n === ids.length ? "on" : "some"; };
+export const stateOf = (ids: string[], sel: Set<string>) => { const n = ids.filter((id) => sel.has(id)).length; return n === 0 ? "off" : n === ids.length ? "on" : "some"; };
 
 function Areas({ docs, sel, setMany }: { docs: Doc[] } & SelProps) {
   const [open, setOpen] = useState<string>();

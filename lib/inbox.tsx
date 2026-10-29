@@ -1,17 +1,18 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDocs } from "@/lib/docs";
+import { startJob, updateJob } from "@/lib/jobs";
 import { fixMime, isCandidate } from "@/lib/mail";
 import { authFetch, supabase, useSession } from "@/lib/supabase";
 
 /**
  * Eigene Empfangsadresse lv-<token>@finastry.com: Mails dorthin weiterleiten, Lifevault holt die Anhänge ab.
- * Nur erlaubte Absender (und echte, per SPF/DKIM bestätigte). Automatisch: beim Öffnen und alle 30 Minuten, nur das Neue seit dem letzten Abruf.
+ * Nur erlaubte Absender (und echte, per SPF/DKIM bestätigte). Automatisch: beim Öffnen und alle 10 Minuten, nur das Neue seit dem letzten Abruf.
  */
 export const INBOX_DOMAIN = process.env.NEXT_PUBLIC_INBOX_DOMAIN ?? "finastry.com";
 export type Inbox = { token: string; allowed: string[]; auto_sync: boolean; last_sync_at: string | null };
 export const inboxAddress = (token: string) => `lv-${token}@${INBOX_DOMAIN}`;
-const EVERY_MIN = 30;
+const EVERY_MIN = 10;
 
 const newToken = () => Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join("");
 
@@ -66,24 +67,33 @@ export async function importInbox(opts: { since: Date; until?: Date; upload: (fi
   const fresh = items.filter((m) => !known.has(`inbox:${m.id}`));
   const out: InboxResult = { checked: items.length, imported: 0, files: 0, known: items.length - fresh.length, withoutDocs: 0, rejected: json.rejected ?? [] };
   let n = 0;
-  for (const m of fresh) {
-    onStep?.("Anhänge übernehmen", n++, fresh.length);
-    const picks = m.attachments.filter((a) => isCandidate({ name: a.name, mime: fixMime(a.name, a.mime), size: a.size, inline: a.inline }));
-    let docIds: string[] = [];
-    if (picks.length) {
-      const files: File[] = [];
-      for (const a of picks) {
-        const r = await authFetch(`/api/mail/inbox/file?email=${m.id}&att=${a.id}`);
-        if (r.ok) files.push(new File([await r.blob()], a.name, { type: fixMime(a.name, a.mime) }));
-      }
-      docIds = files.length ? await upload(files, { silent: opts.silent }) : [];
-      if (docIds.length) { out.imported++; out.files += docIds.length; }
-    } else out.withoutDocs++;
-    await supabase.from("mail_seen").upsert({
-      msg_id: `inbox:${m.id}`, source: "inbox", subject: m.subject.slice(0, 500), sender: m.from.slice(0, 300), mail_date: m.date,
-      relevant: docIds.length > 0, reason: (docIds.length ? "An deine Lifevault-Adresse geschickt" : picks.length ? "Anhang konnte nicht geladen werden" : "Kein Dokument im Anhang").slice(0, 500), doc_ids: docIds,
-    });
+  // sichtbarer Fortschritt (lila Karte unten rechts), sobald es Neues gibt
+  const job = fresh.length ? startJob({ kind: "mail", title: "E-Mails werden verarbeitet", detail: `${fresh.length} neue ${fresh.length === 1 ? "Mail" : "Mails"}`, total: fresh.length }) : null;
+  try {
+    for (const m of fresh) {
+      onStep?.("Anhänge übernehmen", n++, fresh.length);
+      if (job) updateJob(job, { done: n - 1 });
+      const picks = m.attachments.filter((a) => isCandidate({ name: a.name, mime: fixMime(a.name, a.mime), size: a.size, inline: a.inline }));
+      let docIds: string[] = [];
+      if (picks.length) {
+        const files: File[] = [];
+        for (const a of picks) {
+          const r = await authFetch(`/api/mail/inbox/file?email=${m.id}&att=${a.id}`);
+          if (r.ok) files.push(new File([await r.blob()], a.name, { type: fixMime(a.name, a.mime) }));
+        }
+        docIds = files.length ? await upload(files, { silent: opts.silent }) : [];
+        if (docIds.length) { out.imported++; out.files += docIds.length; }
+      } else out.withoutDocs++;
+      await supabase.from("mail_seen").upsert({
+        msg_id: `inbox:${m.id}`, source: "inbox", subject: m.subject.slice(0, 500), sender: m.from.slice(0, 300), mail_date: m.date,
+        relevant: docIds.length > 0, reason: (docIds.length ? "An deine Lifevault-Adresse geschickt" : picks.length ? "Anhang konnte nicht geladen werden" : "Kein Dokument im Anhang").slice(0, 500), doc_ids: docIds,
+      });
+    }
+  } catch (e) {
+    if (job) updateJob(job, { state: "error", title: "E-Mail-Abruf unterbrochen", detail: (e as Error).message });
+    throw e;
   }
+  if (job) updateJob(job, { done: fresh.length, state: "done", title: "E-Mails übernommen", detail: out.files ? `${out.files} ${out.files === 1 ? "Dokument" : "Dokumente"} aus ${out.imported} ${out.imported === 1 ? "Mail" : "Mails"}` : "Keine Dokumente im Anhang" });
   if (opts.advance !== false) await supabase.from("mail_inbox").update({ last_sync_at: new Date().toISOString() }).not("user_id", "is", null);
   window.dispatchEvent(new Event("lifevault:inbox"));
   onStep?.("Fertig", fresh.length, fresh.length);
@@ -108,7 +118,7 @@ export function InboxAutoSync() {
       finally { busy.current = false; }
     };
     void tick();
-    const t = setInterval(() => void tick(), 5 * 60_000);
+    const t = setInterval(() => void tick(), 60_000);
     document.addEventListener("visibilitychange", tick);
     return () => { clearInterval(t); document.removeEventListener("visibilitychange", tick); };
   }, [inbox, upload]);
