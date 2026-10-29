@@ -11,7 +11,6 @@ const TONES = {
   solid: "bg-fg text-canvas", // Avatar: schwarz, weißes Symbol
   urgent: "bg-urgent text-white", // dringend: dunkelrot, weißes Symbol
   plain: "bg-surface text-fg", // ruhig: weiß ohne Rand, schwarzes Symbol
-  brand: "bg-surface text-brand-500", // auf lila Kachel: weißer Kreis, lila Symbol
 };
 
 /** Bereich als Text mit schwarzem Symbol davor (in Listen) */

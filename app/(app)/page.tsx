@@ -92,8 +92,8 @@ export default function Home() {
                   {[...CLUSTERS].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0)).map((c) => {
                     const n = counts.get(c.id) ?? 0;
                     return (
-                      <Link key={c.id} href={`/c/${c.id}`} className={`flex flex-col gap-3 rounded-2xl border p-4 shadow-card transition active:scale-[.98] ${n ? "border-brand-500/20 bg-brand-500/[.07] hover:bg-brand-500/[.12]" : "border-card-line bg-surface opacity-60 hover:bg-surface-2"}`}>
-                        <span className="flex items-start justify-between gap-2"><ClusterIcon id={c.id} size={40} tone={n ? "brand" : "plain"} /><span className={`tnum inline-grid h-7 min-w-7 place-items-center rounded-full px-2 text-[12px] font-bold ${n ? "bg-brand-500 text-white" : "border border-card-line text-muted"}`}>{n}</span></span>
+                      <Link key={c.id} href={`/c/${c.id}`} className={`${TILE} flex flex-col gap-3 p-4 transition hover:bg-surface-2 active:scale-[.98] ${n ? "" : "opacity-60"}`}>
+                        <span className="flex items-start justify-between gap-2"><ClusterIcon id={c.id} size={40} tone="plain" /><span className={`tnum inline-grid h-7 min-w-7 place-items-center rounded-full px-2 text-[12px] font-bold ${n ? "border border-card-line bg-surface-2 text-fg" : "border border-card-line text-muted"}`}>{n}</span></span>
                         <span>
                           <span className="block text-[15px] leading-5 font-semibold">{c.label}</span>
                           <span className="mt-0.5 line-clamp-2 block text-[12px] leading-4 text-muted">{c.hint}</span>
