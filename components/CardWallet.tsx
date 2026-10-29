@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { AlertTriangle, Combine, WalletCards } from "lucide-react";
+import { AlertTriangle, Combine } from "lucide-react";
 import { useDetail } from "@/components/DetailPanel";
 import { MergeSheet } from "@/components/MergeReview";
 import { SenderLogo } from "@/components/SenderLogo";
@@ -19,7 +19,7 @@ export function CardWallet({ title = "Karten & Ausweise", compact = false }: { t
 
   return (
     <section>
-      <h2 className="mb-3 flex items-center gap-2 text-[17px] font-semibold"><WalletCards size={18} /> {title} <span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] font-semibold text-muted">{cards.length}</span></h2>
+      <h2 className="mb-3 flex items-center gap-2 text-[17px] font-semibold">{title} <span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] font-semibold text-muted">{cards.length}</span></h2>
       <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2 [scrollbar-width:none]">
         {cards.map((c) => {
           const soon = c.validDate && c.validDate.getTime() - Date.now() < 90 * 86_400_000;

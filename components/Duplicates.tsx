@@ -6,6 +6,7 @@ import { useDetail } from "@/components/DetailPanel";
 import { Thumb } from "@/components/ChatWidgets";
 import { CARD } from "@/components/ui";
 import { usePartnerDuplicates } from "@/components/PartnerDupes";
+import { SenderLogo } from "@/components/SenderLogo";
 import { caseIds, explain, findDuplicates, pairKeys, type DupGroup } from "@/lib/dupes";
 import { clusterOf } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
@@ -36,31 +37,36 @@ export function DuplicateHint({ docs }: { docs: Doc[] }) {
   const { groups } = useDuplicates(docs);
   const { groups: partnerGroups } = usePartnerDuplicates(docs);
   if (!groups.length && !partnerGroups.length) return null;
+  const row = "flex items-center gap-3 rounded-xl bg-surface-2 px-3 py-2.5";
   return (
-    <section className={`${CARD} overflow-hidden`}>
-      <Link href="/doppelt" className="flex items-center gap-3 px-4 pt-4 pb-2 hover:opacity-80">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2"><Copy size={16} /></span>
-        <span className="min-w-0 flex-1">
-          <b className="block text-[15px]">{[groups.length ? (groups.length === 1 ? "1 Dokument wohl doppelt" : `${groups.length} Dokumente wohl doppelt`) : null, partnerGroups.length ? (partnerGroups.length === 1 ? "1 Partner unter mehreren Namen" : `${partnerGroups.length} Partner unter mehreren Namen`) : null].filter(Boolean).join(" · ")}</b>
-          <span className="block text-[12.5px] text-muted">Prüfen und zusammenführen</span>
-        </span>
-        <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold text-selected">Prüfen <ChevronRight size={15} /></span>
-      </Link>
-      <ul className="px-4 pb-3">
+    <Link href="/doppelt" className={`${CARD} lift block p-4`}>
+      <span className="flex items-center gap-2">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#6d4aff]/10 text-[#6d4aff]"><Copy size={14} /></span>
+        <b className="min-w-0 flex-1 truncate text-[14.5px]">Doppeltes aufräumen <span className="tnum ml-1 rounded-full border border-card-line px-2 py-px text-[11.5px] font-semibold text-muted">{groups.length + partnerGroups.length}</span></b>
+        <ChevronRight size={17} className="shrink-0 text-muted" />
+      </span>
+      <span className="mt-3 block space-y-2">
         {partnerGroups.slice(0, 2).map((g) => (
-          <li key={g.key} className="flex items-start gap-2 py-1 text-[12.5px]">
-            <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${g.sure ? "bg-fg" : "bg-line-strong"}`} />
-            <span className="min-w-0"><b className="font-semibold">{g.partners.map((p) => p.name).slice(0, 3).join(" · ")}{g.partners.length > 3 ? ` +${g.partners.length - 3}` : ""}</b><span className="block text-muted">{g.reasons.join(" · ")}</span></span>
-          </li>
+          <span key={g.key} className={row}>
+            <span className="flex shrink-0 -space-x-2">{g.partners.slice(0, 3).map((p) => <span key={p.name} className="rounded-full ring-2 ring-surface-2"><SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={28} /></span>)}</span>
+            <span className="min-w-0 flex-1">
+              <b className="block truncate text-[13px] font-semibold">{g.partners.map((p) => p.name).slice(0, 3).join(" · ")}{g.partners.length > 3 ? ` +${g.partners.length - 3}` : ""}</b>
+              <span className="block truncate text-[11.5px] text-muted">Ein Partner, mehrere Namen · {g.reasons[0]}</span>
+            </span>
+          </span>
         ))}
         {groups.slice(0, 3).map((g) => (
-          <li key={g.key} className="flex items-start gap-2 py-1 text-[12.5px]">
-            <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${g.sure ? "bg-fg" : "bg-line-strong"}`} />
-            <span className="min-w-0"><b className="font-semibold">{g.docs[0].title ?? g.docs[0].file_name}</b><span className="block text-muted">{where(g)} – {g.why}</span></span>
-          </li>
+          <span key={g.key} className={row}>
+            <span className="h-9 w-7 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface"><Thumb d={g.docs[0]} /></span>
+            <span className="min-w-0 flex-1">
+              <b className="block truncate text-[13px] font-semibold">{g.docs[0].title ?? g.docs[0].file_name}</b>
+              <span className="block truncate text-[11.5px] text-muted">{g.docs.length}× vorhanden · {where(g)}</span>
+            </span>
+          </span>
         ))}
-      </ul>
-    </section>
+      </span>
+      <span className="mt-3 block text-center text-[13px] font-semibold text-[#6d4aff]">Prüfen und zusammenführen</span>
+    </Link>
   );
 }
 
