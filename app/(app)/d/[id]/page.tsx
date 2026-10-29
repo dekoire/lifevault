@@ -1,4 +1,5 @@
 "use client";
+import { isCardDoc, PdfPages } from "@/components/PdfPages";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useRef, useState } from "react";
@@ -284,7 +285,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
           <SensitiveBadge doc={doc} unlocked={unlocked} onProtect={() => void run(() => protectDoc(doc))} />
           {show.original && fileUrl && (
             <section className={`${CARD} overflow-hidden`}>
-              {image ? <img src={fileUrl} alt={doc.title ?? doc.file_name} className="max-h-[60vh] w-full bg-surface-2 object-contain" /> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={fileUrl} mime={doc.mime_type} name={doc.file_name} /> : <iframe src={fileUrl} title="Original" className="h-[60vh] w-full bg-surface-2" />}
+              {image ? <img src={fileUrl} alt={doc.title ?? doc.file_name} className="max-h-[60vh] w-full bg-surface-2 object-contain" /> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={fileUrl} mime={doc.mime_type} name={doc.file_name} /> : doc.mime_type === "application/pdf" ? <PdfPages url={fileUrl} card={isCardDoc(doc)} /> : <iframe src={fileUrl} title="Original" className="h-[60vh] w-full bg-surface-2" />}
             </section>
           )}
           <MergedParts doc={doc} onSplit={() => router.push("/")} />
