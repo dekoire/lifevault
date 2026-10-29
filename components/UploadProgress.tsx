@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { AlertCircle, Check, ChevronDown, CloudUpload, FileSearch, FileText, FolderCheck, Loader2, RefreshCw, Scissors } from "lucide-react";
+import { AlertCircle, Check, ChevronDown, CloudUpload, FileSearch, FileText, FolderCheck, Loader2, RefreshCw, Scissors , X } from "lucide-react";
 import { SenderLogo } from "@/components/SenderLogo";
 import { clusterOf } from "@/lib/clusters";
 import { fmtDate, useDocs, type BatchItem } from "@/lib/docs";
@@ -15,7 +15,9 @@ export function UploadProgress() {
   const { batch, clearBatch, allDocs, reprocess } = useDocs();
   const router = useRouter();
   const [min, setMin] = useState(false);
-  if (!batch.length) return null;
+  // per X ausgeblendet (läuft im Hintergrund weiter); bei neuen Dateien wieder sichtbar
+  const [hidden, setHidden] = useState(0);
+  if (!batch.length || (min && hidden === batch.length)) return null;
 
   const rows = batch.map((b) => {
     const doc = b.id ? allDocs.find((d) => d.id === b.id) : undefined;
@@ -30,9 +32,12 @@ export function UploadProgress() {
   const close = (home: boolean) => { clearBatch(); setMin(false); if (home) router.push("/"); };
 
   if (min) return (
-    <button type="button" onClick={() => setMin(false)} className="sheet-up fixed right-4 bottom-24 z-40 inline-flex h-11 items-center gap-2 rounded-full bg-brand-500 px-4 text-[13px] font-semibold text-white shadow-[0_8px_24px_rgba(85,48,201,.35)] lg:bottom-6">
-      {done ? <Check size={16} /> : <Loader2 size={16} className="animate-spin" />} {done ? "Fertig – ansehen" : `${working} ${working === 1 ? "wird" : "werden"} verarbeitet`}
-    </button>
+    <div className="hide-on-kb sheet-up fixed right-4 bottom-24 z-40 inline-flex h-11 items-center gap-1 rounded-full bg-brand-500 pr-1.5 pl-4 text-[13px] font-semibold text-white shadow-[0_8px_24px_rgba(85,48,201,.35)] lg:bottom-6">
+      <button type="button" onClick={() => setMin(false)} className="inline-flex h-full items-center gap-2 pr-1.5">
+        {done ? <Check size={16} /> : <Loader2 size={16} className="animate-spin" />} {done ? "Fertig – ansehen" : `${working} ${working === 1 ? "wird" : "werden"} verarbeitet`}
+      </button>
+      <button type="button" onClick={() => (done ? close(false) : setHidden(batch.length))} aria-label="Ausblenden" className="grid h-8 w-8 place-items-center rounded-full bg-white/20 text-white hover:bg-white/30"><X size={15} strokeWidth={2.5} /></button>
+    </div>
   );
 
   return (

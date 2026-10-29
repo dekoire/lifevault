@@ -23,6 +23,7 @@ import { UploadProgress } from "@/components/UploadProgress";
 import { DetailHost } from "@/components/DetailPanel";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import { KeyboardWatch } from "@/components/KeyboardWatch";
 import { Avatar, AvatarMenu, nameFromEmail } from "@/components/AvatarMenu";
 import { supabase, useSession } from "@/lib/supabase";
 
@@ -97,6 +98,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       {inputs}
       {exporting && <ExportSheet onClose={() => setExporting(false)} />}
       {!chat && <PullToRefresh color="#6d4aff" />}
+      <KeyboardWatch />
       <UploadProgress />
       <JobToasts />
       <DraftHost />
@@ -151,7 +153,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       </main>
 
       {/* Handy: untere Leiste ohne Schatten – Start, +, Fragen */}
-      <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-card-line bg-surface lg:hidden">
+      <nav className="hide-on-kb pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-card-line bg-surface lg:hidden">
         <div className="mx-auto flex h-16 max-w-md items-center gap-2 px-4">
           <Tab n={NAV[0]} on={NAV[0].match(path)} />
           <Tab n={NAV[2]} on={NAV[2].match(path)} />
