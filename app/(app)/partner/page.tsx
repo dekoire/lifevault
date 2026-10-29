@@ -46,13 +46,13 @@ export default function PartnersPage() {
       return compare(v(a), v(b), sort.dir) || b.last.localeCompare(a.last);
     });
   const filtered = !!(term || fCluster || fKind || onlyIds || withFormer);
-  const reset = () => { setQ(""); setFCluster(""); setFKind(""); setOnlyIds(false); setWithFormer(false); };
+  const reset = () => { setFCluster(""); setFKind(""); setOnlyIds(false); setWithFormer(false); };
 
   return (
     <>
       <PageHeader title="Partner" subtitle={loading ? " " : `${all.length} Firmen und Stellen aus deinen Unterlagen – mit allen Kunden-, Vertrags- und Versicherungsnummern`} />
       <div className="max-w-5xl space-y-3">
-        <FilterBar q={q} onQ={setQ} placeholder="Suchen: Firma oder Nummer, z. B. O2 oder Kundennummer" active={filtered} onReset={reset} count={`${list.length} von ${all.length}`}>
+        <FilterBar q={q} onQ={setQ} placeholder="Suchen: Firma oder Nummer, z. B. O2 oder Kundennummer" activeCount={[fCluster, fKind, onlyIds, withFormer].filter(Boolean).length} onReset={reset} count={`${list.length} von ${all.length}`}>
           {clusters.length > 1 && <FilterSelect label="Bereich" value={fCluster} onChange={setFCluster} options={clusters} />}
           <FilterSelect label="Art" value={fKind} onChange={setFKind} options={KINDS} />
           <FilterToggle label="Mit Kennungen" on={onlyIds} onChange={setOnlyIds} />

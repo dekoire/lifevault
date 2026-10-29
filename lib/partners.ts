@@ -56,6 +56,10 @@ export function buildPartners(docs: Doc[]): Partner[] {
   }
   for (const p of map.values()) {
     p.docs.sort((a, b) => dateOf(b).localeCompare(dateOf(a)));
+    // Bereich: der häufigste unter den Dokumenten (nicht der des neuesten – z. B. Mercedes-Benz mit einem BKK-Brief)
+    const n = new Map<string | null, number>();
+    for (const d of p.docs) n.set(d.cluster, (n.get(d.cluster) ?? 0) + 1);
+    p.cluster = [...n.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? p.cluster;
     p.isShop = p.docs.every((d) => d.cluster === "belege" || d.cluster === "mobilitaet" && /beleg|bon|quittung/i.test(d.doc_type ?? ""));
     const seen = new Set<string>();
     for (const d of p.docs) for (const f of d.key_facts ?? []) {

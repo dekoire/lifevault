@@ -53,11 +53,11 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
       return compare(v(a), v(b), sort.dir) || dateOf(b).localeCompare(dateOf(a));
     });
   const filtered = !!(term || fCluster || fSender || fYear || withArchive);
-  const reset = () => { setQ(""); setFCluster(""); setFSender(""); setFYear(""); setWithArchive(false); };
+  const reset = () => { setFCluster(""); setFSender(""); setFYear(""); setWithArchive(false); };
 
   return (
     <div className="space-y-3">
-      <FilterBar q={q} onQ={setQ} placeholder="In dieser Liste suchen" active={filtered} onReset={reset} count={`${list.length} ${list.length === 1 ? "Dokument" : "Dokumente"}`}>
+      <FilterBar q={q} onQ={setQ} placeholder="In dieser Liste suchen" activeCount={[fCluster, fSender, fYear, withArchive].filter(Boolean).length} onReset={reset} count={`${list.length} ${list.length === 1 ? "Dokument" : "Dokumente"}`}>
         {cluster && opts.clusters.length > 1 && <FilterSelect label="Bereich" value={fCluster} onChange={setFCluster} options={opts.clusters} />}
         {sender && opts.senders.length > 1 && <FilterSelect label="Absender" value={fSender} onChange={setFSender} options={opts.senders} />}
         {opts.years.length > 1 && <FilterSelect label="Jahr" value={fYear} onChange={setFYear} options={opts.years} />}
