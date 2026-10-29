@@ -80,8 +80,11 @@ export default function ProfilPage() {
     const v = partnerKey(value);
     const fromDocs = docIds.map((id) => docs.find((d) => d.id === id)?.sender).filter(Boolean).map((s) => partnerKey(s!));
     const cands = partners.filter((p) => p.key.length >= 3 && (v === p.key || v.startsWith(`${p.key}-`) || v.includes(`-${p.key}-`) || v.endsWith(`-${p.key}`)));
-    return cands.sort((a, b) => Number(fromDocs.includes(b.key)) - Number(fromDocs.includes(a.key)) || b.key.length - a.key.length)[0];
+    const best = cands.sort((a, b) => Number(fromDocs.includes(b.key)) - Number(fromDocs.includes(a.key)) || b.key.length - a.key.length)[0];
+    // nichts im Text erkannt (z. B. Befund, OP): Logo des Absenders aus dem Beleg, etwa Klinik oder Praxis
+    return best ?? (fromDocs[0] ? partners.find((p) => p.key === fromDocs[0]) : undefined);
   };
+  const [openSec, setOpenSec] = useState<string[]>([]);
   const steck = person.filter((f) => f.id !== "name");
   const shownSteck = allFields ? steck : steck.slice(0, 6);
   const sections = profile?.sections.map((s) => ({ ...s, items: s.items.filter((i) => past || i.status === "aktuell") })).filter((s) => s.items.length) ?? [];
@@ -166,7 +169,7 @@ export default function ProfilPage() {
               </button>
             )}
           </div>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
             {sections.map((s) => {
               const Icon = ICONS[s.id] ?? UserRound;
               const open = s.id === "offen";
@@ -178,7 +181,7 @@ export default function ProfilPage() {
                     <span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] font-semibold text-soft">{s.items.length}</span>
                   </h3>
                   <ul className="divide-y divide-line border-t border-line">
-                    {s.items.map((it, i) => (
+                    {(openSec.includes(s.id) ? s.items : s.items.slice(0, 4)).map((it, i) => (
                       <li key={i} className={`flex flex-col gap-1 px-5 py-3 sm:flex-row sm:gap-3 ${it.status === "früher" ? "bg-surface-2/50" : ""}`}>
                         <span lang="de" className="shrink-0 text-[13px] break-words hyphens-auto text-muted sm:w-36">{it.label}</span>
                         <span className="flex min-w-0 flex-1 items-start gap-3">
@@ -192,6 +195,7 @@ export default function ProfilPage() {
                       </li>
                     ))}
                   </ul>
+                  {s.items.length > 4 && <button type="button" aria-expanded={openSec.includes(s.id)} onClick={() => setOpenSec((c) => (c.includes(s.id) ? c.filter((x) => x !== s.id) : [...c, s.id]))} className="w-full border-t border-line bg-surface-2 px-5 py-2.5 text-center text-[13px] font-semibold text-fg transition-colors hover:bg-surface-3">{openSec.includes(s.id) ? "Weniger anzeigen" : `Alle ${s.items.length} anzeigen`}</button>}
                 </section>
               );
             })}

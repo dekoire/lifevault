@@ -59,19 +59,20 @@ export function TodoList({ docs }: { docs: Doc[] }) {
 
   return (
     <section className={`${CARD} overflow-hidden`}>
-      <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-2">
-        <h2 className="flex items-center gap-2 text-[16px] font-semibold"><ListTodo size={18} /> Zu erledigen
-          {openList.length > 0 && <span className="tnum rounded-full border border-card-line bg-surface-2 px-2 py-px text-[12px] font-bold">{openList.length}</span>}
-          {late > 0 && <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-negative-text"><AlertTriangle size={13} /> {late} überfällig</span>}
+      {/* Kopf: Titel + Zähler links, Auswahlfelder rechtsbündig in einer Zeile; mobil darunter je 50 % */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 px-4 pt-4 pb-3">
+        <h2 className="flex min-w-0 flex-1 items-center gap-2 text-[16px] font-semibold"><ListTodo size={18} className="shrink-0" /> Zu erledigen
+          {openList.length > 0 && (late > 0
+            ? <span className="tnum inline-flex items-center gap-1 rounded-full bg-negative/10 px-2 py-0.5 text-[12px] font-semibold text-negative-text"><AlertTriangle size={12} /> {late} von {openList.length} überfällig</span>
+            : <span className="tnum rounded-full bg-surface-2 px-2 py-px text-[12px] font-bold">{openList.length}</span>)}
         </h2>
-      </div>
-      {/* Filter: Status und Art als Auswahlfelder mit Symbolen, Mehrfachauswahl */}
-      <div className="flex flex-wrap items-center gap-2 px-4 pb-3">
-        <MultiSelect label="Status" name={(v) => ([...v].sort().join() === "late,later,soon" ? "Offen" : undefined)} value={status} onChange={(v) => { setStatus(v as Status[]); setAll(false); }} allLabel="Alle"
-          options={STATUS.map((x) => ({ id: x.id, label: x.label, icon: x.icon, n: statusCount(x.id), alert: x.id === "late" }))} />
-        <MultiSelect label="Art" value={kinds_} onChange={(v) => { setKinds(v as TodoKind[]); setAll(false); }} allLabel="Alle"
-          options={kinds.map(({ k, n }) => ({ id: k, label: KIND[k].label, icon: KIND[k].icon, n }))} />
-        {(kinds_.length > 0 || status.join() !== "late,soon,later") && <button type="button" onClick={() => { setKinds([]); setStatus(["late", "soon", "later"]); }} className="text-[12.5px] font-semibold text-selected">Zurücksetzen</button>}
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
+          <MultiSelect label="Status" name={(v) => ([...v].sort().join() === "late,later,soon" ? "Offen" : undefined)} value={status} onChange={(v) => { setStatus(v as Status[]); setAll(false); }} allLabel="Alle"
+            options={STATUS.map((x) => ({ id: x.id, label: x.label, icon: x.icon, n: statusCount(x.id), alert: x.id === "late" }))} />
+          <MultiSelect label="Art" value={kinds_} onChange={(v) => { setKinds(v as TodoKind[]); setAll(false); }} allLabel="Alle"
+            options={kinds.map(({ k, n }) => ({ id: k, label: KIND[k].label, icon: KIND[k].icon, n }))} />
+          {(kinds_.length > 0 || status.join() !== "late,soon,later") && <button type="button" onClick={() => { setKinds([]); setStatus(["late", "soon", "later"]); }} className="col-span-2 text-[12.5px] font-semibold text-selected sm:col-span-1">Zurücksetzen</button>}
+        </div>
       </div>
       {current.length === 0 && <p className="border-t border-line px-4 py-4 text-[13.5px] text-muted">{status.length === 1 && status[0] === "done" ? "Noch nichts abgehakt." : openList.length === 0 ? "Alles erledigt. 🎉" : "Nichts in dieser Auswahl."}</p>}
       {current.length > 0 && (
@@ -91,7 +92,7 @@ export function TodoList({ docs }: { docs: Doc[] }) {
           const overdue = t.days < 0 && !isDone;
           const soon = t.days >= 0 && t.days <= 7 && !isDone;
           const K = KIND[t.kind];
-          const due = <span className={`inline-block rounded-full border bg-surface px-2.5 py-0.5 text-[12px] font-semibold whitespace-nowrap ${overdue || soon ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>{overdue || soon ? dueLabel(t.days) : `bis ${fmtDate(t.date)}`}</span>;
+          const due = <span className={`inline-block text-[12.5px] font-semibold whitespace-nowrap ${overdue || soon ? "text-negative-text" : "text-soft"}`}>{overdue || soon ? dueLabel(t.days) : `bis ${fmtDate(t.date)}`}</span>;
           const amt = t.total ?? t.payment?.amount;
           const amount = amt !== undefined ? fmtMoney(amt, t.payment?.currency ?? "EUR") : null;
           return (
@@ -144,11 +145,11 @@ export function MultiSelect({ label, value, options, onChange, allLabel, name }:
   const toggle = (id: string) => onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id]);
   return (
     <div ref={ref} className="relative">
-      <button type="button" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(!open)} className={`inline-flex h-9 items-center gap-1.5 rounded-full border bg-surface pr-2.5 pl-3 text-[13px] font-semibold hover:bg-surface-2 ${all ? "border-card-line" : "border-fg"}`}>
-        <Icon size={14} /><span className="text-muted">{label}:</span>{text}<ChevronDown size={14} className={`text-muted transition-transform ${open ? "rotate-180" : ""}`} />
+      <button type="button" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(!open)} className="inline-flex h-9 w-full items-center gap-1.5 rounded-full border border-card-line bg-surface pr-2.5 pl-3 text-[13px] font-semibold hover:bg-surface-2 sm:w-auto">
+        <Icon size={14} className="shrink-0" /><span className="text-muted">{label}:</span><span className="min-w-0 flex-1 truncate text-left">{text}</span><ChevronDown size={14} className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div role="listbox" aria-multiselectable="true" className="pop-in absolute left-0 z-30 mt-1.5 w-64 rounded-xl border border-card-line bg-surface p-1 shadow-lg">
+        <div role="listbox" aria-multiselectable="true" className="pop-in absolute inset-x-0 z-30 mt-1.5 min-w-[11rem] sm:right-0 sm:left-auto sm:w-64 rounded-xl border border-card-line bg-surface p-1 shadow-lg">
           {options.map((o) => { const on = value.includes(o.id); return (
             <button key={o.id} type="button" role="option" aria-selected={on} onClick={() => toggle(o.id)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13.5px] hover:bg-surface-2">
               <span className={`grid h-4.5 w-4.5 shrink-0 place-items-center rounded-[5px] border-2 ${on ? "border-fg bg-fg text-canvas" : "border-line-strong"}`}>{on && <Check size={11} strokeWidth={3} />}</span>
