@@ -146,8 +146,8 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
 
       {sheet && (
         <div className="sheet-backdrop fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center" onClick={() => setSheet(false)}>
-          <div className="sheet-rise pb-safe w-full max-w-md rounded-t-3xl bg-surface p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-4 flex items-center justify-between">
+          <div className="sheet-rise w-full max-w-md rounded-t-3xl bg-surface px-6 pt-6 pb-[max(1.75rem,env(safe-area-inset-bottom))] sm:rounded-3xl sm:p-7" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-5 flex items-center justify-between">
               <h2 className="text-[18px] font-semibold">Dokument hinzufügen</h2>
               <button type="button" onClick={() => setSheet(false)} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3"><X size={18} /></button>
             </div>
@@ -158,7 +158,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
                 { icon: Camera, title: "Fotografieren", text: "auch mehrere Seiten", go: openCamera },
                 { icon: FileUp, title: "Datei wählen", text: "Fotos oder PDFs", go: openFiles },
               ] as const).map(({ icon: Icon, title, text, go }) => (
-                <button key={title} type="button" onClick={() => { setSheet(false); go(); }} className="flex flex-col items-center gap-3 rounded-2xl bg-surface-2 px-3 py-6 text-center transition-colors hover:bg-surface-3 active:scale-[.98]">
+                <button key={title} type="button" onClick={() => { setSheet(false); go(); }} className="flex flex-col items-center gap-3 rounded-2xl bg-surface-2 px-4 py-7 text-center transition-colors hover:bg-surface-3 active:scale-[.98]">
                   <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-500 text-white"><Icon size={24} /></span>
                   <span><b className="block text-[15px]">{title}</b><span className="block text-[12.5px] text-muted">{text}</span></span>
                 </button>
