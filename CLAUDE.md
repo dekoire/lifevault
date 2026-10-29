@@ -6,3 +6,4 @@
 - Geheimnisse nie ins Repo oder in den Chat.
 - Vor jedem Push: `npx tsc --noEmit` und `npm run build`.
 - Manuelle Schritte für den Nutzer immer fertig zum Kopieren mit Direktlinks.
+- Pull Requests nach bestandener Prüfung (`npx tsc --noEmit`, `npm run build`) direkt mergen – nicht nachfragen.
