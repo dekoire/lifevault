@@ -7,6 +7,7 @@ export type PartnerGroup = { key: string; partners: Partner[]; sure: boolean; re
 // Wörter, die nichts über die Identität sagen (Orte, Rechtsformen, Abteilungen)
 const GENERIC = new Set(["stuttgart", "klinikum", "klinik", "kliniken", "zentrum", "praxis", "gmbh", "group", "gruppe", "services", "service", "team", "bezirk", "landeshauptstadt", "abteilung", "facharzt", "fachärztin", "urologie", "kinderklinik", "kinderchirurgische", "pädiatrie", "pädiatrisches", "kinderheilkunde", "jugendmedizin", "medizin", "universitätsklinikum", "baden", "württemberg", "deutschland", "energie", "diagnostics", "partg", "mvz", "evangelische", "allgemeinmedizin", "chirurgie", "heilkunde"]);
 const tokens = (name: string) => new Set(name.toLowerCase().replace(/\(.*?\)/g, " ").replace(/\b(dr|med|prof|pd)\b\.?/g, " ").split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 4 && !GENERIC.has(w)));
+const NOT_PARTNER_ID = /\b(bic|swift|iban|blz|bankleitzahl)\b|ausweis|reisepass|pass-?nummer|führerschein|seriennummer|steuer-?id|identifikationsnummer|sozialversicherung|rentenversicherungsnummer|geburts/i;
 const norm = (v: string) => v.toLowerCase().replace(/[\s.\-/]/g, "");
 const distinct = (name: string) => name.toLowerCase().split(/[^\p{L}]+/u).filter((w) => DISTINCT.test(w)).sort().join(",");
 
@@ -21,7 +22,8 @@ function signature(p: Partner): Sig {
   }
   return {
     // Kunden-/Vertrags-/Mitgliedsnummern: mindestens 5 Zeichen, damit kurze Werte nicht zufällig treffen
-    ids: new Set(p.ids.map((i) => norm(i.value)).filter((v) => v.length >= 5 && /\d/.test(v))),
+    // ohne Bank- und eigene Ausweisnummern: BIC/IBAN gehören zur Bank, Ausweis-/Führerscheinnummer zu dir – nicht zum Partner
+    ids: new Set(p.ids.filter((i) => !NOT_PARTNER_ID.test(i.label)).map((i) => norm(i.value)).filter((v) => v.length >= 5 && /\d/.test(v))),
     contact, domain: p.domain?.replace(/^www\./, "") ?? null, tokens: tokens(p.name),
   };
 }

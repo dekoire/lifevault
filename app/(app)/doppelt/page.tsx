@@ -23,7 +23,7 @@ export default function DoppeltPage() {
       </section>
       <section className="space-y-3">
         <h2 className="text-[17px] font-semibold">Doppelte Dokumente</h2>
-        <p className="-mt-1 text-[13px] text-muted">Gleicher Absender, gleiches Briefdatum, ähnlicher Inhalt. Wähle, welches du behältst – die anderen werden gelöscht.</p>
+        <p className="-mt-1 text-[13px] text-muted">Gleicher Inhalt – nicht nur gleiche Kennung. Unterscheidet sich nur das Datum, wurde der Brief wohl erneut geschickt. Wähle, welches du behältst – die anderen werden gelöscht.</p>
         <DuplicateManager docs={allDocs} />
       </section>
     </div>

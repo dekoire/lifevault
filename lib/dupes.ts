@@ -1,7 +1,7 @@
 import { partnerKey } from "@/lib/partners";
 import type { Doc } from "@/lib/types";
 
-/** Doppelte Briefe finden: gleiche Datei, oder gleicher Absender + Datum + fast gleicher Titel, oder gleicher Absender + Art + Betrag */
+/** Doppelte Briefe finden: gleiche Datei oder gleicher Inhalt (nicht nur gleiche Kennung) */
 export type DupGroup = { key: string; docs: Doc[]; sure: boolean; why: string };
 
 const words = (s: string) => new Set(s.toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter((w) => w.length >= 3));
@@ -27,30 +27,59 @@ export function caseIds(d: Doc) {
   return out;
 }
 
+/**
+ * Inhalt vergleichen statt nur Kennungen: Zahlen (Beträge, Nummern – ohne Datumsangaben) und die Zusammenfassung.
+ * Gleicher Inhalt = doppelt, auch wenn nur das Datum abweicht (derselbe Brief erneut zugeschickt).
+ */
+const DATE_RE = /\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}\.\d{1,2}\.(\d{4}|\d{2})\b|\b\d{1,2}\/\d{2,4}\b/g;
+/** Zahlen und Nummern aus Angaben und Zusammenfassung (Beträge, Kennungen) – Datumsangaben herausgenommen */
+function numbersOf(d: Doc) {
+  const text = [...(d.key_facts ?? []).map((f) => f.value), d.summary ?? ""].join(" ").replace(DATE_RE, " ");
+  const out = new Set<string>();
+  for (const t of text.match(/[A-Za-z0-9][A-Za-z0-9./-]*\d[A-Za-z0-9./,-]*/g) ?? []) {
+    const v = t.toLowerCase().replace(/[.,-]$/, "").replace(/(\d)[.](?=\d{3}\b)/g, "$1").replace(",", ".");
+    if (v.replace(/\D/g, "").length >= 2) out.add(v);
+  }
+  return out;
+}
+/** 0…1: wie gleich ist der Inhalt? overlap = Zahlen des kleineren im größeren (eines hat evtl. mehr Seiten) */
+export function contentSim(a: Doc, b: Doc) {
+  const A = numbersOf(a), B = numbersOf(b);
+  let n = 0; for (const x of A) if (B.has(x)) n++;
+  const enough = A.size >= 3 && B.size >= 3;
+  return {
+    overlap: enough ? n / Math.min(A.size, B.size) : undefined,
+    jaccard: enough ? n / (A.size + B.size - n) : undefined,
+    text: sim(a.summary ?? a.title ?? "", b.summary ?? b.title ?? ""),
+  };
+}
+
 function pair(a: Doc, b: Doc): { sure: boolean; why: string } | null {
   if (a.status !== "ready" || b.status !== "ready" || a.encrypted || b.encrypted) return null;
   if (a.split_from && a.split_from === b.split_from) return null; // Teile derselben getrennten PDF
-  // Fall-Kennungen vergleichen: gleiche Art (z. B. Aktenzeichen), anderer Wert → anderer Vorgang, nie doppelt
+  // Fall-Kennungen: gleiche Art (z. B. Aktenzeichen), anderer Wert → anderer Vorgang, nie doppelt
   const ia = caseIds(a), ib = caseIds(b);
   const shared = ia.find((x) => ib.some((y) => norm(y.value) === norm(x.value)));
   const conflict = !shared && ia.some((x) => ib.some((y) => y.kind === x.kind && norm(y.value) !== norm(x.value)));
   if (conflict) return null;
-  const ta = a.title ?? a.file_name, tb = b.title ?? b.file_name;
   const sameDate = !!a.doc_date && a.doc_date === b.doc_date;
   const bothDated = !!a.doc_date && !!b.doc_date;
-  if (a.size_bytes === b.size_bytes && a.mime_type === b.mime_type && a.size_bytes > 0 && (!bothDated || sameDate)) return { sure: true, why: "identische Datei zweimal hochgeladen" };
-  if (!a.sender || !b.sender || partnerKey(a.sender) !== partnerKey(b.sender)) return null;
-  // anderes Briefdatum = anderer Brief (z. B. zwei Bußgeldbescheide, Mahnung nach Rechnung)
-  if (bothDated && !sameDate) return null;
-  const s = sim(ta, tb);
+  if (a.size_bytes === b.size_bytes && a.mime_type === b.mime_type && a.size_bytes > 0) return { sure: true, why: "identische Datei zweimal hochgeladen" };
+  if (!a.sender || !b.sender || (partnerKey(a.sender) !== partnerKey(b.sender) && !(a.sender_domain && a.sender_domain === b.sender_domain))) return null;
+  const c = contentSim(a, b);
   const sameType = (a.doc_type ?? "").toLowerCase() === (b.doc_type ?? "").toLowerCase();
-  if (sameDate && shared) return { sure: true, why: `gleiches Briefdatum und gleiche Kennung (${shared.label} ${shared.value})` };
-  if (sameDate && s >= 0.6) return { sure: true, why: "gleiches Briefdatum, gleicher Absender und Titel" };
-  if (sameDate && (sameType || s >= 0.3)) return { sure: false, why: "gleiches Briefdatum und gleicher Absender" };
-  // ein Datum fehlt: nur mit gleicher Kennung oder gleichem Betrag kurz nacheinander eingegangen
-  if (!bothDated && shared) return { sure: false, why: `gleiche Kennung (${shared.label} ${shared.value}), bei einem fehlt das Briefdatum` };
-  const sharedAmount = [...amountsOf(a)].some((v) => amountsOf(b).has(v));
-  if (!bothDated && sameType && sharedAmount && days(a.received_at, b.received_at) <= 30) return { sure: false, why: "gleicher Betrag, bei einem fehlt das Briefdatum" };
+  const titleSim = sim(a.title ?? "", b.title ?? "");
+  // 1) Inhalt gleich: (fast) alle Zahlen des einen stecken im anderen, Text passt grob – sonst bei wenig Zahlen Text + Titel + Art
+  const equal = c.overlap !== undefined ? c.overlap >= 0.85 && c.text >= 0.25 : c.text >= 0.7 && titleSim >= 0.5 && sameType;
+  if (equal) {
+    const partial = c.jaccard !== undefined && c.jaccard < 0.8;
+    if (!sameDate && bothDated) return { sure: false, why: `gleicher Inhalt, nur anderes Datum (${a.doc_date!.split("-").reverse().join(".")} / ${b.doc_date!.split("-").reverse().join(".")}) – wohl erneut zugeschickt` };
+    return partial ? { sure: false, why: "gleicher Inhalt – eines enthält mehr Seiten/Angaben" } : { sure: true, why: "gleicher Inhalt (Beträge, Nummern, Text)" };
+  }
+  // 2) unsicher (ähnlich): dann entscheiden Kennung und Datum
+  const similar = (c.overlap !== undefined && c.overlap >= 0.6) || c.text >= 0.6;
+  if (similar && shared && (sameDate || !bothDated)) return { sure: false, why: `ähnlicher Inhalt, gleiche Kennung (${shared.label} ${shared.value})${sameDate ? " und gleiches Datum" : ""}` };
+  // gleiche Kennung allein reicht nicht – z. B. Rechnung und Mahnung zum selben Vorgang
   return null;
 }
 

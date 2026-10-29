@@ -196,7 +196,7 @@ function PartnerWidget({ body }: { body: string }) {
 }
 
 // ---------- Dokumente als Vorschau-Kacheln (antippen öffnet rechts) ----------
-function Thumb({ d }: { d: Doc }) {
+export function Thumb({ d }: { d: Doc }) {
   const [url, setUrl] = useState<string>();
   useEffect(() => {
     if (d.encrypted || !d.mime_type.startsWith("image/") || d.file_path.startsWith("inbox/")) return;
