@@ -10,6 +10,8 @@ import type { Doc } from "@/lib/types";
 
 const KEY = "lifevault:todo-done";
 
+const critical = (k: TodoKind) => k === "zahlung";
+const warn = (k: TodoKind) => k === "widerspruch" || k === "vertrag" || k === "frist";
 type Status = "late" | "soon" | "later" | "done";
 const STATUS: { id: Status; label: string; icon: typeof Euro }[] = [
   { id: "late", label: "Überfällig", icon: AlertTriangle },
@@ -45,7 +47,8 @@ export function TodoList({ docs }: { docs: Doc[] }) {
   const key = (t: (typeof list)[number]) => `${t.doc.id}|${t.date}`;
   const openList = list.filter((t) => !done.includes(key(t)));
   const doneList = list.filter((t) => done.includes(key(t)));
-  const late = openList.filter((t) => t.days < 0).length;
+  // als „überfällig“ zählt nur, was wirklich kritisch ist (Zahlungen)
+  const late = openList.filter((t) => t.days < 0 && critical(t.kind)).length;
   if (!all0.length) return null;
   // Arten mit offenen Aufgaben, für den Filter (Zähler über alle offenen)
   const kinds = (Object.keys(KIND) as TodoKind[]).map((k) => ({ k, n: all0.filter((t) => t.kind === k && !done.includes(key(t))).length })).filter((x) => x.n > 0);
@@ -92,7 +95,9 @@ export function TodoList({ docs }: { docs: Doc[] }) {
           const overdue = t.days < 0 && !isDone;
           const soon = t.days >= 0 && t.days <= 7 && !isDone;
           const K = KIND[t.kind];
-          const due = <span className={`inline-block text-[12.5px] font-semibold whitespace-nowrap ${overdue || soon ? "text-negative-text" : "text-soft"}`}>{overdue || soon ? dueLabel(t.days) : `bis ${fmtDate(t.date)}`}</span>;
+          // Farbe nach Wichtigkeit: Zahlung rot, Widerspruch/Vertrag orange, alles andere (Zählerstand, Formular …) grün
+          const tone = critical(t.kind) ? "text-negative-text" : warn(t.kind) ? "text-amber" : "text-positive-text";
+          const due = <span className={`inline-block text-[12.5px] font-semibold whitespace-nowrap ${overdue || soon ? tone : "text-soft"}`}>{overdue || soon ? dueLabel(t.days) : `bis ${fmtDate(t.date)}`}</span>;
           const amt = t.total ?? t.payment?.amount;
           const amount = amt !== undefined ? fmtMoney(amt, t.payment?.currency ?? "EUR") : null;
           return (

@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
-import { ArrowRight, FileClock, GitBranch, History as HistoryIcon, Repeat } from "lucide-react";
+import { ArrowRight, FileClock, GitBranch, History as HistoryIcon, Repeat, Home } from "lucide-react";
 import { SenderLogo } from "@/components/SenderLogo";
+import { CopyValue } from "@/components/CopyValue";
 import { CARD } from "@/components/ui";
 import { CHANGE_LABEL, span, type History } from "@/lib/history";
 import { domainFor, partnerKey } from "@/lib/partners";
@@ -22,18 +23,24 @@ export function HistoryTimeline({ history, docs }: { history: History; docs: Doc
             <h3 className="mb-3 text-[12px] font-semibold tracking-wide text-soft uppercase">{r.role}</h3>
             <ol className="relative space-y-3">
               {r.chain.map((e, i) => {
+                // Wohnung/Adresse: kein Firmenlogo (der Beleg kommt z. B. vom Arbeitgeber), sondern ein Haus – Adresse zum Kopieren
+                const home = /wohn|adresse|anschrift|umzug/i.test(r.role);
                 const now = e.status === "aktuell";
                 const sender = docs.find((d) => e.docIds.includes(d.id));
                 return (
                   <li key={i} className="relative flex gap-3">
                     {/* Verbindungslinie zwischen den Einträgen, hinter den Logos */}
                     {i < r.chain.length - 1 && <span aria-hidden className="absolute top-10 bottom-[-0.75rem] left-[17px] w-0.5 bg-line" />}
-                    <Link href={`/partner/${partnerKey(sender?.sender ?? e.name)}`} className={`relative shrink-0 ${now ? "" : "opacity-60"}`}>
-                      <SenderLogo domain={domainFor(e.name, sender?.sender_domain)} sender={e.name} cluster={sender?.cluster} size={36} />
-                    </Link>
+                    {home ? (
+                      <span className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-full border border-card-line bg-surface ${now ? "" : "opacity-60"}`}><Home size={17} /></span>
+                    ) : (
+                      <Link href={`/partner/${partnerKey(sender?.sender ?? e.name)}`} className={`relative shrink-0 ${now ? "" : "opacity-60"}`}>
+                        <SenderLogo domain={domainFor(e.name, sender?.sender_domain)} sender={e.name} cluster={sender?.cluster} size={36} />
+                      </Link>
+                    )}
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1.5">
-                        <Link href={`/partner/${partnerKey(sender?.sender ?? e.name)}`} className={`text-[14.5px] font-semibold hover:underline ${now ? "" : "text-soft"}`}>{e.name}</Link>
+                        {home ? <span className={`text-[14.5px] ${now ? "" : "text-soft"}`}><CopyValue value={e.name} /></span> : <Link href={`/partner/${partnerKey(sender?.sender ?? e.name)}`} className={`text-[14.5px] font-semibold hover:underline ${now ? "" : "text-soft"}`}>{e.name}</Link>}
                         {now ? <span className="rounded-full bg-positive/10 px-2 py-px text-[11px] font-semibold text-positive-text">aktuell</span> : <span className="rounded-full border border-card-line px-2 py-px text-[11px] font-semibold text-soft">früher</span>}
                         {e.change && e.change !== "start" && i > 0 && (
                           <span className="inline-flex items-center gap-1 rounded-full border border-card-line px-2 py-px text-[11px] font-semibold text-fg">{e.change === "uebergabe" ? <GitBranch size={11} /> : <Repeat size={11} />}{CHANGE_LABEL[e.change]}</span>

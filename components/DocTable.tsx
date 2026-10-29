@@ -17,7 +17,7 @@ const dateOf = (d: Doc) => d.doc_date ?? d.received_at.slice(0, 10);
  * Dokumentliste mit sortierbarem Kopf (Dokument, Bereich, Absender, Datum) und Filtern (Suche, Bereich, Absender, Jahr, Archiv).
  * `cluster` blendet Spalte und Filter „Bereich“ aus, wenn die Liste schon nur einen Bereich zeigt; dasselbe gilt für `sender`.
  */
-export function DocTable({ docs, cluster = true, sender = true, archiveToggle = true, empty = "Keine Dokumente.", restrict, onClearRestrict }: { docs: Doc[]; cluster?: boolean; sender?: boolean; archiveToggle?: boolean; empty?: string; restrict?: { label: string; ids: Set<string> } | null; onClearRestrict?: () => void }) {
+export function DocTable({ docs, cluster = true, sender = true, archiveToggle = true, empty = "Keine Dokumente.", restrict, onClearRestrict, title, limit }: { title?: string; limit?: number; docs: Doc[]; cluster?: boolean; sender?: boolean; archiveToggle?: boolean; empty?: string; restrict?: { label: string; ids: Set<string> } | null; onClearRestrict?: () => void }) {
   // Spalte „Bereich“ nur, wenn die Dokumente aus mehreren Bereichen stammen
   cluster = cluster && new Set(docs.map((d) => clusterOf(d.cluster).id)).size > 1;
   const [sort, setSort] = useState<Sort<Key>>({ key: "date", dir: "desc" });
@@ -26,6 +26,7 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
   const [fSender, setFSender] = useState("");
   const [fYear, setFYear] = useState("");
   const [withArchive, setWithArchive] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const cols: Col<Key>[] = [
     { key: "title", label: "Dokument", icon: FileText },
@@ -58,29 +59,49 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
   const filtered = !!(term || fCluster || fSender || fYear || withArchive);
   const reset = () => { setFCluster(""); setFSender(""); setFYear(""); setWithArchive(false); };
 
-  return (
-    <div className="space-y-3">
-      <FilterBar q={q} onQ={setQ} placeholder="In dieser Liste suchen" actions={<SortMenu cols={cols} sort={sort} onSort={setSort} />} activeCount={[fCluster, fSender, fYear, withArchive].filter(Boolean).length} onReset={reset} count={`${list.length} ${list.length === 1 ? "Dokument" : "Dokumente"}`}>
-        {cluster && opts.clusters.length > 1 && <FilterSelect label="Bereich" value={fCluster} onChange={setFCluster} options={opts.clusters} />}
-        {sender && opts.senders.length > 1 && <FilterSelect label="Absender" value={fSender} onChange={setFSender} options={opts.senders} />}
-        {opts.years.length > 1 && <FilterSelect label="Jahr" value={fYear} onChange={setFYear} options={opts.years} />}
-        {hasArchive && <FilterToggle label="Mit Archiv" on={withArchive} onChange={setWithArchive} />}
-      </FilterBar>
-      {restrict && (
-        <div className="flex items-center gap-2 rounded-2xl border border-brand-500/40 bg-lavender px-3.5 py-2 text-[13.5px]">
-          <Hash size={15} className="shrink-0 text-brand-500" />
-          <span className="min-w-0 flex-1 truncate">Nur Dokumente mit <b className="font-semibold">{restrict.label}</b></span>
-          <button type="button" onClick={onClearRestrict} aria-label="Kennungs-Filter entfernen" className="grid h-7 w-7 shrink-0 place-items-center rounded-full hover:bg-surface"><X size={15} /></button>
+  // mit Titel: Suche, Filter und Liste in einer Kachel; Anzeige gekürzt, gesucht wird trotzdem in allen
+  const shown = limit && !showAll ? list.slice(0, limit) : list;
+  const bar = (
+    <FilterBar q={q} onQ={setQ} placeholder="In dieser Liste suchen" actions={<SortMenu cols={cols} sort={sort} onSort={setSort} />} activeCount={[fCluster, fSender, fYear, withArchive].filter(Boolean).length} onReset={reset} count={title ? undefined : `${list.length} ${list.length === 1 ? "Dokument" : "Dokumente"}`}>
+      {cluster && opts.clusters.length > 1 && <FilterSelect label="Bereich" value={fCluster} onChange={setFCluster} options={opts.clusters} />}
+      {sender && opts.senders.length > 1 && <FilterSelect label="Absender" value={fSender} onChange={setFSender} options={opts.senders} />}
+      {opts.years.length > 1 && <FilterSelect label="Jahr" value={fYear} onChange={setFYear} options={opts.years} />}
+      {hasArchive && <FilterToggle label="Mit Archiv" on={withArchive} onChange={setWithArchive} />}
+    </FilterBar>
+  );
+  const chip = restrict && (
+    <div className="flex items-center gap-2 rounded-2xl border border-brand-500/40 bg-lavender px-3.5 py-2 text-[13.5px]">
+      <Hash size={15} className="shrink-0 text-brand-500" />
+      <span className="min-w-0 flex-1 truncate">Nur Dokumente mit <b className="font-semibold">{restrict.label}</b></span>
+      <button type="button" onClick={onClearRestrict} aria-label="Kennungs-Filter entfernen" className="grid h-7 w-7 shrink-0 place-items-center rounded-full hover:bg-surface"><X size={15} /></button>
+    </div>
+  );
+  const table = (
+    <>
+      <SortHeader cols={cols} sort={sort} onSort={setSort} grid={grid} />
+      {list.length === 0 ? <p className="px-4 py-6 text-center text-[14px] text-muted">{filtered ? "Nichts gefunden – Filter zurücksetzen?" : empty}</p> : (
+        <div className="divide-y divide-line" role="rowgroup">
+          {shown.map((d) => <Row key={d.id} d={d} grid={grid} cluster={cluster} sender={sender} />)}
         </div>
       )}
-      <div className={`${CARD} overflow-hidden`} role="table">
-        <SortHeader cols={cols} sort={sort} onSort={setSort} grid={grid} />
-        {list.length === 0 ? <p className="px-4 py-6 text-center text-[14px] text-muted">{filtered ? "Nichts gefunden – Filter zurücksetzen?" : empty}</p> : (
-          <div className="divide-y divide-line" role="rowgroup">
-            {list.map((d) => <Row key={d.id} d={d} grid={grid} cluster={cluster} sender={sender} />)}
-          </div>
-        )}
+      {limit && list.length > limit && <button type="button" onClick={() => setShowAll(!showAll)} className="w-full border-t border-line bg-surface-2 px-4 py-2.5 text-center text-[13px] font-semibold text-fg transition-colors hover:bg-surface-3">{showAll ? "Weniger anzeigen" : `Alle ${list.length} anzeigen`}</button>}
+    </>
+  );
+  if (title) return (
+    <section className={`${CARD} overflow-hidden`}>
+      <div className="space-y-3 px-4 pt-4 pb-3">
+        <h2 className="flex items-center gap-2 text-[16px] font-semibold">{title}<span className="tnum rounded-full bg-surface-2 px-2 py-px text-[12px] font-bold">{list.length}</span></h2>
+        {bar}
+        {chip}
       </div>
+      <div className="border-t border-line" role="table">{table}</div>
+    </section>
+  );
+  return (
+    <div className="space-y-3">
+      {bar}
+      {chip}
+      <div className={`${CARD} overflow-hidden`} role="table">{table}</div>
     </div>
   );
 }

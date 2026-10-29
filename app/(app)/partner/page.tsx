@@ -30,7 +30,7 @@ export default function PartnersPage() {
   // Verlauf: Partner, die abgelöst wurden (anderer Arzt, Übergabe, neuer Arbeitgeber), gelten als „früher“
   const all = useMemo(() => buildPartners(docs).map((p) => (byPartner.get(p.key)?.entry.status === "früher" ? { ...p, active: false } : p)), [docs, byPartner]);
   const [q, setQ] = useState("");
-  const [sort, setSort] = useState<Sort<Key>>({ key: "last", dir: "desc" });
+  const [sort, setSort] = useState<Sort<Key>>({ key: "name", dir: "asc" });
   const [fCluster, setFCluster] = useState("");
   const [fKind, setFKind] = useState("");
   const [onlyIds, setOnlyIds] = useState(false);

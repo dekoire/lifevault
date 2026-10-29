@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
-import { use, useMemo, useState } from "react";
-import { ArrowRight, CalendarClock, ExternalLink, GitBranch, Hash, History, MessageSquare, PanelRight, PencilLine, ShoppingBag } from "lucide-react";
+import { use, useEffect, useMemo, useState } from "react";
+import { ArrowRight, CalendarClock, ExternalLink, GitBranch, Hash, History, MessageSquare, PanelRight, PencilLine, ShoppingBag, X, Loader2 } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
 import { DocTable } from "@/components/DocTable";
 import { PartnerSheet } from "@/components/PartnerInfo";
@@ -37,6 +37,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
   // angeklickte Kennung → rechts nur Dokumente, die sie enthalten
   const [pick, setPick] = useState<PartnerId | null>(null);
   const [info, setInfo] = useState(false);
+  const [renaming, setRenaming] = useState(false);
   const restrict = useMemo(() => {
     if (!pick || !p) return null;
     const ids = docsWithValue(p.docs, pick.value);
@@ -54,13 +55,14 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
   const spent = total.reduce((s, a) => s + a.value, 0);
 
   // Umbenennen: alle Dokumente bekommen den neuen Absender; alter Name bleibt im Verlauf (rückgängig machbar)
-  const rename = async () => {
-    const name = prompt("Neuer Name für diesen Partner:", p.name)?.trim();
-    if (!name || name === p.name) return;
+  const rename = async (raw: string) => {
+    const name = raw.trim();
+    if (!name || name === p.name) { setRenaming(false); return; }
     const entries = p.docs.map((d) => ({ doc_id: d.id, sender: d.sender, sender_domain: d.sender_domain }));
     const { data: log } = await supabase.from("partner_merges").insert({ target_name: name.slice(0, 300), target_domain: p.domain, kind: "rename", entries }).select("id").single();
     const { error } = await supabase.from("documents").update({ sender: name.slice(0, 300) }).in("id", entries.map((e) => e.doc_id));
-    if (error) { if (log) await supabase.from("partner_merges").delete().eq("id", log.id); alert("Umbenennen hat nicht geklappt."); return; }
+    if (error) { if (log) await supabase.from("partner_merges").delete().eq("id", log.id); throw new Error("Umbenennen hat nicht geklappt. Bitte erneut versuchen."); }
+    setRenaming(false);
     await refresh();
     router.replace(`/partner/${partnerKey(name)}`);
   };
@@ -73,7 +75,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
         title={p.name}
         subtitle={<>{clusterOf(p.cluster).label} · {p.docs.length} {p.docs.length === 1 ? "Dokument" : "Dokumente"} · {fmtDate(p.first)}{p.first !== p.last ? ` – ${fmtDate(p.last)}` : ""}{(!p.active || link?.entry.status === "früher") && " · früher"}</>}
         action={<>
-          <button type="button" onClick={() => void rename()} title="Umbenennen" aria-label="Umbenennen" className="grid h-10 w-10 place-items-center rounded-full border border-card-line bg-surface hover:bg-surface-2"><PencilLine size={15} /></button>
+          <button type="button" onClick={() => setRenaming(true)} title="Umbenennen" aria-label="Umbenennen" className="grid h-10 w-10 place-items-center rounded-full border border-card-line bg-surface hover:bg-surface-2"><PencilLine size={15} /></button>
           <button type="button" onClick={() => setInfo(true)} className="inline-flex h-10 items-center gap-1.5 rounded-full border border-card-line bg-surface px-4 text-[13px] font-semibold hover:bg-surface-2"><PanelRight size={15} /> Kontakt & Infos</button>
           <Link href={`/chat?q=${encodeURIComponent(`Was habe ich alles mit ${p.name}? Verträge, Nummern, Kosten, Fristen.`)}`} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas"><MessageSquare size={15} /> Fragen</Link>
         </>}
@@ -128,17 +130,53 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
           {deadlines.length > 0 && (
             <section className={CARD}>
               <h2 className="flex items-center gap-2 px-5 pt-4 pb-2 text-[16px] font-semibold"><CalendarClock size={17} /> Anstehend</h2>
-              <ul className="divide-y divide-line">{deadlines.map((x, i) => <li key={i}><Link href={`/d/${x.d.id}`} className="flex gap-3 px-5 py-2.5 text-[14px] hover:bg-surface-2/70"><span className="tnum w-24 shrink-0 font-semibold">{fmtDate(x.date)}</span><span className="min-w-0 truncate">{x.what}</span></Link></li>)}</ul>
+              <ul className="grid gap-2.5 px-4 pb-4 sm:grid-cols-2">{deadlines.map((x, i) => { const days = Math.round((Date.parse(x.date) - Date.now()) / 86_400_000); return (
+                <li key={i}><Link href={`/d/${x.d.id}`} className="flex h-full flex-col gap-1.5 rounded-xl bg-surface-2 p-3.5 transition-colors hover:bg-surface-3">
+                  <span className="flex items-baseline justify-between gap-2"><b className="tnum text-[17px]">{fmtDate(x.date)}</b><span className={`text-[12px] font-semibold ${days < 0 ? "text-negative-text" : days <= 30 ? "text-amber" : "text-muted"}`}>{days < 0 ? `seit ${-days} Tagen` : days === 0 ? "heute" : days < 60 ? `in ${days} Tagen` : `in ${Math.round(days / 30)} Monaten`}</span></span>
+                  <span className="line-clamp-2 text-[13.5px] leading-5 text-soft">{x.what}</span>
+                </Link></li>
+              ); })}</ul>
             </section>
           )}
           <MergeHistory pkey={p.key} compact />
         </div>
-        <section className="space-y-3">
-          <h2 className="text-[16px] font-semibold">Dokumente</h2>
-          <DocTable docs={p.docs} sender={false} archiveToggle={false} restrict={restrict} onClearRestrict={() => setPick(null)} />
-        </section>
+        <DocTable title="Dokumente" limit={8} docs={p.docs} sender={false} archiveToggle={false} restrict={restrict} onClearRestrict={() => setPick(null)} />
       </div>
       {info && <PartnerSheet p={p} onClose={() => setInfo(false)} />}
+      {renaming && <RenameModal p={p} onSave={rename} onClose={() => setRenaming(false)} />}
+    </div>
+  );
+}
+
+/** Umbenennen als eigenes Fenster: Logo, neuer Name, was passiert */
+function RenameModal({ p, onSave, onClose }: { p: { name: string; domain: string | null; cluster: string | null; docs: unknown[] }; onSave: (name: string) => Promise<void>; onClose: () => void }) {
+  const [name, setName] = useState(p.name);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); addEventListener("keydown", k); return () => removeEventListener("keydown", k); }, [onClose]);
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault(); setBusy(true); setError(undefined);
+    try { await onSave(name); } catch (err) { setError((err as Error).message); setBusy(false); }
+  };
+  const changed = name.trim() && name.trim() !== p.name;
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onClick={onClose}>
+      <form onSubmit={save} onClick={(e) => e.stopPropagation()} className="sheet-rise pb-safe w-full max-w-md rounded-t-3xl bg-surface p-5 shadow-xl sm:rounded-3xl" role="dialog" aria-label="Partner umbenennen">
+        <div className="flex items-center gap-3">
+          <SenderLogo domain={p.domain} sender={name || p.name} cluster={p.cluster} size={44} />
+          <div className="min-w-0 flex-1"><h2 className="text-[17px] font-semibold">Partner umbenennen</h2><p className="truncate text-[12.5px] text-muted">bisher „{p.name}“</p></div>
+          <button type="button" onClick={onClose} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full hover:bg-surface-2"><X size={17} /></button>
+        </div>
+        <label className="mt-4 block text-[12.5px] font-semibold text-soft">Neuer Name
+          <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onFocus={(e) => e.currentTarget.select()} maxLength={300} className="mt-1.5 h-11 w-full rounded-xl border border-card-line bg-surface px-3.5 text-[15px] font-normal text-fg outline-none focus:border-brand-500" />
+        </label>
+        <p className="mt-2 text-[12.5px] text-muted">{p.docs.length} {p.docs.length === 1 ? "Dokument bekommt" : "Dokumente bekommen"} den neuen Absendernamen. Der alte Name bleibt im Verlauf und lässt sich zurückholen.</p>
+        {error && <p role="alert" className="mt-2 text-[13px] text-negative-text">{error}</p>}
+        <div className="mt-5 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="inline-flex h-10 items-center rounded-full border border-card-line px-4 text-[14px] font-semibold hover:bg-surface-2">Abbrechen</button>
+          <button type="submit" disabled={busy || !changed} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-fg px-5 text-[14px] font-semibold text-canvas disabled:opacity-40">{busy && <Loader2 size={15} className="animate-spin" />} Umbenennen</button>
+        </div>
+      </form>
     </div>
   );
 }

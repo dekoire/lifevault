@@ -10,7 +10,7 @@ import { MergeSuggestions } from "@/components/MergeSuggestions";
 import { CardWallet } from "@/components/CardWallet";
 import { RecentTable } from "@/components/RecentTable";
 import { DuplicateHint } from "@/components/Duplicates";
-import { todos } from "@/lib/actions";
+import { todos, todoKind } from "@/lib/actions";
 import { PageHeader } from "@/components/ui";
 import { SenderLogo } from "@/components/SenderLogo";
 import { buildPartners } from "@/lib/partners";
@@ -44,7 +44,7 @@ export default function Home() {
     { icon: FileText, value: ready.length, label: "Dokumente", sub: `+${docs.filter((d) => d.received_at.startsWith(month)).length} diesen Monat` },
     { icon: Layers, value: counts.size, label: "Bereiche", sub: `von ${CLUSTERS.length}` },
     { icon: ListChecks, value: ready.reduce((a, d) => a + (d.key_facts?.length ?? 0), 0), label: "Key-Fakten", sub: "herausgeschrieben" },
-    { icon: CalendarClock, value: open.length, label: "Zu erledigen", sub: open.some((t) => t.days < 0) ? `${open.filter((t) => t.days < 0).length} überfällig` : "stehen an" },
+    { icon: CalendarClock, value: open.length, label: "Zu erledigen", sub: open.some((t) => t.days < 0 && todoKind(t) === "zahlung") ? `${open.filter((t) => t.days < 0 && todoKind(t) === "zahlung").length} Zahlungen überfällig` : "stehen an" },
   ];
 
   const archived = docs.filter((d) => d.archived).length;
