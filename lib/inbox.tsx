@@ -10,7 +10,14 @@ import { authFetch, supabase, useSession } from "@/lib/supabase";
  * Nur erlaubte Absender (und echte, per SPF/DKIM bestätigte). Automatisch: beim Öffnen und alle 10 Minuten, nur das Neue seit dem letzten Abruf.
  */
 export const INBOX_DOMAIN = process.env.NEXT_PUBLIC_INBOX_DOMAIN ?? "finastry.com";
-export type Inbox = { token: string; allowed: string[]; auto_sync: boolean; last_sync_at: string | null };
+/** Was gelesen wird: nur Anhänge, Anhang sonst Mailtext (Standard), oder beides */
+export type MailMode = "attachments" | "fallback" | "both";
+export const MAIL_MODES: { id: MailMode; label: string; hint: string }[] = [
+  { id: "attachments", label: "Nur Anhänge", hint: "Nur Dokumente im Anhang werden übernommen." },
+  { id: "fallback", label: "Anhang, sonst Mailtext", hint: "Ohne Dokument im Anhang prüft die KI den Mailtext – z. B. Rechnungen von Apple, PayPal oder Uber – und legt ihn als PDF ab, wenn er ein Beleg ist." },
+  { id: "both", label: "Anhang und Mailtext", hint: "Immer beides: Anhänge und, wenn er ein Beleg ist, zusätzlich der Mailtext als PDF." },
+];
+export type Inbox = { token: string; allowed: string[]; auto_sync: boolean; last_sync_at: string | null; mode?: MailMode };
 export const inboxAddress = (token: string) => `lv-${token}@${INBOX_DOMAIN}`;
 const EVERY_MIN = 10;
 
@@ -20,7 +27,9 @@ export function useInbox() {
   const session = useSession();
   const [inbox, setInbox] = useState<Inbox | null>();
   const load = useCallback(async () => {
-    const { data } = await supabase.from("mail_inbox").select("token,allowed,auto_sync,last_sync_at").maybeSingle();
+    // mode fehlt, solange Migration 0014 nicht eingespielt ist
+    let { data, error } = await supabase.from("mail_inbox").select("token,allowed,auto_sync,last_sync_at,mode").maybeSingle();
+    if (error) ({ data } = await supabase.from("mail_inbox").select("token,allowed,auto_sync,last_sync_at").maybeSingle());
     setInbox((data as Inbox) ?? null);
   }, []);
   useEffect(() => {
@@ -99,8 +108,9 @@ async function bodyReceipt(m: Item): Promise<{ file?: File; reason: string }> {
 }
 
 /** Abholen und importieren. Anhänge ohne KI-Vorprüfung: was du selbst schickst, willst du auch haben (nur Logos/Deko fallen raus). Mails ohne Anhang: Beleg im Mailtext → als PDF. */
-export async function importInbox(opts: { since: Date; until?: Date; upload: (files: File[], o?: { silent?: boolean }) => Promise<string[]>; silent?: boolean; advance?: boolean; onStep?: (s: string, done?: number, total?: number) => void }): Promise<InboxResult> {
+export async function importInbox(opts: { since: Date; until?: Date; upload: (files: File[], o?: { silent?: boolean }) => Promise<string[]>; silent?: boolean; advance?: boolean; mode?: MailMode; onStep?: (s: string, done?: number, total?: number) => void }): Promise<InboxResult> {
   const { since, until, upload, onStep } = opts;
+  const mode = opts.mode ?? "fallback";
   onStep?.("Mails abrufen");
   const res = await authFetch("/api/mail/inbox", { method: "POST", body: JSON.stringify({ since: since.toISOString(), until: until?.toISOString() }) });
   const json = (await res.json().catch(() => ({}))) as { items?: Item[]; rejected?: InboxResult["rejected"]; confirmations?: Confirmation[]; error?: string };
@@ -120,6 +130,8 @@ export async function importInbox(opts: { since: Date; until?: Date; upload: (fi
       onStep?.("Anhänge übernehmen", n++, fresh.length);
       if (job) updateJob(job, { done: n - 1 });
       const picks = m.attachments.filter((a) => isCandidate({ name: a.name, mime: fixMime(a.name, a.mime), size: a.size, inline: a.inline }));
+      // Mailtext prüfen: bei „beides“ immer, bei „Anhang, sonst Mailtext“ nur ohne Dokument im Anhang
+      const withBody = mode === "both" || (mode === "fallback" && !picks.length);
       let docIds: string[] = [];
       let reason = "";
       if (picks.length) {
@@ -128,11 +140,17 @@ export async function importInbox(opts: { since: Date; until?: Date; upload: (fi
           const r = await authFetch(`/api/mail/inbox/file?email=${m.id}&att=${a.id}`);
           if (r.ok) files.push(new File([await r.blob()], a.name, { type: fixMime(a.name, a.mime) }));
         }
+        // „beides“: ist auch der Mailtext ein Beleg, kommt er als PDF dazu
+        if (withBody) {
+          const b = await bodyReceipt(m).catch(() => undefined);
+          if (b?.file) files.push(b.file);
+        }
         docIds = files.length ? await upload(files, { silent: opts.silent }) : [];
         // alles aus einer Mail gehört zusammen → nach dem Auslesen gleicher Partner (im Hintergrund)
         if (docIds.length > 1) void unifyWhenReady(docIds, m.subject, m.from);
         if (docIds.length) { out.imported++; out.files += docIds.length; }
-      } else {
+      } else if (!withBody) out.withoutDocs++;
+      else {
         // kein Anhang: vielleicht steht die Rechnung im Mailtext (Apple, PayPal …)
         const b = await bodyReceipt(m).catch(() => ({ file: undefined, reason: "Mailtext konnte nicht geprüft werden" }));
         reason = b.reason;
@@ -181,7 +199,7 @@ export function InboxAutoSync() {
       if (last && Date.now() - last.getTime() < EVERY_MIN * 60_000) return;
       busy.current = true;
       // nur die Differenz seit dem letzten Abruf (1 Stunde Überlappung, Doppelte fängt mail_seen ab); beim ersten Mal 30 Tage
-      try { await importInbox({ since: last ? new Date(last.getTime() - 3_600_000) : new Date(Date.now() - 30 * 86_400_000), upload, silent: true }); }
+      try { await importInbox({ since: last ? new Date(last.getTime() - 3_600_000) : new Date(Date.now() - 30 * 86_400_000), upload, silent: true, mode: inbox.mode }); }
       catch { /* nächster Versuch beim nächsten Takt */ }
       finally { busy.current = false; }
     };
