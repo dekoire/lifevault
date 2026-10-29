@@ -8,7 +8,7 @@ import { Loader2, X } from "lucide-react";
  * Bei Karten/Ausweisen (2 Seiten) mit „Vorderseite“/„Rückseite“ beschriftet.
  */
 const MAX = 30;
-export function PdfPages({ url, card = false, compact = false }: { url: string; card?: boolean; compact?: boolean }) {
+export function PdfPages({ url, card = false, compact = false, bare = false }: { url: string; card?: boolean; compact?: boolean; bare?: boolean }) {
   const [pages, setPages] = useState<string[]>([]);
   const [total, setTotal] = useState(0);
   const [failed, setFailed] = useState(false);
@@ -47,11 +47,11 @@ export function PdfPages({ url, card = false, compact = false }: { url: string; 
   const label = (i: number) => (card && total === 2 ? (i === 0 ? "Vorderseite" : "Rückseite") : `Seite ${i + 1} von ${total}`);
   const loading = pages.length < Math.min(total || 1, MAX);
   return (
-    <div className="p-2">
+    <div className={bare ? "" : "p-2"}>
       {/* zum Wischen: jede Seite passt ganz ins Bild, Tippen öffnet sie groß */}
       <div onScroll={(e) => { const el = e.currentTarget; setAt(Math.round(el.scrollLeft / Math.max(1, el.clientWidth))); }} className="flex snap-x snap-mandatory gap-2 overflow-x-auto [scrollbar-width:none]">
         {pages.map((u, i) => (
-          <figure key={u} className="w-full shrink-0 snap-center overflow-hidden rounded-lg border border-card-line bg-white">
+          <figure key={u} className={`w-full shrink-0 snap-center overflow-hidden bg-white ${bare ? "" : "rounded-lg border border-card-line"}`}>
             <button type="button" onClick={() => setZoom(i)} className="block w-full" aria-label={`${label(i)} groß ansehen`}>
               <img src={u} alt={label(i)} className={`mx-auto block w-full object-contain ${compact ? "h-64" : "h-[55vh]"}`} />
             </button>
@@ -61,7 +61,7 @@ export function PdfPages({ url, card = false, compact = false }: { url: string; 
         {loading && <p className={`flex w-full shrink-0 items-center justify-center gap-2 text-[12.5px] text-muted ${compact ? "h-64" : "h-[55vh]"}`}><Loader2 size={14} className="animate-spin" /> {total ? `Seite ${pages.length + 1} von ${total} …` : "Lade Seiten …"}</p>}
       </div>
       {total > 1 && (
-        <p className="mt-2 flex items-center justify-center gap-1.5">
+        <p className={`flex items-center justify-center gap-1.5 ${bare ? "py-2.5" : "mt-2"}`}>
           {Array.from({ length: Math.min(total, MAX) }, (_, i) => <span key={i} className={`h-1.5 rounded-full transition-all ${i === at ? "w-4 bg-fg" : "w-1.5 bg-line-strong"}`} />)}
         </p>
       )}

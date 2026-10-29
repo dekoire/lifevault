@@ -35,7 +35,7 @@ export function HistoryTimeline({ history, docs }: { history: History; docs: Doc
                       <span className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-full border border-card-line bg-surface ${now ? "" : "opacity-60"}`}><Home size={17} /></span>
                     ) : (
                       <Link href={`/partner/${partnerKey(sender?.sender ?? e.name)}`} className={`relative shrink-0 ${now ? "" : "opacity-60"}`}>
-                        <SenderLogo domain={domainFor(e.name, sender?.sender_domain)} sender={e.name} cluster={sender?.cluster} size={36} />
+                        <SenderLogo domain={logoDomain(e.name, docs) ?? (sender?.sender && !r.chain.some((x) => x !== e && partnerKey(x.name) === partnerKey(sender.sender!)) ? sender.sender_domain : null)} sender={e.name} cluster={sender?.cluster} size={36} />
                       </Link>
                     )}
                     <span className="min-w-0 flex-1">
@@ -74,4 +74,17 @@ export function HistoryTimeline({ history, docs }: { history: History; docs: Doc
       </div>
     </section>
   );
+}
+
+/**
+ * Logo-Adresse für einen Eintrag: die Webadresse, die dieser Absender in deinen Dokumenten am häufigsten hat,
+ * sonst bekannte Adresse (AOK → aok.de); erst danach die des Belegs – aber nie, wenn der Beleg von einem anderen
+ * Eintrag derselben Kette stammt (z. B. BKK-Brief, der die frühere AOK erwähnt).
+ */
+function logoDomain(name: string, docs: Doc[]) {
+  const key = partnerKey(name);
+  const count = new Map<string, number>();
+  for (const d of docs) if (d.sender && d.sender_domain && partnerKey(d.sender) === key) count.set(d.sender_domain, (count.get(d.sender_domain) ?? 0) + 1);
+  const best = [...count.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  return domainFor(name, null) ?? best ?? null;
 }

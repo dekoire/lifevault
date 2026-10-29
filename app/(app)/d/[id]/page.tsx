@@ -49,12 +49,12 @@ function exportMarkdown(d: Doc, c: SecretPart) {
 
 /** Ein Dokument: links Tabelle und Fakten in Gruppen, rechts Original und Chat dazu */
 /** Über dem Original: wie heikel ist das Dokument – und falls nicht verschlüsselt, Verschlüsseln anbieten */
-function SensitiveBadge({ doc, unlocked, onProtect }: { doc: Doc; unlocked: boolean; onProtect: () => void }) {
+function SensitiveBadge({ doc, unlocked, onProtect, flat = false }: { doc: Doc; unlocked: boolean; onProtect: () => void; flat?: boolean }) {
   const { vault } = useMe();
   const s = sensitivity(doc);
   // Kachel mit Farbverlauf wie in Finastry, weiße Schrift
   const G = { teal: "linear-gradient(120deg,#1f9688 0%,#27a294 100%)", red: "linear-gradient(120deg,#d4143c 0%,#e8305a 100%)", amber: "linear-gradient(120deg,#c46d06 0%,#d07a12 100%)", ink: "linear-gradient(120deg,#1b2130 0%,#262d3d 100%)" };
-  const box = "flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3.5 text-[13px] text-white shadow-card";
+  const box = `flex flex-wrap items-center gap-3 px-4 py-3.5 text-[13px] text-white ${flat ? "" : "rounded-2xl shadow-card"}`;
   if (doc.encrypted) return (
     <div className={box} style={{ background: G.teal }}>
       <ShieldCheck size={20} className="shrink-0" />
@@ -282,10 +282,12 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
 
         {/* rechts: Original und Chat */}
         <div className="space-y-3 lg:sticky lg:top-6">
-          <SensitiveBadge doc={doc} unlocked={unlocked} onProtect={() => void run(() => protectDoc(doc))} />
+          {/* Schutz-Hinweis als Kopf der Bild-Kachel, Bild ohne eigenen Rahmen */}
+          {!(show.original && fileUrl) && <SensitiveBadge doc={doc} unlocked={unlocked} onProtect={() => void run(() => protectDoc(doc))} />}
           {show.original && fileUrl && (
             <section className={`${CARD} overflow-hidden`}>
-              {image ? <img src={fileUrl} alt={doc.title ?? doc.file_name} className="max-h-[60vh] w-full bg-surface-2 object-contain" /> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={fileUrl} mime={doc.mime_type} name={doc.file_name} /> : doc.mime_type === "application/pdf" ? <PdfPages url={fileUrl} card={isCardDoc(doc)} /> : <iframe src={fileUrl} title="Original" className="h-[60vh] w-full bg-surface-2" />}
+              <SensitiveBadge flat doc={doc} unlocked={unlocked} onProtect={() => void run(() => protectDoc(doc))} />
+              {image ? <img src={fileUrl} alt={doc.title ?? doc.file_name} className="max-h-[60vh] w-full bg-surface object-contain" /> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={fileUrl} mime={doc.mime_type} name={doc.file_name} /> : doc.mime_type === "application/pdf" ? <PdfPages url={fileUrl} card={isCardDoc(doc)} bare /> : <iframe src={fileUrl} title="Original" className="h-[60vh] w-full bg-surface-2" />}
             </section>
           )}
           <MergedParts doc={doc} onSplit={() => router.push("/")} />
