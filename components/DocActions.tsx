@@ -1,9 +1,11 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CalendarClock, Check, ChevronDown, Copy, Euro, ExternalLink, Globe, Landmark, Mail, MapPin, Phone, QrCode } from "lucide-react";
 import { contactOf, dueLabel, epcPayload, fmtIban, openTotal, paymentOf, todos, type Payment } from "@/lib/actions";
-import { fmtDate, fmtMoney } from "@/lib/docs";
+import { fmtDate, fmtMoney, useDocs } from "@/lib/docs";
 import { PayImageButton } from "@/lib/payimage";
+import { lastPayment } from "@/lib/lastpay";
 import type { Doc } from "@/lib/types";
 
 function CopyRow({ label, value, shown }: { label: string; value: string; shown?: string }) {
@@ -25,7 +27,7 @@ export function Qr({ text, size = 148 }: { text: string; size?: number }) {
 }
 
 /** Überweisung: Betrag, Fälligkeit, alle Felder zum Kopieren, GiroCode zum Scannen */
-function PaymentCard({ p, due, label = "Überweisung", doc }: { p: Payment; due?: { date: string; days: number }; label?: string; doc?: Doc }) {
+function PaymentCard({ p, due, label = "Überweisung", doc, note }: { p: Payment; due?: { date: string; days: number }; label?: string; doc?: Doc; note?: React.ReactNode }) {
   const [done, setDone] = useState(false);
   const all = [p.recipient && `Empfänger: ${p.recipient}`, `IBAN: ${fmtIban(p.iban)}`, p.bic && `BIC: ${p.bic}`, p.amount && `Betrag: ${fmtMoney(p.amount, p.currency)}`, p.reference && `Verwendungszweck: ${p.reference}`].filter(Boolean).join("\n");
   const late = due && due.days < 0;
@@ -38,6 +40,7 @@ function PaymentCard({ p, due, label = "Überweisung", doc }: { p: Payment; due?
           {due && <span className={`block text-[11.5px] font-semibold ${late ? "text-negative-text" : "text-muted"}`}>bis {fmtDate(due.date)} · {dueLabel(due.days)}</span>}
         </span>
       </div>
+      {note && <div className="border-b border-line bg-[#fff7e6] px-3.5 py-2.5 text-[12.5px] text-[#7a4a00] dark:bg-[#3a2a0a] dark:text-[#f5c46b]">{note}</div>}
       <div className="divide-y divide-line">
         {p.recipient && <CopyRow label="Empfänger" value={p.recipient} />}
         <CopyRow label="IBAN" value={p.iban} shown={fmtIban(p.iban)} />
@@ -107,10 +110,13 @@ function parseEpc(c: string) {
 function PaymentSection({ doc, codes, links, related }: { doc: Doc; codes: string[]; links: string[]; related: Doc[] }) {
   const today = new Date().toISOString().slice(0, 10);
   const todo = todos([doc], today)[0];
+  const { allDocs } = useDocs();
   const payment = paymentOf(doc);
   const total = openTotal(doc) ?? payment?.amount;
   const [showItems, setShowItems] = useState(false);
   const epc = codes.map(parseEpc).find(Boolean);
+  // keine IBAN im Schreiben: zuletzt bekannte Bankverbindung des Absenders, mit Herkunft
+  const last = !payment && !epc ? lastPayment(doc, allDocs) : undefined;
   const qrLinks = codes.filter((c) => /^https?:\/\//i.test(c) && PAY_LINK.test(c));
   const payLinks = [...new Set([...qrLinks, ...links.filter((l) => PAY_LINK.test(l))])].slice(0, 3);
   const isPay = !!(payment || total || epc || (todo && /zahl|fällig|überweis|rechnung|mahn|gebühr|abschlag/i.test(todo.what)));
@@ -141,6 +147,7 @@ function PaymentSection({ doc, codes, links, related }: { doc: Doc; codes: strin
       <div className="space-y-2.5 border-t border-line p-3">
         {payment && <PaymentCard p={{ ...payment, amount: total ?? payment.amount }} doc={doc} />}
         {!payment && epc && <PaymentCard p={{ iban: epc.iban, recipient: epc.recipient, amount: epc.amount ?? total, reference: epc.reference, currency: "EUR" }} label="GiroCode aus dem Schreiben" doc={doc} />}
+        {last && <PaymentCard p={{ ...last.payment, amount: total, reference: undefined }} label="Zuletzt bekannte Bankverbindung" doc={doc} note={<>In diesem Schreiben steht keine IBAN. Das ist die zuletzt verwendete von {doc.sender} – aus <Link href={`/d/${last.source.id}`} className="font-semibold underline">{last.source.title ?? last.source.file_name}</Link> vom {fmtDate(last.source.doc_date ?? last.source.received_at)}{last.payment.reference ? <> (Verwendungszweck damals: „{last.payment.reference}“)</> : null}. Bitte vor dem Zahlen kurz prüfen.</>} />}
         {payLinks.map((l) => (
           <a key={l} href={l} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-card-line px-3.5 py-3 hover:bg-surface-2">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2"><Globe size={16} /></span>

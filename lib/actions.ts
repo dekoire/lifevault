@@ -19,7 +19,7 @@ const payGroup = (f: Fact) => /zahl|bank|überweis|konto/i.test(f.group ?? "");
 /** Überweisungsdaten – nur fremde Konten (nicht die eigene IBAN aus Gehaltsabrechnungen) */
 export function paymentOf(d: Doc): Payment | undefined {
   const facts = d.key_facts ?? [];
-  const ibanFact = facts.find((f) => /iban/i.test(f.label) && IBAN.test(f.value.toUpperCase()) && (payGroup(f) || !f.personal) && !/arbeitnehmer|mitarbeiter|dein|ihr konto|auszahlung/i.test(f.label));
+  const ibanFact = facts.find((f) => /iban/i.test(f.label) && IBAN.test(f.value.toUpperCase()) && (payGroup(f) || !f.personal || /empfänger|begünstigt|gläubiger/i.test(f.label)) && !/arbeitnehmer|mitarbeiter|dein|ihr konto|auszahlung/i.test(f.label));
   if (!ibanFact) return undefined;
   const near = facts.filter((f) => f.group === ibanFact.group || payGroup(f));
   const bicSrc = near.find((f) => /bic|swift|bank/i.test(f.label) && BIC.test(f.value.toUpperCase()));

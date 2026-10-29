@@ -15,6 +15,7 @@ import { fmtDate, fmtMoney, useDocs } from "@/lib/docs";
 import { caseIds } from "@/lib/dupes";
 import { buildPartners } from "@/lib/partners";
 import { PayImageButton } from "@/lib/payimage";
+import { lastPayment } from "@/lib/lastpay";
 import { supabase, useSession } from "@/lib/supabase";
 import type { Doc } from "@/lib/types";
 
@@ -77,11 +78,13 @@ function PaymentWidget({ body }: { body: string }) {
   const today = new Date().toISOString().slice(0, 10);
   const name = session?.user.email ? nameFromEmail(session.user.email) : "";
   const list = useMemo(() => ids(body).map((id) => allDocs.find((d) => d.id === id)).filter(Boolean).map((d) => {
-    const p0 = paymentOf(d!), p = p0 && { ...p0 };
+    // keine IBAN im Schreiben: zuletzt bekannte des Absenders (alter Verwendungszweck gilt nicht)
+    const own = paymentOf(d!), last = own ? undefined : lastPayment(d!, allDocs);
+    const p0 = own ?? (last && { ...last.payment, reference: undefined, amount: undefined }), p = p0 && { ...p0 };
     const t = todos([d!], today, { pastDays: 3650, aheadDays: 365 })[0];
     // manche Schreiben liefern als „Empfänger“ nur die IBAN – dann den Absender nehmen
     if (p && (!p.recipient || /^[A-Z]{2}\d{2}[A-Z0-9]{10,}$/.test(p.recipient.replace(/\s/g, "")))) p.recipient = d!.sender ?? undefined;
-    return { d: d!, p, total: openTotal(d!) ?? p?.amount, todo: t, purpose: purposeFor(d!, name), links: contactOf(d!).links.filter((l) => /pay|zahl|bezahl|checkout|portal|kundenkonto/i.test(l)) };
+    return { d: d!, p, from: last?.source, lastRef: last?.payment.reference, total: openTotal(d!) ?? p?.amount, todo: t, purpose: purposeFor(d!, name), links: contactOf(d!).links.filter((l) => /pay|zahl|bezahl|checkout|portal|kundenkonto/i.test(l)) };
   }), [body, allDocs, today, name]);
   const [sel, setSel] = useState<string[]>([]);
   useEffect(() => setSel((cur) => (cur.length ? cur : list.map((x) => x.d.id))), [list]);
@@ -124,6 +127,12 @@ function PaymentWidget({ body }: { body: string }) {
                   {x.todo && <span className={`mt-1 inline-block rounded-full border px-2 py-px text-[11px] font-semibold ${x.todo.days < 0 ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>bis {fmtDate(x.todo.date)}</span>}
                 </span>
               </div>
+              {x.from && (
+                <p className="border-t border-line bg-[#fff7e6] px-4 py-2.5 text-[12.5px] text-[#7a4a00] dark:bg-[#3a2a0a] dark:text-[#f5c46b]">
+                  In diesem Schreiben steht keine IBAN. Das ist die zuletzt verwendete – aus{" "}
+                  <button type="button" onClick={() => open?.({ kind: "doc", id: x.from!.id })} className="font-semibold underline">{x.from.title ?? x.from.file_name}</button> vom {fmtDate(dateOf(x.from))}{x.lastRef ? <> (Verwendungszweck damals: „{x.lastRef}“)</> : null}. Bitte kurz prüfen.
+                </p>
+              )}
               {x.p ? (
                 <div className="divide-y divide-line border-t border-line">
                   {x.p.recipient && <Row label="Empfänger" value={x.p.recipient} />}
