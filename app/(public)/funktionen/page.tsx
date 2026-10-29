@@ -32,6 +32,8 @@ const MORE = [
   { id: "sicherheit", icon: Lock, t: "Tresor-Verschlüsselung", d: "Ganze Bereiche (z. B. Gesundheit) oder einzelne Dateien mit deinem Tresor-Passwort verschlüsseln. Der Schlüssel bleibt auf deinem Gerät." },
   { id: "zwei-faktor", icon: KeyRound, t: "Zwei-Faktor", d: "Freiwillig oder vom Admin für alle vorgeschrieben. Ohne Code gibt auch die Datenbank nichts heraus." },
   { id: "admin", icon: ShieldCheck, t: "Admin", d: "Benutzer verwalten, Admin-Rechte vergeben, festlegen, was in der Dokumentansicht zu sehen ist." },
+  { id: "projekte", icon: FolderTree, t: "Projekte", d: "Unterlagen trennen, z. B. „Steuer 2026“, „Wohnung“ oder „Firma“ – und jedes Projekt einzeln für Apps freigeben." },
+  { id: "api", icon: Globe, t: "API & MCP", d: "Andere Apps und KI-Agenten verbinden: eigene Zugangsdaten, nur freigegebene Projekte, persönliche und Gesundheitsdaten nur auf Wunsch." },
   { id: "email", icon: Mail, t: "E-Mail-Eingang (geplant)", d: "Rechnungen und Verträge per Weiterleitung an deine persönliche Adresse – Lifevault legt sie automatisch ab." },
 ];
 

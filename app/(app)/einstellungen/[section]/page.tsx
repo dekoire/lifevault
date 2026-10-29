@@ -1,5 +1,7 @@
 "use client";
-import { use, useEffect, useState } from "react";
+import { Suspense, use, useEffect, useState } from "react";
+import { ApiSettings } from "@/components/settings/ApiClients";
+import { ProjectsSettings } from "@/components/settings/Projects";
 import { Loader2, Lock, LockOpen } from "lucide-react";
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { MfaEnroll } from "@/components/Mfa";
@@ -11,7 +13,7 @@ import { useMe } from "@/lib/me";
 import { supabase, useSession } from "@/lib/supabase";
 import { createVault, lockVault } from "@/lib/vault";
 
-const TITLES: Record<string, string> = { sicherheit: "Zwei-Faktor", tresor: "Tresor & Verschlüsselung", konto: "Konto" };
+const TITLES: Record<string, string> = { sicherheit: "Zwei-Faktor", tresor: "Tresor & Verschlüsselung", konto: "Konto", projekte: "Projekte", api: "API & MCP" };
 
 export default function SettingsSection({ params }: { params: Promise<{ section: string }> }) {
   const { section } = use(params);
@@ -23,6 +25,8 @@ export default function SettingsSection({ params }: { params: Promise<{ section:
         {section === "sicherheit" && <Mfa />}
         {section === "tresor" && <Vault />}
         {section === "konto" && <Account />}
+        {section === "projekte" && <Suspense><ProjectsSettings /></Suspense>}
+        {section === "api" && <ApiSettings />}
       </div>
     </>
   );

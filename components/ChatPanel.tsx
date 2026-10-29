@@ -6,6 +6,7 @@ import { LogoMark } from "@/components/Logo";
 import { Markdown } from "@/components/Markdown";
 import { SenderLogo } from "@/components/SenderLogo";
 import { useDocs } from "@/lib/docs";
+import { useProjects } from "@/lib/projects";
 import { authFetch, supabase } from "@/lib/supabase";
 
 export type Msg = { role: "user" | "assistant"; content: string };
@@ -86,6 +87,7 @@ export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu de
  * docId: Chat zu einem Dokument (docText = entschlüsselter Inhalt bei verschlüsselten Dokumenten).
  */
 export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; docId?: string; docText?: string; onSaved?: (id: string) => void }) {
+  const { current } = useProjects();
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [busy, setBusy] = useState(false);
   const [id, setId] = useState(chatId);
@@ -121,7 +123,7 @@ export function useChat({ chatId, docId, docText, onSaved }: { chatId?: string; 
     abort.current = ctrl;
     let out = "";
     try {
-      const res = await authFetch("/api/chat", { method: "POST", body: JSON.stringify({ messages: next, docId, docText }), signal: ctrl.signal });
+      const res = await authFetch("/api/chat", { method: "POST", body: JSON.stringify({ messages: next, docId, docText, projectId: current !== "all" ? current : undefined }), signal: ctrl.signal });
       if (!res.ok || !res.body) throw new Error((await res.json().catch(() => ({}))).error ?? `Fehler ${res.status}`);
       const reader = res.body.getReader();
       const dec = new TextDecoder();

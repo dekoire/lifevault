@@ -8,6 +8,8 @@ import { MfaChallenge, MfaEnroll } from "@/components/Mfa";
 import { useUploadPickers } from "@/components/UploadButtons";
 import { DocsProvider } from "@/lib/docs";
 import { MeProvider, useMe } from "@/lib/me";
+import { ProjectsProvider } from "@/lib/projects";
+import { ProjectSwitcher, UploadTarget } from "@/components/ProjectSwitcher";
 import { supabase, useSession } from "@/lib/supabase";
 
 const Splash = () => <div className="grid min-h-dvh place-items-center bg-page"><span className="animate-pulse"><LogoMark size={56} /></span></div>;
@@ -37,9 +39,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (gate === "enroll") return <MfaEnroll forced onDone={() => void supabase.auth.refreshSession().then(check)} />;
   return (
     <MeProvider userId={session.user.id}>
-      <DocsProvider userId={session.user.id}>
-        <Shell email={session.user.email ?? ""}>{children}</Shell>
-      </DocsProvider>
+      <ProjectsProvider>
+        <DocsProvider userId={session.user.id}>
+          <Shell email={session.user.email ?? ""}>{children}</Shell>
+        </DocsProvider>
+      </ProjectsProvider>
     </MeProvider>
   );
 }
@@ -64,7 +68,8 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       {inputs}
       {/* Desktop: Seitenleiste wie bei Finastry */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-card-line bg-surface px-3 py-5 lg:flex">
-        <Link href="/" className="mb-6 px-2"><Logo size={30} /></Link>
+        <Link href="/" className="mb-5 px-2"><Logo size={30} /></Link>
+        <div className="mb-3"><ProjectSwitcher /></div>
         <button type="button" onClick={() => setSheet(true)} className="mb-5 flex h-11 items-center justify-center gap-2 rounded-full bg-brand-500 text-[14px] font-semibold text-white hover:bg-brand-600"><Plus size={18} strokeWidth={2.4} /> Hinzufügen</button>
         <nav className="grid gap-1">
           {NAV.map(({ href, label, icon: Icon, match }) => {
@@ -80,7 +85,10 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
         <header className="pt-safe sticky top-0 z-20 border-b border-card-line/70 bg-page/90 backdrop-blur-xl lg:hidden">
           <div className="flex h-14 items-center justify-between px-4">
             <Link href="/" aria-label="Start"><Logo size={28} /></Link>
-            <Link href="/einstellungen" aria-label="Einstellungen" className="grid h-10 w-10 place-items-center rounded-full bg-surface-3 text-soft"><Settings size={18} /></Link>
+            <span className="flex items-center gap-2">
+              <ProjectSwitcher compact />
+              <Link href="/einstellungen" aria-label="Einstellungen" className="grid h-10 w-10 place-items-center rounded-full bg-surface-3 text-soft"><Settings size={18} /></Link>
+            </span>
           </div>
         </header>
       )}
@@ -106,6 +114,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
               <h2 className="text-[18px] font-semibold">Dokument hinzufügen</h2>
               <button type="button" onClick={() => setSheet(false)} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3"><X size={18} /></button>
             </div>
+            <UploadTarget />
             <div className="grid gap-2">
               <button type="button" onClick={() => { setSheet(false); openCamera(); }} className="flex h-12 items-center gap-3 rounded-full bg-surface-2 px-5 text-left text-[15px] font-semibold hover:bg-surface-3"><Camera size={19} className="text-brand-500" /> Fotografieren</button>
               <button type="button" onClick={() => { setSheet(false); openFiles(); }} className="flex h-12 items-center gap-3 rounded-full bg-surface-2 px-5 text-left text-[15px] font-semibold hover:bg-surface-3"><FileUp size={19} className="text-brand-500" /> Fotos oder PDFs auswählen</button>

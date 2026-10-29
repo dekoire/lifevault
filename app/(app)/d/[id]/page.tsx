@@ -1,14 +1,15 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useMemo, useState } from "react";
-import { Archive, ArchiveRestore, CalendarClock, ChevronLeft, Download, FileDown, FileText, Lock, LockOpen, RefreshCw, Trash2, Wallet } from "lucide-react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
+import { Archive, ArchiveRestore, CalendarClock, ChevronLeft, ChevronRight, Download, FileDown, FileText, Lock, LockOpen, RefreshCw, Trash2, Wallet } from "lucide-react";
 import { Composer, MessageList, useChat } from "@/components/ChatPanel";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD, ICON_BTN, KeyValueTable, Section } from "@/components/ui";
 import { VaultUnlock } from "@/components/VaultUnlock";
 import { clusterOf } from "@/lib/clusters";
-import { fmtDate, fmtMoney, useDocs } from "@/lib/docs";
+import { chrono, fmtDate, fmtMoney, useDocs } from "@/lib/docs";
+import { useProjects } from "@/lib/projects";
 import { useMe } from "@/lib/me";
 import { openDoc, protectDoc, unprotectDoc } from "@/lib/protect";
 import { supabase } from "@/lib/supabase";
@@ -39,10 +40,27 @@ function exportMarkdown(d: Doc, c: SecretPart) {
 export default function DocPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { docs, reprocess, remove, refresh } = useDocs();
+  const { docs, allDocs, reprocess, remove, refresh } = useDocs();
+  const { projects } = useProjects();
   const { settings, unlocked } = useMe();
   const show = settings.doc_sections;
-  const listed = docs.find((d) => d.id === id);
+  const listed = allDocs.find((d) => d.id === id);
+  // Nachbarn im selben Bereich (zeitlich) zum Blättern und Wischen
+  const siblings = useMemo(() => (listed ? chrono(docs.filter((d) => d.cluster === listed.cluster && d.archived === listed.archived)) : []), [docs, listed]);
+  const pos = siblings.findIndex((d) => d.id === id);
+  const prev = pos > 0 ? siblings[pos - 1] : undefined;
+  const next = pos >= 0 && pos < siblings.length - 1 ? siblings[pos + 1] : undefined;
+  const touch = useRef<{ x: number; y: number }>(undefined);
+  const onTouchStart = (e: React.TouchEvent) => { touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const t = touch.current;
+    touch.current = undefined;
+    if (!t) return;
+    const dx = e.changedTouches[0].clientX - t.x, dy = e.changedTouches[0].clientY - t.y;
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2) return;
+    const target = dx < 0 ? next : prev; // nach links wischen → neuer, nach rechts → älter
+    if (target) router.replace(`/d/${target.id}`);
+  };
   const [doc, setDoc] = useState<Doc>();
   const [opened, setOpened] = useState<{ content: SecretPart | null; url: string }>();
   const [url, setUrl] = useState<string>();
@@ -89,8 +107,17 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
   ];
 
   return (
-    <div>
-      <button type="button" onClick={() => router.back()} className="mb-3 inline-flex h-10 items-center gap-1 rounded-full pr-3 pl-1.5 text-[14px] font-semibold text-soft hover:bg-surface-3"><ChevronLeft size={18} /> Zurück</button>
+    <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <Link href={`/c/${c.id}`} className="inline-flex h-10 items-center gap-1 rounded-full pr-3 pl-1.5 text-[14px] font-semibold text-soft hover:bg-surface-3"><ChevronLeft size={18} /> {c.label}</Link>
+        {siblings.length > 1 && pos >= 0 && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-card-line bg-surface p-1">
+            <button type="button" disabled={!prev} onClick={() => prev && router.replace(`/d/${prev.id}`)} aria-label="Älteres Dokument" title={prev?.title ?? ""} className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-2 disabled:opacity-30"><ChevronLeft size={17} /></button>
+            <span className="tnum px-1 text-[12px] font-semibold text-soft">{pos + 1} / {siblings.length}</span>
+            <button type="button" disabled={!next} onClick={() => next && router.replace(`/d/${next.id}`)} aria-label="Neueres Dokument" title={next?.title ?? ""} className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-2 disabled:opacity-30"><ChevronRight size={17} /></button>
+          </span>
+        )}
+      </div>
 
       {/* Kopf: Logo, Titel, Kennzeichen, kleine Aktionen */}
       <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -127,6 +154,12 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
                 { label: "Datum", value: fmtDate(doc.doc_date) || "–" },
                 { label: "Eingang", value: fmtDate(doc.received_at) },
                 { label: "Bereich", value: c.label },
+                ...(projects.length > 1 ? [{ label: "Projekt", value: (
+                  <select value={doc.project_id ?? ""} onChange={(e) => void run(async () => { const { error } = await supabase.from("documents").update({ project_id: e.target.value }).eq("id", doc.id); if (error) throw error; setDoc({ ...doc, project_id: e.target.value }); })}
+                    className="h-8 rounded-full border border-card-line bg-surface px-2.5 text-[13px] font-semibold">
+                    {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                ) }] : []),
                 { label: "Datei", value: `${doc.file_name} · ${doc.size_bytes < 1048576 ? `${Math.max(1, Math.round(doc.size_bytes / 1024))} KB` : `${(doc.size_bytes / 1048576).toLocaleString("de-DE", { maximumFractionDigits: 1 })} MB`}` },
                 ...(doc.tags?.length && show.tags ? [{ label: "Schlagworte", value: doc.tags.join(", ") }] : []),
               ]} />

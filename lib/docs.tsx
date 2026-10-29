@@ -1,12 +1,13 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useMe } from "@/lib/me";
+import { useProjects } from "@/lib/projects";
 import { downloadFile, processEncrypted, protectDoc } from "@/lib/protect";
 import { authFetch, supabase } from "@/lib/supabase";
 import { openBytes, sealBytes, vaultKey } from "@/lib/vault";
 import { LIST_COLS, type Doc } from "@/lib/types";
 
-type Ctx = { docs: Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean }) => Promise<void>; pendingProtect: number; reprocess: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
+type Ctx = { docs: Doc[]; allDocs: Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null }) => Promise<void>; pendingProtect: number; reprocess: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
 const DocsCtx = createContext<Ctx | null>(null);
 
 const OK = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
@@ -52,10 +53,22 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
     return () => window.clearInterval(timer.current);
   }, [busy, refresh]);
 
-  const process = (id: string) => authFetch("/api/process", { method: "POST", body: JSON.stringify({ id }) }).then(() => refresh()).catch(() => refresh());
+  // Auslesen; enthält eine PDF mehrere Briefe, kommen die Teile zurück und werden einzeln ausgelesen
+  const process = async (id: string): Promise<void> => {
+    try {
+      const res = await authFetch("/api/process", { method: "POST", body: JSON.stringify({ id }) });
+      const json = (await res.json().catch(() => ({}))) as { split?: string[] };
+      await refresh();
+      if (json.split?.length) for (let i = 0; i < json.split.length; i += 2) await Promise.all(json.split.slice(i, i + 2).map((x) => process(x)));
+    } catch {
+      await refresh();
+    }
+  };
+  const { current, defaultProject } = useProjects();
 
-  const upload = useCallback(async (files: File[], opts: { encrypt?: boolean } = {}) => {
+  const upload = useCallback(async (files: File[], opts: { encrypt?: boolean; projectId?: string | null } = {}) => {
     const encrypt = !!opts.encrypt && !!vaultKey();
+    const projectId = opts.projectId ?? (current !== "all" ? current : defaultProject?.id ?? null);
     setUploading((n) => n + files.length);
     await Promise.all(files.map(async (raw) => {
       try {
@@ -67,7 +80,7 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
         const body = encrypt ? new Blob([(await sealBytes(plain)) as BlobPart], { type: "application/octet-stream" }) : file;
         const { error: upErr } = await supabase.storage.from("documents").upload(path, body, { contentType: encrypt ? "application/octet-stream" : file.type || "application/octet-stream" });
         if (upErr) throw upErr;
-        const { data, error } = await supabase.from("documents").insert({ file_path: path, file_name: raw.name.slice(0, 200), mime_type: file.type || "application/octet-stream", size_bytes: file.size, encrypted: encrypt }).select("id").single();
+        const { data, error } = await supabase.from("documents").insert({ file_path: path, file_name: raw.name.slice(0, 200), mime_type: file.type || "application/octet-stream", size_bytes: file.size, encrypted: encrypt, project_id: projectId }).select("id").single();
         if (error) throw error;
         await refresh();
         if (encrypt) await processEncrypted({ id: data.id, mime_type: file.type }, plain).catch(async (e) => { await supabase.from("documents").update({ status: "error", error: (e as Error).message }).eq("id", data.id); }).finally(() => refresh());
@@ -80,12 +93,46 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
       }
     }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, refresh, current, defaultProject?.id]);
+
+  // Über die API hochgeladene Originale aus der Inbox in den eigenen Speicher holen (mit dem Zugang des Nutzers)
+  const draining = useRef(false);
+  const drainInbox = useCallback(async () => {
+    if (draining.current) return;
+    draining.current = true;
+    try {
+      const { data: items } = await supabase.from("api_inbox").select("id,document_id,file_name,mime_type").limit(10);
+      for (const it of items ?? []) {
+        const { data: row } = await supabase.from("api_inbox").select("data").eq("id", it.id).maybeSingle();
+        const hex = typeof row?.data === "string" ? row.data.replace(/^\\x/, "") : "";
+        if (!hex) continue;
+        const bytes = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+        const ext = ({ "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "text/plain": "txt", "text/markdown": "md" } as Record<string, string>)[it.mime_type] ?? "bin";
+        const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+        const up = await supabase.storage.from("documents").upload(path, new Blob([bytes], { type: it.mime_type }), { contentType: it.mime_type });
+        if (up.error) continue;
+        const { data: moved } = await supabase.from("documents").update({ file_path: path }).eq("id", it.document_id).like("file_path", "inbox/%").select("id");
+        if (!moved?.length) await supabase.storage.from("documents").remove([path]); // schon von einem anderen Tab übernommen
+        await supabase.from("api_inbox").delete().eq("id", it.id);
+      }
+      if (items?.length) await refresh();
+    } finally {
+      draining.current = false;
+    }
   }, [userId, refresh]);
+  useEffect(() => {
+    void drainInbox();
+    const t = window.setInterval(() => void drainInbox(), 60_000);
+    const onFocus = () => void drainInbox();
+    window.addEventListener("focus", onFocus);
+    return () => { window.clearInterval(t); window.removeEventListener("focus", onFocus); };
+  }, [drainInbox]);
 
   // geschützte Bereiche (z. B. Gesundheit): nach dem Erkennen automatisch verschlüsseln, sobald der Tresor offen ist
   const { vault, unlocked } = useMe();
   const protecting = useRef(new Set<string>());
-  const toProtect = docs.filter((d) => d.status === "ready" && !d.encrypted && d.cluster && vault?.protected_clusters.includes(d.cluster));
+  const toProtect = docs.filter((d) => d.status === "ready" && !d.encrypted && !d.file_path.startsWith("inbox/") && d.cluster && vault?.protected_clusters.includes(d.cluster));
   useEffect(() => {
     if (!unlocked || !toProtect.length) return;
     void (async () => {
@@ -119,7 +166,9 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
   }, [refresh]);
 
   const pendingProtect = unlocked ? 0 : toProtect.length;
-  const value = useMemo(() => ({ docs, loading, refresh, upload, reprocess, remove, uploading, pendingProtect }), [docs, loading, refresh, upload, reprocess, remove, uploading, pendingProtect]);
+  // Ansicht auf das gewählte Projekt beschränken
+  const visible = useMemo(() => (current === "all" ? docs : docs.filter((d) => d.project_id === current)), [docs, current]);
+  const value = useMemo(() => ({ docs: visible, allDocs: docs, loading, refresh, upload, reprocess, remove, uploading, pendingProtect }), [visible, docs, loading, refresh, upload, reprocess, remove, uploading, pendingProtect]);
   return <DocsCtx.Provider value={value}>{children}</DocsCtx.Provider>;
 }
 
@@ -131,3 +180,7 @@ export function useDocs() {
 
 export const fmtDate = (iso?: string | null) => (iso ? new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) : "");
 export const fmtMoney = (v: number, cur = "EUR") => { try { return v.toLocaleString("de-DE", { style: "currency", currency: cur || "EUR" }); } catch { return `${v.toLocaleString("de-DE")} ${cur}`; } };
+
+/** Zeitliche Reihenfolge: älteste zuerst (Dokumentdatum, sonst Eingang) */
+export const dateOf = (d: Pick<Doc, "doc_date" | "received_at">) => d.doc_date ?? d.received_at.slice(0, 10);
+export const chrono = <T extends Pick<Doc, "doc_date" | "received_at">>(list: T[]) => [...list].sort((a, b) => dateOf(a).localeCompare(dateOf(b)) || a.received_at.localeCompare(b.received_at));

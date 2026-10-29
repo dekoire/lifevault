@@ -6,12 +6,14 @@ import { ClusterIcon } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
 import { UploadCard } from "@/components/UploadButtons";
 import { PageHeader } from "@/components/ui";
+import { useProjects } from "@/lib/projects";
 import { CLUSTERS } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
 
 /** Start: Hochladen, Suche, Fristen, Cluster und zuletzt hinzugefügt */
 export default function Home() {
   const { docs, loading, pendingProtect } = useDocs();
+  const { currentProject } = useProjects();
   const [q, setQ] = useState("");
   const today = new Date().toISOString().slice(0, 10);
   const counts = useMemo(() => {
@@ -56,7 +58,7 @@ export default function Home() {
 
   return (
     <div>
-      <PageHeader title="Deine Unterlagen" subtitle={loading ? " " : `${ready.length} Dokumente in ${counts.size} Bereichen${archived ? ` · ${archived} archiviert` : ""}`} />
+      <PageHeader title={currentProject?.name ?? "Deine Unterlagen"} subtitle={loading ? " " : `${ready.length} Dokumente in ${counts.size} Bereichen${archived ? ` · ${archived} archiviert` : ""}`} />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
         <div className="min-w-0 space-y-5">
           {/* Kennzahlen: was bisher gesammelt ist */}
