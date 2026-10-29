@@ -4,9 +4,11 @@
  * Mails und Anhänge gehen nicht über unseren Server – nur Absender, Betreff, Vorschau und Dateinamen an die KI-Vorprüfung.
  */
 import PostalMime from "postal-mime";
+import { PDFDocument, StandardFonts, rgb, type PDFFont } from "pdf-lib";
 
 export type MailAttachment = { name: string; mime: string; size: number; load: () => Promise<Blob> };
-export type MailItem = { id: string; source: string; from: string; subject: string; date: string; snippet: string; attachments: MailAttachment[] };
+/** bodyText: Mailtext als Text – für Belege, die nur in der Mail stehen (z. B. Apple, PayPal), ohne PDF im Anhang */
+export type MailItem = { id: string; source: string; from: string; subject: string; date: string; snippet: string; attachments: MailAttachment[]; bodyText?: string };
 
 // ---------- Anhänge vorsortieren (ohne KI) ----------
 const DOC_MIME = /^(application\/pdf|image\/(jpeg|png|heic|heif|webp)|application\/(msword|vnd\.openxmlformats-officedocument\.[a-z.]+|vnd\.ms-excel|vnd\.ms-powerpoint))$/i;
@@ -85,9 +87,13 @@ type Part = { filename?: string; mimeType: string; headers?: { name: string; val
 type GMsg = { id: string; snippet: string; internalDate: string; payload: Part };
 const b64url = (s: string) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
 
-/** Mails mit Anhang im Zeitraum (from inklusive, to exklusive), höchstens max */
+/** Gmail: Kategorie „Käufe“ und typische Betreffzeilen von Belegen im Mailtext (in { } = ODER) */
+const BODY_RECEIPT_TERMS = ["category:purchases", ...["rechnung", "quittung", "beleg", "kaufbeleg", "receipt", "invoice", "zahlungsbestätigung", "bestellbestätigung", "zahlungseingang", "abbuchung", "\"deine bestellung\"", "\"ihre bestellung\"", "\"your order\""].map((t) => `subject:${t}`)].join(" ");
+
+/** Mails mit Anhang oder mit Beleg im Mailtext im Zeitraum (from inklusive, to exklusive), höchstens max */
 export async function gmailSearch(token: string, from: Date, to: Date, max: number, onProgress?: (n: number) => void): Promise<string[]> {
-  const q = `has:attachment -in:chats -in:spam -in:trash after:${Math.floor(from.getTime() / 1000)} before:${Math.floor(to.getTime() / 1000)}`;
+  // mit Anhang ODER Kauf-/Rechnungsmail ohne Anhang (Apple, Google Play, PayPal … schicken den Beleg nur als Mailtext)
+  const q = `{has:attachment ${BODY_RECEIPT_TERMS}} -in:chats -in:spam -in:trash after:${Math.floor(from.getTime() / 1000)} before:${Math.floor(to.getTime() / 1000)}`;
   const ids: string[] = [];
   let page: string | undefined;
   do {
@@ -114,7 +120,18 @@ export async function gmailMessage(token: string, id: string, source: string): P
     p.parts?.forEach(walk);
   };
   walk(m.payload);
-  return { id: `gmail:${id}`, source, from: head("from"), subject: head("subject"), date: new Date(Number(m.internalDate)).toISOString(), snippet: decodeEntities(m.snippet ?? ""), attachments: atts };
+  // Mailtext: lieber HTML (Belege sind meist Tabellen), sonst Text – nur Teile ohne Dateinamen
+  let html = "", text = "";
+  const body = (p: Part) => {
+    if (!p.filename && p.body?.data) {
+      const s = new TextDecoder().decode(b64url(p.body.data));
+      if (/^text\/html/i.test(p.mimeType) && !html) html = s;
+      else if (/^text\/plain/i.test(p.mimeType) && !text) text = s;
+    }
+    p.parts?.forEach(body);
+  };
+  body(m.payload);
+  return { id: `gmail:${id}`, source, from: head("from"), subject: head("subject"), date: new Date(Number(m.internalDate)).toISOString(), snippet: decodeEntities(m.snippet ?? ""), attachments: atts, bodyText: mailText(html, text) };
 }
 
 const decodeEntities = (s: string) => s.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
@@ -151,7 +168,7 @@ export async function parseMailFiles(files: File[], onProgress?: (n: number) => 
     const date = e.date ? new Date(e.date) : new Date(NaN);
     const from = e.from ? (e.from.name ? `${e.from.name} <${e.from.address ?? ""}>` : e.from.address ?? "") : "";
     const key = e.messageId || `${from}|${e.subject}|${e.date}|${atts.map((a) => a.name).join(",")}`;
-    out.push({ id: `eml:${await hashId(key)}`, source: "eml", from, subject: e.subject ?? "", date: isNaN(date.getTime()) ? "" : date.toISOString(), snippet: (e.text ?? "").replace(/\s+/g, " ").trim().slice(0, 300), attachments: atts });
+    out.push({ id: `eml:${await hashId(key)}`, source: "eml", from, subject: e.subject ?? "", date: isNaN(date.getTime()) ? "" : date.toISOString(), snippet: (e.text ?? "").replace(/\s+/g, " ").trim().slice(0, 300), attachments: atts, bodyText: mailText(e.html ?? "", e.text ?? "") });
   }
   return out;
 }
@@ -160,4 +177,77 @@ export async function parseMailFiles(files: File[], onProgress?: (n: number) => 
 export function importName(m: MailItem, a: MailAttachment) {
   const sender = m.from.replace(/<.*>/, "").replace(/["']/g, "").trim() || m.from.replace(/.*@/, "").replace(/>.*/, "");
   return /^(attachment|anhang|document|dokument|scan|file|datei|unnamed|image)?[-_ ]?\d*\.\w+$/i.test(a.name) ? `${sender} – ${a.name}`.slice(0, 180) : a.name;
+}
+
+// ---------- Beleg im Mailtext → PDF ----------
+/** HTML-Mail in lesbaren Text: Blöcke und Tabellenzeilen werden Zeilen, Zellen durch Abstand getrennt; Stil, Skripte, Unsichtbares fallen weg */
+export function htmlToText(html: string): string {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  doc.querySelectorAll("style,script,head,title,noscript,[hidden]").forEach((n) => n.remove());
+  doc.querySelectorAll("[style]").forEach((n) => { if (/display\s*:\s*none|max-height\s*:\s*0|font-size\s*:\s*0|opacity\s*:\s*0/i.test(n.getAttribute("style") ?? "")) n.remove(); });
+  doc.querySelectorAll("br").forEach((n) => n.replaceWith("\n"));
+  doc.querySelectorAll("td,th").forEach((n) => n.append("   "));
+  doc.querySelectorAll("p,div,tr,li,h1,h2,h3,h4,h5,h6,table,section,article,header,footer,blockquote").forEach((n) => { n.prepend("\n"); n.append("\n"); });
+  return (doc.body?.textContent ?? "").replace(/[\u200b-\u200d\u2060\ufeff\u034f\u00ad]/g, "").replace(/[ \t\u00a0]+/g, " ").split("\n").map((l) => l.trim()).filter((l, i, a) => l || a[i - 1]).join("\n").trim();
+}
+/** Mailtext für den Tresor: HTML bevorzugt, sonst Text; gekürzt */
+export const mailText = (html: string, text: string) => ((html ? htmlToText(html) : "") || text.replace(/\r/g, "").trim()).slice(0, 60_000);
+
+/** Zeichen, die die Standardschrift nicht kann, ersetzen (sonst bricht pdf-lib ab) */
+function printable(font: PDFFont, s: string, cache: Map<string, string>) {
+  const swap: Record<string, string> = { "\u2009": " ", "\u202f": " ", "\u2012": "-", "\u2013": "–", "\u2212": "-", "\u2192": "->", "\u2022": "•", "\u2026": "…" };
+  return [...s].map((ch) => {
+    if (cache.has(ch)) return cache.get(ch)!;
+    let out = swap[ch] ?? ch;
+    try { font.encodeText(out); } catch { out = ch.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); try { font.encodeText(out); } catch { out = ""; } }
+    cache.set(ch, out);
+    return out;
+  }).join("");
+}
+
+/** Mail (Absender, Betreff, Datum, Text) als PDF – damit Belege ohne Anhang wie jedes andere Dokument ausgelesen und abgelegt werden */
+export async function mailBodyPdf(m: Pick<MailItem, "from" | "subject" | "date" | "bodyText">): Promise<File> {
+  const pdf = await PDFDocument.create();
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const cache = new Map<string, string>(), cacheB = new Map<string, string>();
+  const W = 595, H = 842, M = 50, size = 10, lh = 14;
+  pdf.setTitle(m.subject || "E-Mail");
+  let page = pdf.addPage([W, H]);
+  let y = H - M;
+  const line = (t: string, f = font, s = size, color = rgb(0.1, 0.1, 0.1)) => {
+    const c = f === bold ? cacheB : cache;
+    // Zeile umbrechen, damit nichts über den Rand läuft
+    const words = printable(f, t, c).split(" ");
+    let cur = "";
+    const flush = () => {
+      if (y < M) { page = pdf.addPage([W, H]); y = H - M; }
+      page.drawText(cur, { x: M, y, size: s, font: f, color });
+      y -= s === size ? lh : s * 1.4;
+      cur = "";
+    };
+    for (const w of words) {
+      // sehr lange Wörter (Links) hart trennen
+      for (let part = w; part.length; ) {
+        const next = cur ? `${cur} ${part}` : part;
+        if (f.widthOfTextAtSize(next, s) <= W - 2 * M) { cur = next; part = ""; continue; }
+        if (cur) { flush(); continue; }
+        let n = part.length;
+        while (n > 1 && f.widthOfTextAtSize(part.slice(0, n), s) > W - 2 * M) n--;
+        cur = part.slice(0, n); part = part.slice(n); flush();
+      }
+    }
+    if (cur || !t) flush();
+  };
+  line(m.subject || "(ohne Betreff)", bold, 14);
+  y -= 4;
+  line(`Von: ${m.from}`, font, 9, rgb(0.4, 0.4, 0.4));
+  if (m.date) line(`Datum: ${new Date(m.date).toLocaleString("de-DE")}`, font, 9, rgb(0.4, 0.4, 0.4));
+  line("Aus dem E-Mail-Text übernommen (die Mail hatte keinen Dokument-Anhang).", font, 9, rgb(0.4, 0.4, 0.4));
+  y -= 10;
+  for (const l of (m.bodyText ?? "").split("\n")) line(l);
+  const bytes = await pdf.save();
+  const sender = m.from.replace(/<.*>/, "").replace(/["']/g, "").trim() || m.from.replace(/.*@/, "").replace(/>.*/, "");
+  const name = `${sender} – ${m.subject || "E-Mail"}`.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 150);
+  return new File([bytes as BlobPart], `${name}.pdf`, { type: "application/pdf" });
 }

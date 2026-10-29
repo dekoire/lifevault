@@ -4,11 +4,12 @@ import { Check, ChevronDown, FileUp, Inbox, Loader2, Mail, Paperclip, RefreshCw,
 import { InboxCard } from "@/components/settings/InboxCard";
 import { BackLink, CARD, PageHeader } from "@/components/ui";
 import { fmtDate, useDocs } from "@/lib/docs";
-import { GMAIL_CLIENT_ID, gmailMessage, gmailProfile, gmailSearch, gmailToken, importName, parseMailFiles, pool, type MailItem } from "@/lib/mail";
+import { GMAIL_CLIENT_ID, gmailMessage, gmailProfile, gmailSearch, gmailToken, importName, mailBodyPdf, parseMailFiles, pool, type MailItem } from "@/lib/mail";
 import { authFetch, supabase, useSession } from "@/lib/supabase";
 
 type Seen = { msg_id: string; source: string; subject: string | null; sender: string | null; mail_date: string | null; relevant: boolean | null; reason: string | null; doc_ids: string[]; created_at: string };
-type Row = { m: MailItem; relevant: boolean; reason: string; pick: number[]; state: "neu" | "importiert" | "übersprungen" | "fehler" | "läuft" };
+/** body: der Mailtext selbst ist der Beleg (z. B. Apple-Rechnung ohne PDF) – wird als PDF abgelegt */
+type Row = { m: MailItem; relevant: boolean; reason: string; pick: number[]; body: boolean; state: "neu" | "importiert" | "übersprungen" | "fehler" | "läuft" };
 type Phase = { step: string; done?: number; total?: number } | null;
 
 const MAX_MAILS = 400;
@@ -55,9 +56,11 @@ export default function MailPage() {
 
   /** Vorprüfung in Paketen, dann relevante Anhänge hochladen */
   const run = async (items: MailItem[], source: string, syncedUntil?: Date) => {
-    const fresh = items.filter((m) => m.attachments.length && !seenIds.has(m.id));
+    // auch Mails ohne Anhang, wenn sie Text haben – die KI prüft, ob der Mailtext selbst ein Beleg ist
+    const hasBody = (m: MailItem) => (m.bodyText ?? "").replace(/\s/g, "").length > 80;
+    const fresh = items.filter((m) => (m.attachments.length || hasBody(m)) && !seenIds.has(m.id));
     const skippedKnown = items.filter((m) => seenIds.has(m.id)).length;
-    const noDocs = items.filter((m) => !m.attachments.length && !seenIds.has(m.id));
+    const noDocs = items.filter((m) => !m.attachments.length && !hasBody(m) && !seenIds.has(m.id));
     setRows([]);
     if (!fresh.length) {
       setPhase({ step: items.length ? `Nichts Neues: ${skippedKnown} schon geprüft, ${noDocs.length} ohne Dokument-Anhang.` : "Keine Mails mit Anhang im Zeitraum." });
@@ -70,13 +73,14 @@ export default function MailPage() {
     let checked = 0;
     setPhase({ step: "KI prüft", done: 0, total: fresh.length });
     await pool(chunks, 2, async (chunk) => {
-      const res = await authFetch("/api/mail/triage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: chunk.map((m) => ({ id: m.id, from: m.from, subject: m.subject, date: m.date, snippet: m.snippet, attachments: m.attachments.map((a) => ({ name: a.name, mime: a.mime, size: a.size })) })) }) });
-      const json = (await res.json().catch(() => ({}))) as { results?: { id: string; relevant: boolean; reason: string; attachments: number[] }[]; error?: string };
+      const res = await authFetch("/api/mail/triage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: chunk.map((m) => ({ id: m.id, from: m.from, subject: m.subject, date: m.date, snippet: m.snippet, attachments: m.attachments.map((a) => ({ name: a.name, mime: a.mime, size: a.size })), ...(!m.attachments.length && m.bodyText ? { body: m.bodyText.slice(0, 1500) } : {}) })) }) });
+      const json = (await res.json().catch(() => ({}))) as { results?: { id: string; relevant: boolean; reason: string; attachments: number[]; bodyDocument?: boolean }[]; error?: string };
       if (!res.ok || json.error) throw new Error(json.error ?? `Fehler ${res.status}`);
       for (const m of chunk) {
         const r = json.results?.find((x) => x.id === m.id);
         const pick = (r?.attachments ?? []).filter((i) => i >= 0 && i < m.attachments.length);
-        out.push({ m, relevant: !!r?.relevant && pick.length > 0, reason: r?.reason ?? "nicht bewertet", pick: r?.relevant ? (pick.length ? pick : m.attachments.map((_, i) => i)) : [], state: "neu" });
+        const body = !!r?.relevant && !!r.bodyDocument && hasBody(m) && !pick.length;
+        out.push({ m, relevant: !!r?.relevant && (pick.length > 0 || body), reason: r?.reason ?? "nicht bewertet", pick: r?.relevant && !body ? (pick.length ? pick : m.attachments.map((_, i) => i)) : [], body, state: "neu" });
       }
       checked += chunk.length;
       setPhase({ step: "KI prüft", done: checked, total: fresh.length });
@@ -99,14 +103,16 @@ export default function MailPage() {
     if (!list.length) return;
     await supabase.from("mail_seen").upsert(list.map((r, i) => ({ msg_id: r.m.id, source: r.m.source, subject: r.m.subject.slice(0, 500), sender: r.m.from.slice(0, 300), mail_date: r.m.date || null, relevant: r.relevant, reason: r.reason.slice(0, 500), doc_ids: docIds[i] ?? [] })));
   };
-  const importRow = async (r: Row, indices = r.pick) => {
+  const importRow = async (r: Row, indices = r.pick, body = r.body) => {
     patch(r.m.id, { state: "läuft" });
     try {
       const files: File[] = [];
       for (const i of indices) { const a = r.m.attachments[i]; files.push(new File([await a.load()], importName(r.m, a), { type: a.mime })); }
+      // Beleg nur im Mailtext (z. B. Apple): Mail als PDF ablegen, sie wird dann wie jedes Dokument ausgelesen
+      if (body && r.m.bodyText) files.push(await mailBodyPdf(r.m));
       const ids = await upload(files);
       await remember([{ ...r, relevant: true }], [ids]);
-      patch(r.m.id, { state: ids.length ? "importiert" : "fehler", relevant: true, pick: indices });
+      patch(r.m.id, { state: ids.length ? "importiert" : "fehler", relevant: true, pick: indices, body });
     } catch (e) {
       console.error(e);
       patch(r.m.id, { state: "fehler" });
@@ -126,8 +132,8 @@ export default function MailPage() {
       const source = `gmail:${emailAddress}`;
       const known = sources.find((s) => s.source === source);
       const { start, end } = range(known);
-      setPhase({ step: "Mails mit Anhang suchen", done: 0 });
-      const ids = await gmailSearch(token, start, end, MAX_MAILS, (n) => setPhase({ step: "Mails mit Anhang suchen", done: n }));
+      setPhase({ step: "Mails mit Anhang oder Beleg suchen", done: 0 });
+      const ids = await gmailSearch(token, start, end, MAX_MAILS, (n) => setPhase({ step: "Mails mit Anhang oder Beleg suchen", done: n }));
       const fresh = ids.filter((id) => !seenIds.has(`gmail:${id}`));
       let n = 0;
       setPhase({ step: "Mails lesen", done: 0, total: fresh.length });
@@ -259,7 +265,7 @@ export default function MailPage() {
               <button type="button" onClick={() => setShowSkipped(!showSkipped)} className="flex w-full items-center gap-2 border-t border-line px-5 py-3 text-left text-[13px] font-semibold text-soft hover:text-fg">
                 <ChevronDown size={15} className={showSkipped ? "rotate-180" : ""} /> {skipped.length} übersprungen (Newsletter, Werbung …)
               </button>
-              {showSkipped && <ul className="divide-y divide-line border-t border-line">{skipped.map((r) => <MailRow key={r.m.id} r={r} onImport={() => void importRow(r, r.m.attachments.map((_, i) => i))} />)}</ul>}
+              {showSkipped && <ul className="divide-y divide-line border-t border-line">{skipped.map((r) => <MailRow key={r.m.id} r={r} onImport={() => void importRow(r, r.m.attachments.map((_, i) => i), !r.m.attachments.length && !!r.m.bodyText)} />)}</ul>}
             </>
           )}
         </section>
@@ -295,6 +301,7 @@ function MailRow({ r, onImport }: { r: Row; onImport?: () => void }) {
         <span className="block truncate text-[12px] text-muted">{senderName(r.m.from)}{r.m.date ? ` · ${fmtDate(r.m.date)}` : ""} · {r.reason}</span>
         <span className="mt-1 flex flex-wrap gap-1">
           {r.m.attachments.map((a, i) => <span key={i} className={`inline-flex max-w-[16rem] items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${r.relevant && r.pick.includes(i) ? "border-fg text-fg" : "border-card-line text-muted"}`}><Paperclip size={10} className="shrink-0" /><span className="truncate">{a.name}</span></span>)}
+          {r.body && <span className="inline-flex items-center gap-1 rounded-full border border-fg px-2 py-0.5 text-[11px] font-medium text-fg"><Mail size={10} className="shrink-0" /> Mailtext als PDF</span>}
         </span>
       </span>
       <span className="shrink-0 pt-1">
