@@ -31,12 +31,16 @@ export function TodoList({ docs }: { docs: Doc[] }) {
   const [all, setAll] = useState(false);
   useEffect(() => setDone(load()), []);
   const toggle = (k: string) => setDone((cur) => { const n = cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]; try { localStorage.setItem(KEY, JSON.stringify(n)); } catch { /* egal */ } return n; });
-  const list = useMemo(() => todos(docs, today), [docs, today]);
+  const [kind, setKind] = useState<TodoKind | null>(null);
+  const all0 = useMemo(() => todos(docs, today).map((t) => ({ ...t, kind: todoKind(t) })), [docs, today]);
+  const list = kind ? all0.filter((t) => t.kind === kind) : all0;
   const key = (t: (typeof list)[number]) => `${t.doc.id}|${t.date}`;
   const openList = list.filter((t) => !done.includes(key(t)));
   const doneList = list.filter((t) => done.includes(key(t)));
   const late = openList.filter((t) => t.days < 0).length;
-  if (!list.length) return null;
+  if (!all0.length) return null;
+  // Arten mit offenen Aufgaben, für den Filter (Zähler über alle offenen)
+  const kinds = (Object.keys(KIND) as TodoKind[]).map((k) => ({ k, n: all0.filter((t) => t.kind === k && !done.includes(key(t))).length })).filter((x) => x.n > 0);
   const soonList = openList.filter((t) => t.days >= 0 && t.days <= 14);
   const tabs = [
     { id: "open", label: "Offen", list: openList },
@@ -64,6 +68,17 @@ export function TodoList({ docs }: { docs: Doc[] }) {
           </button>
         ))}
       </div>
+      {kinds.length > 1 && (
+        <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto px-4 pb-3">
+          <span className="mr-0.5 shrink-0 text-[12px] font-semibold text-muted">Art:</span>
+          <button type="button" onClick={() => { setKind(null); setAll(false); }} className={`h-7 shrink-0 rounded-full px-3 text-[12px] font-semibold ${!kind ? "bg-fg text-canvas" : "border border-card-line text-soft hover:text-fg"}`}>Alle</button>
+          {kinds.map(({ k, n }) => { const K = KIND[k]; const on = kind === k; return (
+            <button key={k} type="button" aria-pressed={on} onClick={() => { setKind(on ? null : k); setAll(false); }} className={`inline-flex h-7 shrink-0 items-center gap-1 rounded-full px-2.5 text-[12px] font-semibold transition ${on ? `${K.cls} ring-2 ring-current/30` : "border border-card-line text-soft hover:text-fg"}`}>
+              <K.icon size={12} strokeWidth={2.4} />{K.label}<span className="tnum opacity-70">{n}</span>
+            </button>
+          ); })}
+        </div>
+      )}
       {current.length === 0 && <p className="border-t border-line px-4 py-4 text-[13.5px] text-muted">{tab === "done" ? "Noch nichts abgehakt." : tab === "open" ? "Alles erledigt. 🎉" : "Nichts in dieser Ansicht."}</p>}
       <ul className="divide-y divide-line border-t border-line">
         {shown.map((t) => {
@@ -78,7 +93,7 @@ export function TodoList({ docs }: { docs: Doc[] }) {
                 <SenderLogo domain={t.doc.sender_domain} sender={t.doc.sender} cluster={t.doc.cluster} size={38} />
                 <span className="min-w-0 flex-1">
                   <span className={`block truncate text-[14px] font-semibold ${isDone ? "line-through" : ""}`}>{t.what}</span>
-                  <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] text-muted">{(() => { const k = KIND[todoKind(t)]; return <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-px text-[11px] font-semibold ${k.cls}`}><k.icon size={11} strokeWidth={2.4} />{k.label}</span>; })()}<span className="min-w-0 truncate">{t.doc.title}{t.more > 0 ? ` · +${t.more} weitere Frist${t.more === 1 ? "" : "en"}` : ""}</span></span>
+                  <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] text-muted">{(() => { const k = KIND[t.kind]; return <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-px text-[11px] font-semibold ${k.cls}`}><k.icon size={11} strokeWidth={2.4} />{k.label}</span>; })()}<span className="min-w-0 truncate">{t.doc.title}{t.more > 0 ? ` · +${t.more} weitere Frist${t.more === 1 ? "" : "en"}` : ""}</span></span>
                 </span>
                 <span className="shrink-0 text-right">
                   {t.payment?.amount !== undefined && <b className="tnum block text-[13.5px]">{fmtMoney(t.payment.amount, t.payment.currency)}</b>}
