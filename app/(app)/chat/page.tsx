@@ -113,7 +113,7 @@ function Chat() {
           )}
         </div>
 
-        <div className={`fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-canvas via-canvas to-canvas/0 px-3 pt-6 pb-3 lg:bottom-0 lg:pb-6 ${side ? "lg:left-[calc(15rem+18rem)]" : "lg:left-60"}`}>
+        <div className={`fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-canvas via-canvas to-canvas/0 px-3 pt-6 pb-3 lg:bottom-0 lg:pb-6 ${side ? "lg:left-[calc(var(--side,15rem)+18rem)]" : "lg:left-[var(--side,15rem)]"}`}>
           <div className="mx-auto max-w-3xl"><Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} onFiles={(f) => void chat.attach(f)} attachments={chat.attachments} onRemoveAttachment={chat.removeAttachment} depth={chat.depth} onDepth={chat.setDepth} /></div>
         </div>
       </div>

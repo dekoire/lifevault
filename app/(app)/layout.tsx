@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Building2, Camera, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
+import { Building2, Camera, PanelLeftClose, PanelLeftOpen, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
 import { Logo, LogoMark } from "@/components/Logo";
 import { MfaChallenge, MfaEnroll } from "@/components/Mfa";
 import { useUploadPickers } from "@/components/UploadButtons";
@@ -59,6 +59,11 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
   const chat = path.startsWith("/chat");
   const [sheet, setSheet] = useState(false);
   const { inputs, openCamera, openFiles } = useUploadPickers();
+  // Desktop-Menü links ein-/ausklappen (wie bei Finastry), gemerkt; Breite als CSS-Variable --side für alle Seiten
+  const [mini, setMini] = useState(false);
+  useEffect(() => { try { setMini(localStorage.getItem("lifevault:side-mini") === "1"); } catch { /* egal */ } }, []);
+  useEffect(() => { document.documentElement.style.setProperty("--side", mini ? "4.5rem" : "15rem"); }, [mini]);
+  const toggleMini = () => setMini((v) => { try { localStorage.setItem("lifevault:side-mini", v ? "0" : "1"); } catch { /* egal */ } return !v; });
   const NAV: Nav[] = [
     { href: "/", label: "Start", icon: House, match: (p) => p === "/" || p.startsWith("/c/") || p.startsWith("/d/") },
     { href: "/chat", label: "Fragen", icon: MessageSquare, match: (p) => p.startsWith("/chat") },
@@ -72,19 +77,21 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       {inputs}
       <UploadProgress />
       {/* Desktop: Seitenleiste wie bei Finastry */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-card-line bg-surface px-3 py-5 lg:flex">
-        <Link href="/" className="mb-5 px-2"><Logo size={30} /></Link>
-        <div className="mb-3"><ProjectSwitcher /></div>
+      <aside className={`fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-card-line bg-surface py-5 transition-[width] duration-200 lg:flex ${mini ? "w-[4.5rem] px-2.5" : "w-60 px-3"}`}>
+        <div className={`mb-5 flex items-center ${mini ? "flex-col gap-3" : "justify-between pl-2"}`}>
+          <Link href="/" aria-label="Start">{mini ? <LogoMark size={30} /> : <Logo size={30} />}</Link>
+          <button type="button" onClick={toggleMini} aria-label={mini ? "Menü aufklappen" : "Menü zuklappen"} title={mini ? "Menü aufklappen" : "Menü zuklappen"} className="grid h-9 w-9 place-items-center rounded-full text-soft hover:bg-surface-2 hover:text-fg">{mini ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}</button>
+        </div>
+        {!mini && <div className="mb-3"><ProjectSwitcher /></div>}
         <nav className="grid gap-1">
           {NAV.map(({ href, label, icon: Icon, match }) => {
             const on = match(path);
-            return <Link key={href} href={href} aria-current={on ? "page" : undefined} className={`flex h-11 items-center gap-2.5 rounded-xl px-3 text-[14px] font-medium transition-colors ${on ? "bg-fg text-canvas" : "text-soft hover:bg-surface-2 hover:text-fg"}`}><Icon size={18} strokeWidth={1.8} /> {label}</Link>;
+            return <Link key={href} href={href} aria-current={on ? "page" : undefined} title={mini ? label : undefined} className={`flex h-11 items-center gap-2.5 rounded-xl text-[14px] font-medium transition-colors ${mini ? "justify-center" : "px-3"} ${on ? "bg-fg text-canvas" : "text-soft hover:bg-surface-2 hover:text-fg"}`}><Icon size={18} strokeWidth={1.8} />{!mini && label}</Link>;
           })}
         </nav>
-        <Link href="/einstellungen" className="mt-auto flex items-center gap-2.5 rounded-xl p-2 hover:bg-surface-2" title="Einstellungen">
+        <Link href="/einstellungen" className={`mt-auto flex items-center gap-2.5 rounded-xl p-2 hover:bg-surface-2 ${mini ? "justify-center" : ""}`} title={`${nameFromEmail(email)} · Einstellungen`}>
           <Avatar email={email} />
-          <span className="min-w-0 flex-1"><b className="block truncate text-[14px]">{nameFromEmail(email)}</b><span className="block truncate text-[12px] text-muted">{email}</span></span>
-          <Settings size={16} className="shrink-0 text-muted" />
+          {!mini && <><span className="min-w-0 flex-1"><b className="block truncate text-[14px]">{nameFromEmail(email)}</b><span className="block truncate text-[12px] text-muted">{email}</span></span><Settings size={16} className="shrink-0 text-muted" /></>}
         </Link>
       </aside>
 
@@ -102,12 +109,12 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       )}
       {/* Desktop: oben rechts Hinzufügen und Avatar */}
       {!chat && (
-        <div className="sticky top-0 z-20 hidden h-16 items-center justify-end gap-3 border-b border-card-line/70 bg-page/90 px-8 backdrop-blur-xl lg:ml-60 lg:flex">
+        <div className="sticky top-0 z-20 hidden h-16 items-center justify-end gap-3 border-b border-card-line/70 bg-page/90 px-8 backdrop-blur-xl lg:ml-[var(--side,15rem)] lg:flex">
           <button type="button" onClick={() => setSheet(true)} className="inline-flex h-10 items-center gap-2 rounded-full bg-brand-500 px-4 text-[14px] font-semibold text-white hover:bg-brand-600"><Plus size={17} strokeWidth={2.4} /> Hinzufügen</button>
           <AvatarMenu email={email} />
         </div>
       )}
-      <main className={`lg:pl-60 ${chat ? "" : "pb-28 lg:pb-12"}`}>
+      <main className={`lg:pl-[var(--side,15rem)] ${chat ? "" : "pb-28 lg:pb-12"}`}>
         {chat ? children : <div className="mx-auto max-w-6xl px-4 pt-5 md:px-8 lg:pt-8">{children}</div>}
       </main>
 
