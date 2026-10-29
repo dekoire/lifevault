@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useRef, useState } from "react";
-import { Archive, ArchiveRestore, CalendarClock, ChevronLeft, ChevronRight, Download, FileDown, FileText, Lock, LockOpen, RefreshCw, Scissors, Trash2, Wallet } from "lucide-react";
+import { Archive, ArchiveRestore, CalendarClock, ChevronLeft, ChevronRight, Download, FileDown, FileText, Lock, LockOpen, RefreshCw, Scissors, ShieldAlert, ShieldCheck, Trash2, Wallet } from "lucide-react";
 import { Composer, MessageList, useChat } from "@/components/ChatPanel";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD, ICON_BTN, KeyValueTable, Section } from "@/components/ui";
@@ -19,6 +19,7 @@ import { OfficePreview } from "@/components/OfficePreview";
 import { officeKind } from "@/lib/office";
 import { useMe } from "@/lib/me";
 import { openDoc, protectDoc, unprotectDoc } from "@/lib/protect";
+import { sensitivity } from "@/lib/sensitive";
 import { supabase } from "@/lib/supabase";
 import type { Doc, Fact, SecretPart } from "@/lib/types";
 
@@ -44,6 +45,30 @@ function exportMarkdown(d: Doc, c: SecretPart) {
 }
 
 /** Ein Dokument: links Tabelle und Fakten in Gruppen, rechts Original und Chat dazu */
+/** Über dem Original: wie heikel ist das Dokument – und falls nicht verschlüsselt, Verschlüsseln anbieten */
+function SensitiveBadge({ doc, unlocked, onProtect }: { doc: Doc; unlocked: boolean; onProtect: () => void }) {
+  const { vault } = useMe();
+  const s = sensitivity(doc);
+  if (doc.encrypted) return (
+    <div className="flex items-center gap-3 rounded-2xl border border-positive/30 bg-positive/8 px-4 py-3 text-[13px]">
+      <ShieldCheck size={18} className="shrink-0 text-positive-text" />
+      <span className="min-w-0 flex-1"><b className="text-positive-text">Verschlüsselt geschützt</b><span className="block text-soft">Datei und Inhalt liegen nur verschlüsselt auf dem Server.</span></span>
+    </div>
+  );
+  const tone = s.level === "hoch" ? "border-negative/30 bg-negative/8" : s.level === "mittel" ? "border-amber/30 bg-amber/8" : "border-card-line bg-surface";
+  const head = s.level === "hoch" ? "Sehr sensibel" : s.level === "mittel" ? "Sensibel" : "Unkritisch";
+  const color = s.level === "hoch" ? "text-negative-text" : s.level === "mittel" ? "text-amber" : "text-soft";
+  return (
+    <div className={`flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 text-[13px] ${tone}`}>
+      {s.level === "gering" ? <ShieldCheck size={18} className="shrink-0 text-muted" /> : <ShieldAlert size={18} className={`shrink-0 ${color}`} />}
+      <span className="min-w-0 flex-1"><b className={color}>{head}</b><span className="block text-soft">{s.reasons.length ? `Enthält ${s.reasons.join(", ")} – nicht verschlüsselt.` : "Keine besonders schützenswerten Daten erkannt."}</span></span>
+      {s.level !== "gering" && (vault && unlocked
+        ? <button type="button" onClick={onProtect} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas"><Lock size={14} /> Verschlüsseln</button>
+        : <Link href="/einstellungen/tresor" className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas"><Lock size={14} /> {vault ? "Tresor entsperren" : "Tresor einrichten"}</Link>)}
+    </div>
+  );
+}
+
 /** Kam das Dokument aus einer E-Mail? Absender, Betreff, Datum der Mail */
 function useMailOrigin(id: string) {
   const [m, setM] = useState<{ subject: string | null; sender: string | null; mail_date: string | null } | null>(null);
@@ -251,6 +276,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
 
         {/* rechts: Original und Chat */}
         <div className="space-y-3 lg:sticky lg:top-6">
+          <SensitiveBadge doc={doc} unlocked={unlocked} onProtect={() => void run(() => protectDoc(doc))} />
           {show.original && fileUrl && (
             <section className={`${CARD} overflow-hidden`}>
               {image ? <img src={fileUrl} alt={doc.title ?? doc.file_name} className="max-h-[60vh] w-full bg-surface-2 object-contain" /> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={fileUrl} mime={doc.mime_type} name={doc.file_name} /> : <iframe src={fileUrl} title="Original" className="h-[60vh] w-full bg-surface-2" />}

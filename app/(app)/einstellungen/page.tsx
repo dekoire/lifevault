@@ -1,5 +1,5 @@
 "use client";
-import { AtSign, BellRing, Building2, Cable, FolderKanban, KeyRound, LockKeyhole, LogOut, ShieldCheck, UserRound } from "lucide-react";
+import { AtSign, BellRing, Timer, Building2, Cable, FolderKanban, KeyRound, LockKeyhole, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { PageHeader, TileMenu } from "@/components/ui";
 import { useMe } from "@/lib/me";
 import { supabase, useSession } from "@/lib/supabase";
@@ -18,6 +18,7 @@ export default function SettingsPage() {
         { href: "/einstellungen/projekte", title: "Projekte", text: "Unterlagen trennen, z. B. Steuer, Wohnung, Firma", icon: <FolderKanban size={22} strokeWidth={1.75} /> },
         { href: "/einstellungen/api", title: "API & MCP", text: "Andere Apps und KI-Agenten verbinden, Rechte festlegen", icon: <Cable size={22} strokeWidth={1.75} /> },
         { href: "/einstellungen/sicherheit", title: "Zwei-Faktor", text: "Code aus der Authenticator-App beim Anmelden", icon: <KeyRound size={22} strokeWidth={1.75} /> },
+        { href: "/einstellungen/sperre", title: "App-Sperre (PIN)", text: "Nach Inaktivität sperren, standardmäßig nach 15 Minuten", icon: <Timer size={22} strokeWidth={1.75} /> },
         { href: "/einstellungen/tresor", title: "Tresor & Verschlüsselung", text: "Bereiche oder einzelne Dateien Ende-zu-Ende verschlüsseln", icon: <LockKeyhole size={22} strokeWidth={1.75} /> },
         { href: "/einstellungen/konto", title: "Konto", text: "E-Mail, Passwort, Daten", icon: <UserRound size={22} strokeWidth={1.75} /> },
         ...(isAdmin ? [{ href: "/admin", title: "Admin", text: "Benutzer, Zwei-Faktor-Pflicht, Dokumentansicht", icon: <ShieldCheck size={22} strokeWidth={1.75} /> }] : []),

@@ -8,6 +8,7 @@ import { MfaChallenge, MfaEnroll } from "@/components/Mfa";
 import { useCaptureTray } from "@/components/CaptureTray";
 import { DocsProvider, useDocs } from "@/lib/docs";
 import { NotifySync } from "@/lib/notify";
+import { LockGate } from "@/lib/applock";
 import { MeProvider, useMe } from "@/lib/me";
 import { ProjectsProvider } from "@/lib/projects";
 import { ProjectSwitcher, UploadTarget } from "@/components/ProjectSwitcher";
@@ -46,7 +47,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <MeProvider userId={session.user.id}>
       <ProjectsProvider>
         <DocsProvider userId={session.user.id}>
-          <DetailHost><Shell email={session.user.email ?? ""}>{children}</Shell></DetailHost>
+          <LockGate><DetailHost><Shell email={session.user.email ?? ""}>{children}</Shell></DetailHost></LockGate>
           <QueueSync />
         </DocsProvider>
       </ProjectsProvider>

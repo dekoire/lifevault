@@ -3,6 +3,8 @@ import { Suspense, use, useEffect, useState } from "react";
 import { ApiSettings } from "@/components/settings/ApiClients";
 import { ProjectsSettings } from "@/components/settings/Projects";
 import { NotificationSettings } from "@/components/settings/Notifications";
+import { AppLockSettings } from "@/components/settings/AppLock";
+import { unprotectDoc } from "@/lib/protect";
 import { Loader2, Lock, LockOpen } from "lucide-react";
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { MfaEnroll } from "@/components/Mfa";
@@ -14,7 +16,7 @@ import { useMe } from "@/lib/me";
 import { supabase, useSession } from "@/lib/supabase";
 import { createVault, lockVault } from "@/lib/vault";
 
-const TITLES: Record<string, string> = { sicherheit: "Zwei-Faktor", tresor: "Tresor & Verschlüsselung", konto: "Konto", projekte: "Projekte", api: "API & MCP", mitteilungen: "Mitteilungen" };
+const TITLES: Record<string, string> = { sicherheit: "Zwei-Faktor", tresor: "Tresor & Verschlüsselung", konto: "Konto", projekte: "Projekte", api: "API & MCP", mitteilungen: "Mitteilungen", sperre: "App-Sperre (PIN)" };
 
 export default function SettingsSection({ params }: { params: Promise<{ section: string }> }) {
   const { section } = use(params);
@@ -29,6 +31,7 @@ export default function SettingsSection({ params }: { params: Promise<{ section:
         {section === "projekte" && <Suspense><ProjectsSettings /></Suspense>}
         {section === "api" && <ApiSettings />}
         {section === "mitteilungen" && <NotificationSettings />}
+        {section === "sperre" && <AppLockSettings />}
       </div>
     </>
   );
@@ -86,6 +89,23 @@ function Vault() {
     await reload();
   };
   const encryptedCount = docs.filter((d) => d.encrypted).length;
+  const { allDocs, refresh } = useDocs();
+  const [progress, setProgress] = useState<string>();
+  // Tresor auflösen: alle verschlüsselten Dokumente entschlüsseln, dann Tresor löschen
+  const disable = async () => {
+    const enc = allDocs.filter((d) => d.encrypted);
+    if (!confirm(enc.length ? `Tresor deaktivieren? ${enc.length} verschlüsselte ${enc.length === 1 ? "Datei wird" : "Dateien werden"} entschlüsselt und liegen danach wieder normal (geschützt durch dein Konto) auf dem Server.` : "Tresor deaktivieren?")) return;
+    setBusy(true); setError(undefined);
+    try {
+      for (const [i, d] of enc.entries()) { setProgress(`Entschlüssele ${i + 1} von ${enc.length} …`); await unprotectDoc(d); }
+      const uid = (await supabase.auth.getUser()).data.user!.id;
+      const { error } = await supabase.from("vaults").delete().eq("user_id", uid);
+      if (error) throw error;
+      lockVault();
+      await refresh(); await reload();
+    } catch (err) { setError(`Das hat nicht ganz geklappt: ${(err as Error).message}. Bereits entschlüsselte Dateien bleiben entschlüsselt – einfach erneut versuchen.`); }
+    finally { setBusy(false); setProgress(undefined); }
+  };
   return (
     <>
       <section className={`${CARD} p-5 text-[14px] leading-6 text-soft`}>
@@ -106,7 +126,7 @@ function Vault() {
             <span className="flex items-center gap-3">{unlocked ? <LockOpen className="text-positive" /> : <Lock className="text-brand-500" />}<span><b>{unlocked ? "Tresor entsperrt" : "Tresor gesperrt"}</b><span className="block text-[13px] text-muted">{encryptedCount} verschlüsselte {encryptedCount === 1 ? "Datei" : "Dateien"}{pendingProtect ? ` · ${pendingProtect} warten auf Verschlüsselung` : ""}</span></span></span>
             {unlocked && <button type="button" onClick={lockVault} className="inline-flex h-10 items-center rounded-full bg-surface-3 px-4 text-[14px] font-semibold">Sperren</button>}
           </section>
-          {!unlocked && <VaultUnlock text="Entsperren, um verschlüsselte Dokumente zu öffnen und neue automatisch zu verschlüsseln." />}
+          {!unlocked && <VaultUnlock compact title="Tresor entsperren" text="Zum Öffnen verschlüsselter Dokumente, zum automatischen Verschlüsseln – und um den Tresor zu deaktivieren." />}
           <section className={CARD}>
             <h2 className="px-5 pt-5 text-[16px] font-semibold">Ganze Bereiche verschlüsseln</h2>
             <p className="px-5 pb-2 text-[13px] text-muted">Neue Dokumente in diesen Bereichen werden nach dem Erkennen automatisch verschlüsselt. Einzelne Dateien verschlüsselst du über das Schloss auf der Dokumentseite.</p>
@@ -119,6 +139,11 @@ function Vault() {
                 </li>
               ))}
             </ul>
+          </section>
+          <section className={`${CARD} flex flex-wrap items-center justify-between gap-3 p-5`}>
+            <span><b className="text-[15px]">Tresor deaktivieren</b><span className="mt-0.5 block text-[13px] text-muted">Entschlüsselt alle Dateien und löscht das Tresor-Passwort. {unlocked ? "" : "Dafür zuerst oben entsperren."}</span></span>
+            <button type="button" disabled={!unlocked || busy} onClick={() => void disable()} className="inline-flex h-10 items-center gap-2 rounded-full border border-negative/40 px-4 text-[14px] font-semibold text-negative-text disabled:opacity-40">{busy && <Loader2 size={15} className="animate-spin" />} Deaktivieren</button>
+            {(progress || error) && <p className={`basis-full text-[13px] ${error ? "text-negative-text" : "text-muted"}`}>{error ?? progress}</p>}
           </section>
         </>
       )}

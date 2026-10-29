@@ -1,10 +1,12 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock, LockKeyhole, ShieldCheck } from "lucide-react";
 import { SenderLogo } from "@/components/SenderLogo";
 import { dateOf, fmtDate, fmtMoney, isUrgent } from "@/lib/docs";
-import type { Doc } from "@/lib/types";
+import type { Doc, SecretPart } from "@/lib/types";
+import { useMe } from "@/lib/me";
+import { openJson } from "@/lib/vault";
 
 /** Dokumente als Karten zum Wischen, zeitlich sortiert (links älter, rechts neuer) – startet beim neuesten */
 export function DocCarousel({ docs }: { docs: Doc[] }) {
@@ -43,7 +45,7 @@ export function DocCarousel({ docs }: { docs: Doc[] }) {
               </span>
               {d.encrypted && <Lock size={14} className="shrink-0 text-fg" />}
             </span>
-            {d.status === "processing" ? <p className="mt-3 text-[13px] text-muted">Wird ausgelesen …</p> : (
+            {d.encrypted && !d.summary ? <EncryptedPreview d={d} /> : d.status === "processing" ? <p className="mt-3 text-[13px] text-muted">Wird ausgelesen …</p> : (
               <>
                 {d.summary && <p className="mt-3 line-clamp-4 text-[13px] leading-5 text-soft">{d.summary}</p>}
                 {(d.key_facts?.length ?? 0) > 0 && (
@@ -58,5 +60,24 @@ export function DocCarousel({ docs }: { docs: Doc[] }) {
         ))}
       </div>
     </section>
+  );
+}
+
+/** Verschlüsseltes Dokument: bei entsperrtem Tresor die Zusammenfassung entschlüsselt zeigen, sonst ein schöner Platzhalter */
+function EncryptedPreview({ d }: { d: Doc }) {
+  const { unlocked } = useMe();
+  const [summary, setSummary] = useState<string | null>(null);
+  useEffect(() => {
+    if (!unlocked || !d.secret) { setSummary(null); return; }
+    void openJson<SecretPart>(d.secret).then((p) => setSummary(p.summary ?? null)).catch(() => setSummary(null));
+  }, [unlocked, d.secret]);
+  if (summary) return <p className="mt-3 line-clamp-6 text-[13px] leading-5 text-soft">{summary}</p>;
+  return (
+    <div className="mt-3 flex flex-1 flex-col items-center justify-center rounded-xl bg-lavender/60 px-4 py-6 text-center">
+      <span className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-500 text-white"><LockKeyhole size={20} /></span>
+      <b className="mt-3 text-[14px]">Verschlüsselt</b>
+      <span className="mt-0.5 text-[12.5px] text-soft">{d.doc_type ?? "Dokument"} · Inhalt sichtbar nach dem Entsperren des Tresors</span>
+      <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-surface px-3 py-1 text-[12px] font-semibold text-brand-600"><ShieldCheck size={13} /> Ende-zu-Ende geschützt</span>
+    </div>
   );
 }
