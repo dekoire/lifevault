@@ -17,6 +17,7 @@ import { caseIds } from "@/lib/dupes";
 import { buildPartners } from "@/lib/partners";
 import { PayImageButton } from "@/lib/payimage";
 import { lastPayment } from "@/lib/lastpay";
+import { purposeFor } from "@/lib/purpose";
 import { useSession } from "@/lib/supabase";
 import { SMALL, thumbUrl } from "@/lib/thumbs";
 import type { Doc } from "@/lib/types";
@@ -65,14 +66,6 @@ function Row({ label, value, shown }: { label: string; value: string; shown?: st
 }
 
 // ---------- Zahlungen: auswählen (mehrere), dann je eine Karte zum Wischen ----------
-const REF_ID = /kunden-?\s?(nummer|nr)|vertrags-?\s?(nummer|nr)|mitglieds-?\s?(nummer|nr)|versicherungs(schein)?-?\s?(nummer|nr)|vertragskonto|zählpunkt/i;
-function purposeFor(d: Doc, name: string) {
-  const p = paymentOf(d);
-  if (p?.reference) return { text: p.reference, given: true };
-  const parts = [name, ...caseIds(d).slice(0, 2).map((c) => `${c.label} ${c.value}`), ...(d.key_facts ?? []).filter((f) => REF_ID.test(f.label)).slice(0, 1).map((f) => `${f.label} ${f.value}`)];
-  return { text: [...new Set(parts)].join(", ").slice(0, 140), given: false };
-}
-
 function PaymentWidget({ body }: { body: string }) {
   const { allDocs } = useDocs();
   const session = useSession();
@@ -86,7 +79,7 @@ function PaymentWidget({ body }: { body: string }) {
     const t = todos([d!], today, { pastDays: 3650, aheadDays: 365 })[0];
     // manche Schreiben liefern als „Empfänger“ nur die IBAN – dann den Absender nehmen
     if (p && (!p.recipient || /^[A-Z]{2}\d{2}[A-Z0-9]{10,}$/.test(p.recipient.replace(/\s/g, "")))) p.recipient = d!.sender ?? undefined;
-    return { d: d!, p, from: last?.source, lastRef: last?.payment.reference, total: openTotal(d!) ?? p?.amount, todo: t, purpose: purposeFor(d!, name), links: contactOf(d!).links.filter((l) => /pay|zahl|bezahl|checkout|portal|kundenkonto/i.test(l)) };
+    return { d: d!, p, from: last?.source, lastRef: last?.payment.reference, total: openTotal(d!) ?? p?.amount, todo: t, purpose: purposeFor(d!, name, last?.payment.reference), links: contactOf(d!).links.filter((l) => /pay|zahl|bezahl|checkout|portal|kundenkonto/i.test(l)) };
   }), [body, allDocs, today, name]);
   const [sel, setSel] = useState<string[]>([]);
   useEffect(() => setSel((cur) => (cur.length ? cur : list.map((x) => x.d.id))), [list]);
@@ -141,7 +134,7 @@ function PaymentWidget({ body }: { body: string }) {
                   <Row label="IBAN" value={x.p.iban} shown={fmtIban(x.p.iban)} />
                   {x.p.bic && <Row label="BIC" value={x.p.bic} />}
                   {x.total !== undefined && <Row label="Betrag" value={x.total.toFixed(2).replace(".", ",")} shown={fmtMoney(x.total)} />}
-                  <Row label={x.purpose.given ? "Verwendungszweck" : "Verwendungszweck (Vorschlag)"} value={x.purpose.text} />
+                  <Row label={x.purpose.note ? `Verwendungszweck (${x.purpose.note})` : x.purpose.given ? "Verwendungszweck" : "Verwendungszweck (Vorschlag)"} value={x.purpose.text} />
                 </div>
               ) : <p className="border-t border-line px-4 py-3 text-[12.5px] text-muted">Keine Bankverbindung im Schreiben – vermutlich Lastschrift oder Zahlung im Kundenkonto.</p>}
               <div className="flex items-center gap-3 border-t border-line p-3">

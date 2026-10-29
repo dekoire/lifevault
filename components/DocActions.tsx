@@ -6,6 +6,9 @@ import { contactOf, dueLabel, epcPayload, fmtIban, openTotal, paymentOf, todos, 
 import { fmtDate, fmtMoney, useDocs } from "@/lib/docs";
 import { PayImageButton } from "@/lib/payimage";
 import { lastPayment } from "@/lib/lastpay";
+import { purposeFor } from "@/lib/purpose";
+import { nameFromEmail } from "@/components/AvatarMenu";
+import { useSession } from "@/lib/supabase";
 import type { Doc } from "@/lib/types";
 
 function CopyRow({ label, value, shown }: { label: string; value: string; shown?: string }) {
@@ -27,7 +30,7 @@ export function Qr({ text, size = 148 }: { text: string; size?: number }) {
 }
 
 /** Überweisung: Betrag, Fälligkeit, alle Felder zum Kopieren, GiroCode zum Scannen */
-function PaymentCard({ p, due, label = "Überweisung", doc, note }: { p: Payment; due?: { date: string; days: number }; label?: string; doc?: Doc; note?: React.ReactNode }) {
+function PaymentCard({ p, due, label = "Überweisung", doc, note, refLabel }: { p: Payment; due?: { date: string; days: number }; label?: string; doc?: Doc; note?: React.ReactNode; refLabel?: string }) {
   const [done, setDone] = useState(false);
   const all = [p.recipient && `Empfänger: ${p.recipient}`, `IBAN: ${fmtIban(p.iban)}`, p.bic && `BIC: ${p.bic}`, p.amount && `Betrag: ${fmtMoney(p.amount, p.currency)}`, p.reference && `Verwendungszweck: ${p.reference}`].filter(Boolean).join("\n");
   const late = due && due.days < 0;
@@ -46,7 +49,7 @@ function PaymentCard({ p, due, label = "Überweisung", doc, note }: { p: Payment
         <CopyRow label="IBAN" value={p.iban} shown={fmtIban(p.iban)} />
         {p.bic && <CopyRow label={p.bank ? `BIC · ${p.bank}` : "BIC"} value={p.bic} />}
         {p.amount !== undefined && <CopyRow label="Betrag" value={p.amount.toFixed(2).replace(".", ",")} shown={fmtMoney(p.amount, p.currency)} />}
-        {p.reference && <CopyRow label="Verwendungszweck" value={p.reference} />}
+        {p.reference && <CopyRow label={refLabel ?? "Verwendungszweck"} value={p.reference} />}
       </div>
       <div className="flex items-center gap-4 border-t border-line p-3.5">
         <Qr text={epcPayload(p)} size={112} />
@@ -117,6 +120,8 @@ function PaymentSection({ doc, codes, links, related }: { doc: Doc; codes: strin
   const epc = codes.map(parseEpc).find(Boolean);
   // keine IBAN im Schreiben: zuletzt bekannte Bankverbindung des Absenders, mit Herkunft
   const last = !payment && !epc ? lastPayment(doc, allDocs) : undefined;
+  const session = useSession();
+  const purpose = last ? purposeFor(doc, session?.user.email ? nameFromEmail(session.user.email) : "", last.payment.reference) : undefined;
   const qrLinks = codes.filter((c) => /^https?:\/\//i.test(c) && PAY_LINK.test(c));
   const payLinks = [...new Set([...qrLinks, ...links.filter((l) => PAY_LINK.test(l))])].slice(0, 3);
   const isPay = !!(payment || total || epc || (todo && /zahl|fällig|überweis|rechnung|mahn|gebühr|abschlag/i.test(todo.what)));
@@ -147,7 +152,7 @@ function PaymentSection({ doc, codes, links, related }: { doc: Doc; codes: strin
       <div className="space-y-2.5 border-t border-line p-3">
         {payment && <PaymentCard p={{ ...payment, amount: total ?? payment.amount }} doc={doc} />}
         {!payment && epc && <PaymentCard p={{ iban: epc.iban, recipient: epc.recipient, amount: epc.amount ?? total, reference: epc.reference, currency: "EUR" }} label="GiroCode aus dem Schreiben" doc={doc} />}
-        {last && <PaymentCard p={{ ...last.payment, amount: total, reference: undefined }} label="Zuletzt bekannte Bankverbindung" doc={doc} note={<>In diesem Schreiben steht keine IBAN. Das ist die zuletzt verwendete von {doc.sender} – aus <Link href={`/d/${last.source.id}`} className="font-semibold underline">{last.source.title ?? last.source.file_name}</Link> vom {fmtDate(last.source.doc_date ?? last.source.received_at)}{last.payment.reference ? <> (Verwendungszweck damals: „{last.payment.reference}“)</> : null}. Bitte vor dem Zahlen kurz prüfen.</>} />}
+        {last && purpose && <PaymentCard p={{ ...last.payment, amount: total, reference: purpose.text }} refLabel={purpose.note ? "Verwendungszweck (wie zuletzt)" : purpose.given ? "Verwendungszweck" : "Verwendungszweck (Vorschlag)"} label="Zuletzt bekannte Bankverbindung" doc={doc} note={<>In diesem Schreiben steht keine IBAN. Das ist die zuletzt verwendete von {doc.sender} – aus <Link href={`/d/${last.source.id}`} className="font-semibold underline">{last.source.title ?? last.source.file_name}</Link> vom {fmtDate(last.source.doc_date ?? last.source.received_at)}{last.payment.reference ? <> (Verwendungszweck damals: „{last.payment.reference}“)</> : null}. Bitte vor dem Zahlen kurz prüfen.</>} />}
         {payLinks.map((l) => (
           <a key={l} href={l} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-card-line px-3.5 py-3 hover:bg-surface-2">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2"><Globe size={16} /></span>
