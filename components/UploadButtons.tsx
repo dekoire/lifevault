@@ -16,7 +16,7 @@ export function useUploadPickers() {
   const inputs = (
     <>
       <input ref={cam} type="file" accept="image/*" capture="environment" className="hidden" onChange={onPick} />
-      <input ref={files} type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={onPick} />
+      <input ref={files} type="file" accept="image/*,application/pdf,.pptx,.docx,.xlsx" multiple className="hidden" onChange={onPick} />
     </>
   );
   return { inputs, openCamera: () => cam.current?.click(), openFiles: () => files.current?.click() };

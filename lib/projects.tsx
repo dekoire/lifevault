@@ -2,7 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-export type Project = { id: string; name: string; description: string | null; color: string; is_default: boolean; all_apps: boolean; created_at: string };
+export type Project = { id: string; name: string; description: string | null; color: string; is_default: boolean; all_apps: boolean; kind: "personal" | "app"; created_at: string };
 type Ctx = { projects: Project[]; current: string; setCurrent: (id: string) => void; currentProject?: Project; defaultProject?: Project; reload: () => Promise<void> };
 const P = createContext<Ctx | null>(null);
 const KEY = "lifevault:project";
@@ -13,7 +13,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const [current, setCurrentState] = useState("all");
   const reload = useCallback(async () => {
     await supabase.rpc("ensure_default_project");
-    const { data } = await supabase.from("projects").select("id,name,description,color,is_default,all_apps,created_at").order("is_default", { ascending: false }).order("name");
+    const { data } = await supabase.from("projects").select("id,name,description,color,is_default,all_apps,kind,created_at").order("is_default", { ascending: false }).order("name");
     setProjects((data as Project[]) ?? []);
   }, []);
   useEffect(() => {

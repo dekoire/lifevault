@@ -18,6 +18,9 @@ export default function ProfilPage() {
   const { docs } = useDocs();
   const person = useMemo(() => buildPerson(docs), [docs]);
   const [showEarlier, setShowEarlier] = useState(false);
+  const [allFields, setAllFields] = useState(false);
+  // Standard: nur Name und Geburtsdatum, der Rest über „Mehr anzeigen“
+  const shownPerson = allFields ? person : person.filter((f) => f.id === "name" || f.id === "birth");
   const [profile, setProfile] = useState<LifeProfile | null>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -57,11 +60,11 @@ export default function ProfilPage() {
         <section className={`${CARD} mb-4 overflow-hidden`}>
           <div className="flex items-center justify-between px-5 pt-4 pb-2">
             <h2 className="flex items-center gap-2.5 text-[16px] font-semibold"><span className="grid h-8 w-8 place-items-center rounded-full bg-fg text-canvas"><UserRound size={16} /></span>Steckbrief</h2>
-            {person.some((f) => f.earlier.length) && <button type="button" onClick={() => setShowEarlier(!showEarlier)} className="text-[13px] font-semibold text-selected">{showEarlier ? "Nur aktuell" : "Frühere Werte"}</button>}
+            {allFields && person.some((f) => f.earlier.length) && <button type="button" onClick={() => setShowEarlier(!showEarlier)} className="text-[13px] font-semibold text-selected">{showEarlier ? "Nur aktuell" : "Frühere Werte"}</button>}
           </div>
           <p className="px-5 pb-2 text-[12px] text-muted">Automatisch aus deinen Dokumenten – jeweils der neueste Stand, mit Quelle.</p>
           <ul className="grid divide-y divide-line md:grid-cols-2 md:divide-y-0">
-            {person.map((f) => (
+            {shownPerson.map((f) => (
               <li key={f.id} className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 border-line px-5 py-2.5 text-[14px] md:border-b md:odd:border-r">
                 <span className="min-w-0 break-words hyphens-auto text-muted" lang="de">{f.label}</span>
                 <span className="min-w-0 space-y-1">
@@ -75,6 +78,9 @@ export default function ProfilPage() {
               </li>
             ))}
           </ul>
+          {person.length > shownPerson.length || allFields ? (
+            <button type="button" onClick={() => setAllFields(!allFields)} className="w-full border-t border-line px-5 py-3 text-left text-[13px] font-semibold text-selected hover:bg-surface-2">{allFields ? "Weniger anzeigen" : `Mehr anzeigen (${person.length - shownPerson.length} weitere: Steuer-ID, Krankenkasse, IBAN …)`}</button>
+          ) : null}
         </section>
       )}
       {error && <p role="alert" className="mb-4 rounded-xl bg-negative/10 px-4 py-3 text-[14px] text-negative-text">{error}</p>}

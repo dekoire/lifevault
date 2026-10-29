@@ -183,7 +183,7 @@ export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu de
   return (
     <form onSubmit={(e) => { e.preventDefault(); send(); }} className="chat-box relative rounded-[22px] border bg-surface p-2">
       <input ref={cam} type="file" accept="image/*" capture="environment" className="hidden" onChange={pick} />
-      <input ref={files} type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={pick} />
+      <input ref={files} type="file" accept="image/*,application/pdf,.pptx,.docx,.xlsx" multiple className="hidden" onChange={pick} />
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-1.5 px-2 pt-1 pb-2">
           {attachments.map((a) => {

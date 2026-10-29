@@ -2,13 +2,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useMe } from "@/lib/me";
 import { useProjects } from "@/lib/projects";
+import { OFFICE_MIME, officeKind } from "@/lib/office";
 import { downloadFile, processEncrypted, protectDoc } from "@/lib/protect";
 import { authFetch, supabase } from "@/lib/supabase";
 import { openBytes, sealBytes, vaultKey } from "@/lib/vault";
 import { LIST_COLS, type Doc } from "@/lib/types";
 
 export type BatchItem = { key: string; name: string; id?: string; state: "uploading" | "saved" | "failed"; error?: string };
-type Ctx = { batch: BatchItem[]; clearBatch: () => void; docs: Doc[]; allDocs: Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null; silent?: boolean }) => Promise<string[]>; pendingProtect: number; reprocess: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
+type Ctx = { batch: BatchItem[]; clearBatch: () => void; docs: Doc[]; allDocs: Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null; silent?: boolean }) => Promise<string[]>; pendingProtect: number; reprocess: (id: string) => Promise<void>; splitDoc: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
 const DocsCtx = createContext<Ctx | null>(null);
 
 const OK = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
@@ -24,6 +25,9 @@ function friendlyName(name: string, i: number, n: number) {
 /** Fotos verkleinern (lange Kante 2400 px) und als JPEG speichern – auch HEIC vom iPhone, sofern der Browser es lesen kann */
 async function prepare(file: File): Promise<File> {
   if (file.type === "application/pdf") return file;
+  // Office-Dateien: manche Browser liefern keinen Typ – aus der Endung ergänzen
+  const kind = officeKind(file.type, file.name);
+  if (kind) return file.type ? file : new File([file], file.name, { type: OFFICE_MIME(kind) });
   const isImage = file.type.startsWith("image/") || /\.(heic|heif)$/i.test(file.name);
   if (!isImage) return file;
   if (OK.includes(file.type) && file.size < 2_500_000) return file;
@@ -69,9 +73,9 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
   }, [busy, refresh]);
 
   // Auslesen; enthält eine PDF mehrere Briefe, kommen die Teile zurück und werden einzeln ausgelesen
-  const process = async (id: string): Promise<void> => {
+  const process = async (id: string, split = false): Promise<void> => {
     try {
-      const res = await authFetch("/api/process", { method: "POST", body: JSON.stringify({ id }) });
+      const res = await authFetch("/api/process", { method: "POST", body: JSON.stringify({ id, ...(split ? { split: true } : {}) }) });
       const json = (await res.json().catch(() => ({}))) as { split?: string[] };
       await refresh();
       if (json.split?.length) for (let i = 0; i < json.split.length; i += 2) await Promise.all(json.split.slice(i, i + 2).map((x) => process(x)));
@@ -182,6 +186,14 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh, docs]);
 
+  /** PDF nachträglich in einzelne Dokumente trennen (z. B. Krankenakte mit vielen Briefen) */
+  const splitDoc = useCallback(async (id: string) => {
+    await supabase.from("documents").update({ status: "processing", error: null }).eq("id", id);
+    await refresh();
+    await process(id, true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refresh]);
+
   const remove = useCallback(async (d: Doc) => {
     await supabase.storage.from("documents").remove([d.file_path]);
     await supabase.from("documents").delete().eq("id", d.id);
@@ -191,7 +203,7 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
   const pendingProtect = unlocked ? 0 : toProtect.length;
   // Ansicht auf das gewählte Projekt beschränken
   const visible = useMemo(() => (current === "all" ? docs : docs.filter((d) => d.project_id === current)), [docs, current]);
-  const value = useMemo(() => ({ batch, clearBatch, docs: visible, allDocs: docs, loading, refresh, upload, reprocess, remove, uploading, pendingProtect }), [batch, clearBatch, visible, docs, loading, refresh, upload, reprocess, remove, uploading, pendingProtect]);
+  const value = useMemo(() => ({ batch, clearBatch, docs: visible, allDocs: docs, loading, refresh, upload, reprocess, splitDoc, remove, uploading, pendingProtect }), [batch, clearBatch, visible, docs, loading, refresh, upload, reprocess, splitDoc, remove, uploading, pendingProtect]);
   return <DocsCtx.Provider value={value}>{children}</DocsCtx.Provider>;
 }
 

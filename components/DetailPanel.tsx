@@ -3,6 +3,8 @@ import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarClock, Download, ExternalLink, Lock, Maximize2, X } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
+import { OfficePreview } from "@/components/OfficePreview";
+import { officeKind } from "@/lib/office";
 import { DocRow } from "@/components/DocRow";
 import { SenderLogo } from "@/components/SenderLogo";
 import { clusterOf } from "@/lib/clusters";
@@ -94,7 +96,7 @@ function DocDetail({ id, open, close }: { id: string; open: (d: Detail) => void;
           {doc.summary && <p className="text-[14px] leading-6">{doc.summary}</p>}
           {url && (
             <div className="overflow-hidden rounded-xl border border-card-line bg-surface-2">
-              {image ? <img src={url} alt={doc.title ?? ""} className="max-h-80 w-full object-contain" /> : <iframe src={`${url}#toolbar=0&view=FitH`} title="Vorschau" className="h-80 w-full" />}
+              {image ? <img src={url} alt={doc.title ?? ""} className="max-h-80 w-full object-contain" /> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={url} mime={doc.mime_type} name={doc.file_name} compact /> : <iframe src={`${url}#toolbar=0&view=FitH`} title="Vorschau" className="h-80 w-full" />}
             </div>
           )}
           {doc.deadlines?.length > 0 && (

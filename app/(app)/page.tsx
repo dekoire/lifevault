@@ -75,10 +75,6 @@ export default function Home() {
             ))}
           </section>
 
-          <label className="flex h-12 items-center gap-2.5 rounded-full border border-card-line bg-surface px-4 focus-within:border-brand-500">
-            <Search size={18} className="text-muted" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Suchen: Titel, Absender, Stichwort …" className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted" />
-          </label>
 
           {term ? (
             <section className={CARD}>

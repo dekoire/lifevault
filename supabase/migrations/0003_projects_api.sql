@@ -8,6 +8,7 @@ create table public.projects (
   is_default boolean not null default false,
   -- alle verbundenen Apps dürfen dieses Projekt lesen (jeweils nur im Rahmen ihrer eigenen Filter)
   all_apps boolean not null default false,
+  kind text not null default 'personal' check (kind in ('personal','app')), -- persönlich oder für eine App
   created_at timestamptz not null default now()
 );
 create unique index projects_one_default on public.projects (user_id) where is_default;

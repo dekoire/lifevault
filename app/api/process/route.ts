@@ -3,6 +3,7 @@ import { z } from "zod";
 import { aiFor } from "@/lib/ai";
 import { extract, FILE_TYPES, slicePdf, splitPlan, TEXT_TYPES, toColumns, type Extracted } from "@/lib/extract";
 import { unauthorized, userClient } from "@/lib/server";
+import { OFFICE_TYPES } from "@/lib/office";
 
 export const maxDuration = 300;
 
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
   const auth = await userClient(req);
   if (!auth) return unauthorized();
   const { sb } = auth;
-  const body = (await req.json().catch(() => null)) as { id?: unknown; data?: unknown; mediaType?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { id?: unknown; data?: unknown; mediaType?: unknown; split?: unknown } | null;
   const id = typeof body?.id === "string" ? body.id : "";
   if (!/^[0-9a-f-]{36}$/i.test(id)) return Response.json({ error: "Ungültige Anfrage." }, { status: 400 });
   const inline = typeof body?.data === "string";
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
     return Response.json({ error: msg }, { status: 422 });
   };
   const mediaType = inline && typeof body?.mediaType === "string" ? body.mediaType : doc.mime_type;
-  if (![...FILE_TYPES, ...TEXT_TYPES].includes(mediaType)) return fail("Dieser Dateityp wird noch nicht unterstützt (Foto, PDF oder Text).");
+  if (![...FILE_TYPES, ...TEXT_TYPES, ...Object.keys(OFFICE_TYPES)].includes(mediaType)) return fail("Dieser Dateityp wird noch nicht unterstützt (Foto, PDF, Text, PowerPoint, Word, Excel).");
 
   let data: Uint8Array;
   if (inline) {
@@ -67,7 +68,9 @@ export async function POST(req: Request) {
   }
 
   // mehrere Briefe in einer PDF → in einzelne Dokumente trennen (nicht bei verschlüsselten Dateien)
-  if (!inline && mediaType === "application/pdf" && !doc.split_from) {
+  // Teile einer schon getrennten PDF nicht erneut trennen (außer ausdrücklich gewünscht)
+  const isPart = !!doc.split_from || / – Teil \d+ \(S\. /.test(doc.file_name);
+  if (!inline && mediaType === "application/pdf" && (body?.split === true || !isPart)) {
     const plan = await splitPlan(data).catch(() => undefined);
     if (plan) {
       const ids: string[] = [];
@@ -77,7 +80,7 @@ export async function POST(req: Request) {
           const path = `${auth.user.id}/${crypto.randomUUID()}.pdf`;
           const up = await sb.storage.from("documents").upload(path, bytes, { contentType: "application/pdf" });
           if (up.error) throw up.error;
-          const name = `${doc.file_name.replace(/\.pdf$/i, "")} – Teil ${i + 1} (S. ${p.fromPage}${p.toPage > p.fromPage ? `–${p.toPage}` : ""}).pdf`;
+          const name = `${doc.file_name.replace(/\.pdf$/i, "").slice(0, 120)} – Teil ${i + 1} (S. ${p.fromPage}${p.toPage > p.fromPage ? `–${p.toPage}` : ""}).pdf`;
           const { data: row, error } = await sb.from("documents").insert({ file_path: path, file_name: name.slice(0, 200), mime_type: "application/pdf", size_bytes: bytes.length, ...(doc.project_id ? { project_id: doc.project_id } : {}), received_at: doc.received_at, split_from: doc.id }).select("id").single();
           if (error) throw error;
           ids.push(row.id);

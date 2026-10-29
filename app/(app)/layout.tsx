@@ -12,6 +12,7 @@ import { ProjectsProvider } from "@/lib/projects";
 import { ProjectSwitcher, UploadTarget } from "@/components/ProjectSwitcher";
 import { UploadProgress } from "@/components/UploadProgress";
 import { DetailHost } from "@/components/DetailPanel";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import { Avatar, AvatarMenu, nameFromEmail } from "@/components/AvatarMenu";
 import { supabase, useSession } from "@/lib/supabase";
 
@@ -101,6 +102,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
           <div className="flex h-14 items-center justify-between px-4">
             <Link href="/" aria-label="Start"><Logo size={28} /></Link>
             <span className="flex items-center gap-2">
+              <GlobalSearch compact />
               <ProjectSwitcher compact />
               <Link href="/einstellungen" aria-label="Einstellungen" className="grid h-10 w-10 place-items-center rounded-full bg-surface-3 text-soft"><Settings size={18} /></Link>
             </span>
@@ -109,8 +111,10 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       )}
       {/* Desktop: oben rechts Hinzufügen und Avatar */}
       {!chat && (
-        <div className="sticky top-0 z-20 hidden h-16 items-center justify-end gap-3 border-b border-card-line/70 bg-page/90 px-8 backdrop-blur-xl lg:ml-[var(--side,15rem)] lg:flex">
-          <button type="button" onClick={() => setSheet(true)} className="inline-flex h-10 items-center gap-2 rounded-full bg-brand-500 px-4 text-[14px] font-semibold text-white hover:bg-brand-600"><Plus size={17} strokeWidth={2.4} /> Hinzufügen</button>
+        <div className="sticky top-0 z-20 hidden h-16 items-center gap-3 border-b border-card-line/70 bg-page/90 px-8 backdrop-blur-xl lg:ml-[var(--side,15rem)] lg:flex">
+          <GlobalSearch />
+          <span className="flex-1" />
+          <button type="button" onClick={() => setSheet(true)} className="inline-flex h-10 items-center gap-2 rounded-full border border-card-line bg-surface px-4 text-[14px] font-semibold text-fg hover:bg-surface-2"><Plus size={17} /> Hinzufügen</button>
           <AvatarMenu email={email} />
         </div>
       )}

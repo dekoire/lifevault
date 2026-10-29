@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useRef, useState } from "react";
-import { Archive, ArchiveRestore, CalendarClock, ChevronLeft, ChevronRight, Download, FileDown, FileText, Lock, LockOpen, RefreshCw, Trash2, Wallet } from "lucide-react";
+import { Archive, ArchiveRestore, CalendarClock, ChevronLeft, ChevronRight, Download, FileDown, FileText, Lock, LockOpen, RefreshCw, Scissors, Trash2, Wallet } from "lucide-react";
 import { Composer, MessageList, useChat } from "@/components/ChatPanel";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD, ICON_BTN, KeyValueTable, Section } from "@/components/ui";
@@ -13,6 +13,8 @@ import { useProjects } from "@/lib/projects";
 import { explainDoc, groupRank } from "@/lib/doctypes";
 import { partnerKey } from "@/lib/partners";
 import { useDetail } from "@/components/DetailPanel";
+import { OfficePreview } from "@/components/OfficePreview";
+import { officeKind } from "@/lib/office";
 import { useMe } from "@/lib/me";
 import { openDoc, protectDoc, unprotectDoc } from "@/lib/protect";
 import { supabase } from "@/lib/supabase";
@@ -43,7 +45,7 @@ function exportMarkdown(d: Doc, c: SecretPart) {
 export default function DocPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { docs, allDocs, reprocess, remove, refresh } = useDocs();
+  const { docs, allDocs, reprocess, splitDoc, remove, refresh } = useDocs();
   const { projects } = useProjects();
   const { settings, unlocked } = useMe();
   const show = settings.doc_sections;
@@ -116,6 +118,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
     { icon: <Download size={17} />, label: "Original herunterladen", onClick: () => void download(), hidden: doc.encrypted && !opened },
     { icon: <FileDown size={17} />, label: "Als Markdown exportieren", onClick: () => content && exportMarkdown(doc, content), hidden: !content },
     { icon: <RefreshCw size={17} />, label: "Neu auslesen", onClick: () => void run(() => reprocess(doc.id)), hidden: doc.encrypted && !unlocked },
+    { icon: <Scissors size={17} />, label: "In einzelne Dokumente trennen", onClick: () => { if (confirm("Prüfen, ob die PDF mehrere eigenständige Dokumente enthält, und sie getrennt ablegen? Das kann bei langen Akten ein paar Minuten dauern.")) { void splitDoc(doc.id); router.push(`/c/${doc.cluster ?? "sonstiges"}`); } }, hidden: doc.encrypted || doc.mime_type !== "application/pdf" },
     { icon: doc.archived ? <ArchiveRestore size={17} /> : <Archive size={17} />, label: doc.archived ? "Wieder aktuell" : "Archivieren", onClick: () => void run(async () => { await supabase.from("documents").update({ archived: !doc.archived, archived_reason: doc.archived ? null : "von dir archiviert" }).eq("id", doc.id); }) },
     { icon: doc.encrypted ? <LockOpen size={17} /> : <Lock size={17} />, label: doc.encrypted ? "Verschlüsselung aufheben" : "Verschlüsseln", onClick: () => void run(() => (doc.encrypted ? unprotectDoc(doc) : protectDoc(doc))), hidden: !unlocked },
     { icon: <Trash2 size={17} />, label: "Löschen", onClick: () => void del(), danger: true },
@@ -230,7 +233,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
         <div className="space-y-3 lg:sticky lg:top-6">
           {show.original && fileUrl && (
             <section className={`${CARD} overflow-hidden`}>
-              {image ? <img src={fileUrl} alt={doc.title ?? doc.file_name} className="max-h-[60vh] w-full bg-surface-2 object-contain" /> : <iframe src={fileUrl} title="Original" className="h-[60vh] w-full bg-surface-2" />}
+              {image ? <img src={fileUrl} alt={doc.title ?? doc.file_name} className="max-h-[60vh] w-full bg-surface-2 object-contain" /> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={fileUrl} mime={doc.mime_type} name={doc.file_name} /> : <iframe src={fileUrl} title="Original" className="h-[60vh] w-full bg-surface-2" />}
             </section>
           )}
           {show.chat && (

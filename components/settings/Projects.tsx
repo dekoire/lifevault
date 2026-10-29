@@ -45,7 +45,7 @@ export function ProjectsSettings() {
           <div key={p.id} className="flex items-center gap-3 px-5 py-4">
             <Dot color={p.color} size={14} />
             <span className="min-w-0 flex-1">
-              <b className="flex items-center gap-2 text-[15px]">{p.name}{p.is_default && <span className="rounded-full border border-card-line px-2 py-0.5 text-[11px] font-semibold text-soft">Standard</span>}</b>
+              <b className="flex items-center gap-2 text-[15px]">{p.name}<span className="rounded-full border border-card-line px-2 py-0.5 text-[11px] font-semibold text-soft">{p.kind === "app" ? "App" : "Persönlich"}</span>{p.is_default && <span className="rounded-full border border-card-line px-2 py-0.5 text-[11px] font-semibold text-soft">Standard</span>}</b>
               <span className="block truncate text-[13px] text-muted">{count(p.id)} Dokumente{p.description ? ` · ${p.description}` : ""}</span>
             </span>
             <span className="hidden items-center gap-2 text-[12px] text-soft sm:flex">Für alle Apps <Switch on={p.all_apps} onChange={(v) => void save({ all_apps: v }, p.id)} label={`${p.name} für alle Apps`} /></span>
@@ -63,11 +63,19 @@ function ProjectForm({ initial, onSave, onCancel }: { initial?: Project; onSave:
   const [description, setDescription] = useState(initial?.description ?? "");
   const [color, setColor] = useState(initial?.color ?? PROJECT_COLORS[1]);
   const [allApps, setAllApps] = useState(initial?.all_apps ?? false);
+  const [kind, setKind] = useState<"personal" | "app">(initial?.kind ?? "personal");
   const [busy, setBusy] = useState(false);
   return (
-    <form className={initial ? "space-y-3" : `${CARD} space-y-3 p-5`} onSubmit={async (e) => { e.preventDefault(); setBusy(true); await onSave({ name: name.trim(), description: description.trim() || null, color, all_apps: allApps }); setBusy(false); }}>
+    <form className={initial ? "space-y-3" : `${CARD} space-y-3 p-5`} onSubmit={async (e) => { e.preventDefault(); setBusy(true); await onSave({ name: name.trim(), description: description.trim() || null, color, all_apps: allApps, kind }); setBusy(false); }}>
       <input required maxLength={80} value={name} onChange={(e) => setName(e.target.value)} placeholder="Name, z. B. Steuer 2026" className={field} autoFocus />
       <input maxLength={300} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Beschreibung (optional)" className={field} />
+      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Art des Projekts">
+        {([["personal", "Persönlich", "Deine eigenen Unterlagen"], ["app", "App", "Daten für eine bestimmte App"]] as const).map(([k, l, t]) => (
+          <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)} className={`rounded-xl border p-3 text-left ${kind === k ? "border-brand-500 bg-brand-500/5" : "border-card-line"}`}>
+            <b className="block text-[14px]">{l}</b><span className="text-[12px] text-muted">{t}</span>
+          </button>
+        ))}
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         {PROJECT_COLORS.map((c) => <button key={c} type="button" onClick={() => setColor(c)} aria-label={`Farbe ${c}`} className="grid h-8 w-8 place-items-center rounded-full" style={{ background: c }}>{color === c && <Check size={15} className="text-white" />}</button>)}
       </div>

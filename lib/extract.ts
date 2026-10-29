@@ -3,6 +3,7 @@ import { PDFDocument } from "pdf-lib";
 import { z } from "zod";
 import { aiFor } from "@/lib/ai";
 import { CLUSTER_IDS, CLUSTERS } from "@/lib/clusters";
+import { OFFICE_TYPES, officeAsText, readOffice } from "@/lib/office";
 
 export const FILE_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 export const TEXT_TYPES = ["text/plain", "text/markdown"];
@@ -39,6 +40,9 @@ Datumsangaben immer als YYYY-MM-DD. Was nicht im Dokument steht, lässt du leer 
 
 /** Dokument (Datei oder Text) mit der KI auslesen */
 export async function extract(input: { data: Uint8Array; mediaType: string }): Promise<Extracted | undefined> {
+  // PowerPoint, Word, Excel: Text herauslesen und als Text auswerten
+  const office = OFFICE_TYPES[input.mediaType];
+  if (office) input = { data: new TextEncoder().encode(officeAsText(readOffice(input.data, office))), mediaType: "text/plain" };
   const text = TEXT_TYPES.includes(input.mediaType);
   const content: ModelMessage["content"] = text
     ? [{ type: "text", text: `Lies dieses Dokument vollständig aus und strukturiere es.\n\n---\n${new TextDecoder().decode(input.data).slice(0, 200_000)}` }]
@@ -77,38 +81,53 @@ export function toColumns(o: Extracted) {
   return { meta, content };
 }
 
-const Parts = z.object({
-  parts: z.array(z.object({
-    fromPage: z.number().int().describe("erste Seite (ab 1)"),
-    toPage: z.number().int().describe("letzte Seite"),
+const Starts = z.object({
+  starts: z.array(z.object({
+    page: z.number().int().describe("Seitennummer im Ausschnitt (ab 1), auf der ein NEUES eigenständiges Dokument beginnt"),
     what: z.string().describe("kurz: was für ein Dokument, z. B. „Arztbrief Dr. Weber 03.02.2025“"),
-  })).describe("eigenständige Dokumente in Seitenreihenfolge, lückenlos; nur 1 Eintrag, wenn alles zusammengehört"),
+  })).describe("leer, wenn im Ausschnitt kein neues Dokument beginnt"),
 });
 
+const CHUNK = 20;
+
+/** In einem Ausschnitt die Seiten finden, auf denen ein neues Dokument beginnt (erste Seite ggf. nur Kontext) */
+async function startsIn(data: Uint8Array, from: number, to: number, contextPage: boolean) {
+  const bytes = from === 1 && to === Number.MAX_SAFE_INTEGER ? data : await slicePdf(data, from, to);
+  const r = await generateText({
+    ...aiFor("read"),
+    system: `Du prüfst einen Ausschnitt aus einer PDF eines Dokumenten-Tresors. Oft sind viele Briefe, Befunde oder Berichte hintereinander eingescannt (z. B. eine Krankenakte).
+Finde jede Seite, auf der ein NEUES eigenständiges Dokument beginnt: neuer Briefkopf, anderes Datum, anderer Absender oder andere Praxis/Klinik, neue Anrede, neuer Berichtstitel.
+Folgeseiten desselben Briefs, Anlagen zu einem Vertrag und Rechnungen mit Folgeseiten gehören NICHT zu einem neuen Dokument.${contextPage ? "\nDie erste Seite des Ausschnitts ist nur Kontext (Ende des vorherigen Teils) – gib sie nicht an, prüfe ab Seite 2." : ""}`,
+    messages: [{ role: "user", content: [{ type: "file", data: bytes, mediaType: "application/pdf" }, { type: "text", text: "Auf welchen Seiten beginnt ein neues eigenständiges Dokument?" }] }],
+    output: Output.object({ schema: Starts, name: "starts" }),
+  });
+  const offset = from - 1;
+  return (r.output?.starts ?? [])
+    .filter((x) => x.page >= (contextPage ? 2 : 1) && x.page <= to - from + 1)
+    .map((x) => ({ page: offset + x.page, what: x.what }));
+}
+
 /**
- * Enthält eine PDF mehrere eigenständige Dokumente (z. B. mehrere Arztbriefe mit verschiedenen Daten)?
+ * Enthält eine PDF mehrere eigenständige Dokumente (z. B. eine Krankenakte mit vielen Arztbriefen)?
+ * Lange PDFs werden in Abschnitten zu 20 Seiten geprüft (je mit der letzten Seite davor als Kontext).
  * Gibt die Seitenbereiche zurück, wenn es mindestens zwei sind – sonst undefined.
  */
 export async function splitPlan(data: Uint8Array): Promise<{ fromPage: number; toPage: number; what: string }[] | undefined> {
   let pages = 0;
   try { pages = (await PDFDocument.load(data, { ignoreEncryption: true })).getPageCount(); } catch { return undefined; }
-  if (pages < 2 || pages > 150) return undefined;
-  const r = await generateText({
-    ...aiFor("classify"),
-    system: `Du prüfst eine PDF mit ${pages} Seiten aus einem Dokumenten-Tresor. Oft sind mehrere Briefe zusammen eingescannt.
-Trenne nur, wenn eindeutig verschiedene Dokumente vorliegen: anderes Datum, anderer Absender, neuer Briefkopf, neue Anrede. Mehrseitige Briefe, Verträge mit Anlagen und Rechnungen mit Folgeseiten bleiben zusammen.`,
-    messages: [{ role: "user", content: [{ type: "file", data, mediaType: "application/pdf" }, { type: "text", text: "Welche Seiten gehören jeweils zu einem eigenständigen Dokument?" }] }],
-    output: Output.object({ schema: Parts, name: "parts" }),
-  }).catch(() => undefined);
-  const parts = r?.output?.parts;
-  if (!parts || parts.length < 2) return undefined;
-  // nur übernehmen, wenn die Bereiche lückenlos 1..pages abdecken
-  let next = 1;
-  for (const p of parts) {
-    if (p.fromPage !== next || p.toPage < p.fromPage) return undefined;
-    next = p.toPage + 1;
+  if (pages < 2 || pages > 400) return undefined;
+  const chunks: { from: number; to: number; ctx: boolean }[] = [];
+  for (let a = 1; a <= pages; a += CHUNK) chunks.push({ from: a === 1 ? 1 : a - 1, to: Math.min(pages, a + CHUNK - 1), ctx: a > 1 });
+  const found: { page: number; what: string }[] = [];
+  // bis zu 4 Abschnitte gleichzeitig
+  for (let i = 0; i < chunks.length; i += 4) {
+    const res = await Promise.all(chunks.slice(i, i + 4).map((c) => startsIn(data, c.from, c.to, c.ctx).catch((e) => { console.error("split chunk", (e as Error).message); return null; })));
+    if (res.some((x) => x === null)) return undefined; // lieber nicht trennen als falsch trennen
+    for (const r of res) found.push(...r!);
   }
-  return next === pages + 1 ? parts : undefined;
+  const starts = [...new Map([{ page: 1, what: found.find((f) => f.page === 1)?.what ?? "Teil 1" }, ...found].map((f) => [f.page, f])).values()].sort((a, b) => a.page - b.page);
+  if (starts.length < 2 || starts.length > 80) return undefined;
+  return starts.map((st, i) => ({ fromPage: st.page, toPage: (starts[i + 1]?.page ?? pages + 1) - 1, what: st.what }));
 }
 
 /** Seiten from..to (ab 1) als eigene PDF */
