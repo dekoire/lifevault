@@ -17,6 +17,7 @@ import { caseIds } from "@/lib/dupes";
 import { buildPartners } from "@/lib/partners";
 import { PayImageButton } from "@/lib/payimage";
 import { lastPayment } from "@/lib/lastpay";
+import { relatedPayDocs } from "@/lib/related";
 import { purposeFor } from "@/lib/purpose";
 import { useSession } from "@/lib/supabase";
 import { SMALL, thumbUrl } from "@/lib/thumbs";
@@ -79,7 +80,7 @@ function PaymentWidget({ body }: { body: string }) {
     const t = todos([d!], today, { pastDays: 3650, aheadDays: 365 })[0];
     // manche Schreiben liefern als „Empfänger“ nur die IBAN – dann den Absender nehmen
     if (p && (!p.recipient || /^[A-Z]{2}\d{2}[A-Z0-9]{10,}$/.test(p.recipient.replace(/\s/g, "")))) p.recipient = d!.sender ?? undefined;
-    return { d: d!, p, from: last?.source, lastRef: last?.payment.reference, total: openTotal(d!) ?? p?.amount, todo: t, purpose: purposeFor(d!, name, last?.payment.reference), links: contactOf(d!).links.filter((l) => /pay|zahl|bezahl|checkout|portal|kundenkonto/i.test(l)) };
+    return { d: d!, rel: relatedPayDocs(d!, allDocs), p, from: last?.source, lastRef: last?.payment.reference, total: openTotal(d!) ?? p?.amount, todo: t, purpose: purposeFor(d!, name, last?.payment.reference), links: contactOf(d!).links.filter((l) => /pay|zahl|bezahl|checkout|portal|kundenkonto/i.test(l)) };
   }), [body, allDocs, today, name]);
   const [sel, setSel] = useState<string[]>([]);
   useEffect(() => setSel((cur) => (cur.length ? cur : list.map((x) => x.d.id))), [list]);
@@ -122,6 +123,7 @@ function PaymentWidget({ body }: { body: string }) {
                   {x.todo && <span className={`mt-1 inline-block rounded-full border px-2 py-px text-[11px] font-semibold ${x.todo.days < 0 ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>bis {fmtDate(x.todo.date)}</span>}
                 </span>
               </div>
+              <CaseDocs d={x.d} rel={x.rel} />
               {x.from && (
                 <p className="border-t border-line bg-[#fff7e6] px-4 py-2.5 text-[12.5px] text-[#7a4a00] dark:bg-[#3a2a0a] dark:text-[#f5c46b]">
                   In diesem Schreiben steht keine IBAN. Das ist die zuletzt verwendete – aus{" "}
@@ -360,3 +362,40 @@ export function ChatWidget({ kind, body }: { kind: string; body: string }) {
   }
 }
 
+
+/** Alle Schreiben zum Vorgang (Rechnung, Mahnung, Forderung …) – antippen öffnet sie rechts; Hinweis, wenn es ein neueres gibt */
+function CaseDocs({ d, rel }: { d: Doc; rel: Doc[] }) {
+  const open = useDetail();
+  const [show, setShow] = useState(false);
+  const all = [d, ...rel].sort((a, b) => dateOf(b).localeCompare(dateOf(a)));
+  const newer = rel.filter((x) => dateOf(x) > dateOf(d));
+  return (
+    <div className="border-t border-line">
+      {newer.length > 0 && (
+        <button type="button" onClick={() => open?.({ kind: "doc", id: newer[0].id })} className="flex w-full items-center gap-2 bg-[#eef3ff] px-4 py-2 text-left text-[12.5px] font-semibold text-[#2443a8] hover:underline dark:bg-[#1c2540] dark:text-[#9fb6ff]">
+          <FileText size={14} className="shrink-0" /> Neueres Schreiben vom {fmtDate(dateOf(newer[0]))}: {newer[0].title ?? newer[0].file_name}
+        </button>
+      )}
+      <button type="button" aria-expanded={show} onClick={() => setShow(!show)} className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[12.5px] font-semibold text-soft hover:bg-surface-2">
+        <FileText size={14} className="shrink-0" /><span className="flex-1">{all.length === 1 ? "Das Schreiben dazu" : `${all.length} Schreiben zu diesem Vorgang`}</span>
+        <ChevronRight size={15} className={`shrink-0 transition-transform ${show ? "rotate-90" : ""}`} />
+      </button>
+      {show && (
+        <ul className="divide-y divide-line border-t border-line">
+          {all.map((x) => (
+            <li key={x.id}>
+              <button type="button" onClick={() => open?.({ kind: "doc", id: x.id })} className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-surface-2">
+                <span className="h-10 w-8 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2"><Thumb d={x} /></span>
+                <span className="min-w-0 flex-1">
+                  <b className="block truncate text-[13px] font-semibold">{x.title ?? x.file_name}</b>
+                  <span className="block text-[11.5px] text-muted">{fmtDate(dateOf(x))}{x.id === d.id ? " · hier gezeigt" : dateOf(x) > dateOf(d) ? " · neuer" : " · älter"}</span>
+                </span>
+                <ChevronRight size={14} className="shrink-0 text-muted" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

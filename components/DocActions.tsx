@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CalendarClock, Check, ChevronDown, Copy, Euro, ExternalLink, Globe, Landmark, Mail, MapPin, Phone, QrCode } from "lucide-react";
+import { CalendarClock, Check, ChevronDown, Copy, Euro, ExternalLink, FileText, Globe, Landmark, Mail, MapPin, Phone, QrCode } from "lucide-react";
+import { useDetail } from "@/components/DetailPanel";
 import { contactOf, dueLabel, epcPayload, fmtIban, openTotal, paymentOf, todos, type Payment } from "@/lib/actions";
 import { fmtDate, fmtMoney, useDocs } from "@/lib/docs";
 import { PayImageButton } from "@/lib/payimage";
@@ -143,11 +144,7 @@ function PaymentSection({ doc, codes, links, related }: { doc: Doc; codes: strin
           {showItems && <ul className="divide-y divide-line border-t border-line text-[13px]">{todo.items.map((x, i) => <li key={i} className="flex gap-3 px-4 py-2"><span className="tnum w-20 shrink-0 text-muted">{fmtDate(x.date)}</span><span className="min-w-0 flex-1">{x.what}</span></li>)}</ul>}
         </div>
       )}
-      {related.length > 0 && (
-        <div className="border-t border-line px-4 py-2.5 text-[12.5px] text-soft">
-          <b className="text-fg">{related.length + 1} Schreiben zum selben Vorgang</b> – maßgeblich ist das neueste. Früher: {related.slice(0, 3).map((d) => `${d.title ?? d.file_name} (${fmtDate(d.doc_date ?? d.received_at)})`).join(", ")}
-        </div>
-      )}
+      {related.length > 0 && <RelatedDocs doc={doc} related={related} />}
       {/* Wege zu zahlen – jeweils klar benannt */}
       <div className="space-y-2.5 border-t border-line p-3">
         {payment && <PaymentCard p={{ ...payment, amount: total ?? payment.amount }} doc={doc} />}
@@ -204,6 +201,26 @@ export function DocActions({ doc, url, fullText, related = [] }: { doc: Doc; url
           )}
         </section>
       )}
+    </div>
+  );
+}
+
+/** Alle Schreiben zum selben Vorgang – antippen öffnet sie rechts (bzw. auf der Seite) */
+function RelatedDocs({ doc, related }: { doc: Doc; related: Doc[] }) {
+  const open = useDetail();
+  const dOf = (x: Doc) => x.doc_date ?? x.received_at.slice(0, 10);
+  const all = [doc, ...related].sort((a, b) => dOf(b).localeCompare(dOf(a)));
+  return (
+    <div className="border-t border-line">
+      <p className="px-4 pt-2.5 pb-1 text-[12.5px] text-soft"><b className="text-fg">{all.length} Schreiben zum selben Vorgang</b> – maßgeblich ist das neueste.</p>
+      <ul className="pb-1.5">
+        {all.map((x) => {
+          const here = x.id === doc.id;
+          const cls = `flex w-full items-center gap-2 px-4 py-1.5 text-left text-[12.5px] ${here ? "font-semibold text-fg" : "text-selected hover:bg-surface-2"}`;
+          const body = <><FileText size={13} className="shrink-0" /><span className="min-w-0 flex-1 truncate">{x.title ?? x.file_name}</span><span className="shrink-0 text-muted">{fmtDate(dOf(x))}{here ? " · dieses" : x.id === all[0].id ? " · neuestes" : ""}</span></>;
+          return <li key={x.id}>{here ? <span className={cls}>{body}</span> : open ? <button type="button" onClick={() => open({ kind: "doc", id: x.id })} className={cls}>{body}</button> : <Link href={`/d/${x.id}`} className={cls}>{body}</Link>}</li>;
+        })}
+      </ul>
     </div>
   );
 }

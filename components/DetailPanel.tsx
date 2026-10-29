@@ -8,6 +8,7 @@ import { caseIds } from "@/lib/dupes";
 import { DocActions } from "@/components/DocActions";
 import { PartnerFacts } from "@/components/PartnerInfo";
 import { OfficePreview } from "@/components/OfficePreview";
+import { relatedPayDocs } from "@/lib/related";
 import { isCardDoc, PdfPages } from "@/components/PdfPages";
 import { officeKind } from "@/lib/office";
 import { DocRow } from "@/components/DocRow";
@@ -74,15 +75,8 @@ function DocDetail({ id, open, close, back = false }: { id: string; open: (d: De
   if (!doc) return <p className="p-6 text-[14px] text-muted">Dokument nicht gefunden.</p>;
   const c = clusterOf(doc.cluster);
   const image = doc.mime_type.startsWith("image/");
-  // andere Schreiben zum selben Zahlungs-Vorgang (gleicher Absender, Rechnung/Mahnung, nah beieinander)
-  // anderes Aktenzeichen/Rechnungsnummer = anderer Vorgang
-  const mine = caseIds(doc);
-  const otherCase = (x: Doc) => caseIds(x).some((c) => mine.some((m) => m.kind === c.kind && m.value.replace(/\W/g, "") !== c.value.replace(/\W/g, "")));
-  const PAYDOC = /rechnung|mahnung|zahlungserinnerung|forderung|abschlag|bescheid|kosten/i;
-  const dOf = (x: Doc) => Date.parse(x.doc_date ?? x.received_at);
-  const related = doc.sender && PAYDOC.test(`${doc.doc_type} ${doc.title}`)
-    ? allDocs.filter((x) => x.id !== doc.id && x.sender && partnerKey(x.sender) === partnerKey(doc.sender!) && PAYDOC.test(`${x.doc_type} ${x.title}`) && Math.abs(dOf(x) - dOf(doc)) < 200 * 86_400_000 && !otherCase(x)).sort((a, b) => dOf(b) - dOf(a))
-    : [];
+  // andere Schreiben zum selben Zahlungs-Vorgang
+  const related = relatedPayDocs(doc, allDocs);
   const download = async () => {
     const { data } = await supabase.storage.from("documents").createSignedUrl(doc.file_path, 60, { download: doc.file_name });
     if (data) location.href = data.signedUrl;
