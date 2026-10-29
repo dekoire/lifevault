@@ -116,18 +116,13 @@ function Chat() {
 
         <div className={`fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-page via-page to-page/0 px-3 pt-6 pb-3 lg:bottom-0 lg:pb-6 ${side ? "lg:left-[calc(var(--side,15rem)+18rem)]" : "lg:left-[var(--side,15rem)]"}`}>
           {chat.gate && (
-            <div className="mx-auto mb-3 max-w-md">
-              <div className="rounded-2xl border border-card-line bg-surface p-3 shadow-card">
-                <p className="mb-2.5 px-1 text-[13px] text-soft">Für <b className="text-fg">„{chat.gate.q}“</b> brauche ich wahrscheinlich verschlüsselte Unterlagen. Entsperre den Tresor – oder frag ohne sie.</p>
-                <VaultUnlock compact title="Tresor entsperren" text="Danach geht deine Frage automatisch los. Die Inhalte werden nur für diese Antwort im Browser entschlüsselt." />
-                <div className="mt-2.5 flex flex-wrap justify-end gap-1.5">
-                  <button type="button" onClick={chat.skipGate} className="inline-flex h-8 items-center rounded-full border border-card-line px-3 text-[12.5px] font-semibold hover:bg-surface-2">Ohne verschlüsselte Dokumente fragen</button>
-                  <button type="button" onClick={chat.cancelGate} className="inline-flex h-8 items-center rounded-full px-3 text-[12.5px] font-semibold text-muted hover:text-fg">Abbrechen</button>
-                </div>
-              </div>
+            <div className="mx-auto max-w-md">
+              <VaultUnlock compact title="Tresor entsperren" onClose={chat.cancelGate}
+                text={<>Für <b className="text-white">„{chat.gate.q}“</b> brauche ich wahrscheinlich verschlüsselte Unterlagen. Danach geht die Frage automatisch los.</>}
+                footer={<button type="button" onClick={chat.skipGate} className="mt-2.5 w-full rounded-full border border-white/30 py-1.5 text-[12.5px] font-semibold text-white hover:bg-white/10">Ohne verschlüsselte Dokumente fragen</button>} />
             </div>
           )}
-          <div className="mx-auto max-w-3xl"><Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} onFiles={(f) => void chat.attach(f)} attachments={chat.attachments} onRemoveAttachment={chat.removeAttachment} depth={chat.depth} onDepth={chat.setDepth} /></div>
+          <div className={`mx-auto max-w-3xl ${chat.gate ? "hidden" : ""}`}><Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} onFiles={(f) => void chat.attach(f)} attachments={chat.attachments} onRemoveAttachment={chat.removeAttachment} depth={chat.depth} onDepth={chat.setDepth} /></div>
         </div>
       </div>
 

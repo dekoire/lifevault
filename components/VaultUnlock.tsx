@@ -1,12 +1,12 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Eye, EyeOff, Loader2, LockKeyhole } from "lucide-react";
+import { Eye, EyeOff, Loader2, LockKeyhole, X } from "lucide-react";
 import { useMe } from "@/lib/me";
 import { REMEMBER_MIN, unlockVault } from "@/lib/vault";
 
 /** Tresor entsperren – Box wie die PIN-Abfrage (Passwort bleibt im Gerät) */
-export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib dein Tresor-Passwort ein, um Inhalt und Original zu sehen.", title = "Verschlüsselt", compact = false }: { text?: string; title?: string; compact?: boolean }) {
+export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib dein Tresor-Passwort ein, um Inhalt und Original zu sehen.", title = "Verschlüsselt", compact = false, footer, onClose }: { text?: React.ReactNode; title?: string; compact?: boolean; footer?: React.ReactNode; onClose?: () => void }) {
   const { vault } = useMe();
   const [pw, setPw] = useState("");
   const [show, setShow] = useState(false);
@@ -22,7 +22,7 @@ export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib de
   };
   const field = (cls: string) => (
     <label className={`relative block min-w-0 ${cls}`}>
-      <input type={show ? "text" : "password"} autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Tresor-Passwort" aria-label="Tresor-Passwort" autoFocus={!compact}
+      <input type={show ? "text" : "password"} autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Tresor-Passwort" aria-label="Tresor-Passwort" autoFocus={!compact} data-own-focus
         className={`h-10 w-full rounded-full border bg-surface pr-10 pl-4 text-[14px] outline-none focus:border-brand-500 ${error ? "border-negative" : "border-card-line"}`} />
       <button type="button" onClick={() => setShow(!show)} aria-label={show ? "Passwort verbergen" : "Passwort zeigen"} className="absolute top-1/2 right-2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-muted hover:text-fg">{show ? <EyeOff size={15} /> : <Eye size={15} />}</button>
     </label>
@@ -44,11 +44,13 @@ export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib de
           <b className="block text-[13.5px] leading-5">{vault ? title : "Noch kein Tresor"}</b>
           <span className="block text-[12px] leading-4 text-white/75">{vault ? text : "Lege einen Tresor an, um Dokumente zu verschlüsseln."}</span>
         </span>
+        {onClose && <button type="button" onClick={onClose} aria-label="Schließen" className="-mt-1 -mr-1.5 grid h-8 w-8 shrink-0 place-items-center rounded-full text-white/75 hover:bg-white/10 hover:text-white"><X size={16} /></button>}
       </div>
       {vault ? (
         <form onSubmit={submit} className="mt-2.5">
           <div className="flex gap-2 [&_input]:border-transparent [&_input]:text-fg">{field("flex-1")}<button type="submit" disabled={busy || !pw} className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-white px-4 text-[13.5px] font-semibold text-brand-600 disabled:opacity-60">{busy && <Loader2 size={14} className="animate-spin" />} Entsperren</button></div>
           <div className="mt-1.5 flex items-center justify-between gap-2 pl-1 [&_label]:text-white/80">{keepBox}{error && <span className="rounded-full bg-white px-2 py-0.5 text-[12px] text-negative-text" role="alert">{error}</span>}</div>
+          {footer}
         </form>
       ) : <Link href="/einstellungen/tresor" className="mt-2.5 inline-flex h-9 items-center rounded-full bg-white px-4 text-[13px] font-semibold text-brand-600">Tresor einrichten</Link>}
     </div>
