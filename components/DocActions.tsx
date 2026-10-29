@@ -111,7 +111,8 @@ function parseEpc(c: string) {
 }
 
 /** Eigener Bereich „Bezahlung“: was ist offen (gesamt), woraus setzt es sich zusammen, und wie bezahle ich – Überweisung, GiroCode, Link */
-function PaymentSection({ doc, codes, links, related }: { doc: Doc; codes: string[]; links: string[]; related: Doc[] }) {
+/** always: auch ohne offene Zahlung zeigen (Status „nichts offen“ + bekannte Bankverbindung mit GiroCode) */
+function PaymentSection({ doc, codes, links, related, always = false }: { doc: Doc; codes: string[]; links: string[]; related: Doc[]; always?: boolean }) {
   const today = new Date().toISOString().slice(0, 10);
   const todo = todos([doc], today)[0];
   const { allDocs } = useDocs();
@@ -126,15 +127,17 @@ function PaymentSection({ doc, codes, links, related }: { doc: Doc; codes: strin
   const qrLinks = codes.filter((c) => /^https?:\/\//i.test(c) && PAY_LINK.test(c));
   const payLinks = [...new Set([...qrLinks, ...links.filter((l) => PAY_LINK.test(l))])].slice(0, 3);
   const isPay = !!(payment || total || epc || (todo && /zahl|fällig|überweis|rechnung|mahn|gebühr|abschlag/i.test(todo.what)));
-  if (!isPay) return null;
+  if (!isPay && !always) return null;
   const late = todo && todo.days < 0;
+  // nichts offen: bezahlt, Lastschrift oder kein Zahlungsdokument – trotzdem zeigen, wohin man zahlen würde
+  const nothing = !todo && !isPay;
   return (
     <section className="overflow-hidden rounded-2xl border border-card-line bg-surface">
       <div className="flex items-start justify-between gap-3 px-4 pt-3.5 pb-3">
         <span>
           <span className="flex items-center gap-2 text-[12px] font-semibold tracking-wide text-muted uppercase"><Euro size={14} /> Bezahlung</span>
-          {total !== undefined ? <b className="tnum mt-1 block text-[26px] leading-8">{fmtMoney(total, "EUR")}</b> : <b className="mt-1 block text-[15px]">Betrag nicht erkannt</b>}
-          <span className="block text-[12.5px] text-muted">{todo?.items?.length ? `offen insgesamt · ${todo.items.length} Posten` : "offen"}</span>
+          {nothing ? <b className="mt-1 block text-[18px] leading-7">Nichts offen</b> : total !== undefined ? <b className="tnum mt-1 block text-[26px] leading-8">{fmtMoney(total, "EUR")}</b> : <b className="mt-1 block text-[15px]">Betrag nicht erkannt</b>}
+          <span className="block text-[12.5px] text-muted">{nothing ? (doc.archived ? "erledigt bzw. archiviert" : "aus diesem Dokument ist gerade nichts zu zahlen") : todo?.items?.length ? `offen insgesamt · ${todo.items.length} Posten` : todo ? "offen" : "laut Dokument"}</span>
         </span>
         {todo && <span className={`mt-1 shrink-0 rounded-full border px-2.5 py-0.5 text-[12px] font-semibold ${late ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>{late ? dueLabel(todo.days) : `bis ${fmtDate(todo.date)}`}</span>}
       </div>
@@ -157,7 +160,7 @@ function PaymentSection({ doc, codes, links, related }: { doc: Doc; codes: strin
             <ExternalLink size={14} className="shrink-0 text-muted" />
           </a>
         ))}
-        {!payment && !epc && !payLinks.length && <p className="px-1 text-[12.5px] text-muted">Keine Bankverbindung oder Zahlungslink im Schreiben – vermutlich per Lastschrift oder im Kundenkonto des Absenders.</p>}
+        {!payment && !epc && !last && !payLinks.length && <p className="px-1 text-[12.5px] text-muted">{nothing ? "Keine Bankverbindung bekannt – bei diesem Absender gab es bisher nichts zu überweisen (z. B. Lastschrift)." : "Keine Bankverbindung oder Zahlungslink im Schreiben – vermutlich per Lastschrift oder im Kundenkonto des Absenders."}</p>}
       </div>
     </section>
   );
@@ -226,12 +229,12 @@ function RelatedDocs({ doc, related }: { doc: Doc; related: Doc[] }) {
 }
 
 /** Dokumentseite: Bezahlung gleich offen zeigen, solange die Zahlung nicht erledigt ist */
-export function DocPayment({ doc, url, fullText, related = [] }: { doc: Doc; url?: string; fullText?: string | null; related?: Doc[] }) {
+export function DocPayment({ doc, url, fullText, related = [], always = false }: { doc: Doc; url?: string; fullText?: string | null; related?: Doc[]; always?: boolean }) {
   const codes = useDocQrCodes(url, doc.mime_type);
   const contact = contactOf(doc, fullText);
   const todo = todos([doc], new Date().toISOString().slice(0, 10))[0];
   let done = false;
   try { done = !!todo && (JSON.parse(localStorage.getItem("lifevault:todo-done") ?? "[]") as string[]).includes(`${doc.id}|${todo.date}`); } catch { /* egal */ }
-  if (!todo || done) return null;
-  return <PaymentSection doc={doc} codes={codes} links={contact.links} related={related} />;
+  if ((!todo || done) && !always) return null;
+  return <PaymentSection doc={doc} codes={codes} links={contact.links} related={related} always={always} />;
 }
