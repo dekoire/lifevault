@@ -60,6 +60,19 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 .tnum { font-variant-numeric: tabular-nums; }
+/* Wischreihen weich ausblenden (Werte setzt useEdgeFade) */
+.fade-x {
+  --fl: 0px; --fr: 0px;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fl), #000 calc(100% - var(--fr)), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--fl), #000 calc(100% - var(--fr)), transparent 100%);
+}
+/* Schwarz-Weiß: Akzent ohne Lila */
+[data-accent="mono"] {
+  --color-brand-300: #a1a1aa; --color-brand-400: #3f3f46; --color-brand-500: #18181b; --color-brand-600: #000000; --color-brand-700: #000000;
+  --color-lavender: #f1f1f3; --color-selected: #111111;
+  --accent-grad: linear-gradient(120deg, #18181b 0%, #2e2e33 55%, #44444a 100%);
+}
+[data-accent="mono"][data-theme="dark"] { --color-lavender: #26262b; --color-selected: #f4f4f6; --color-brand-500: #3f3f46; --color-brand-600: #52525b; }
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .pb-safe { padding-bottom: env(safe-area-inset-bottom); }

@@ -41,7 +41,7 @@ export function DuplicateHint({ docs }: { docs: Doc[] }) {
   return (
     <Link href="/doppelt" className={`${CARD} lift block p-4`}>
       <span className="flex items-center gap-2">
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#6d4aff]/10 text-[#6d4aff]"><Copy size={14} /></span>
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-brand-500/10 text-brand-500"><Copy size={14} /></span>
         <b className="min-w-0 flex-1 truncate text-[14.5px]">Doppeltes aufräumen <span className="tnum ml-1 rounded-full border border-card-line px-2 py-px text-[11.5px] font-semibold text-muted">{groups.length + partnerGroups.length}</span></b>
         <ChevronRight size={17} className="shrink-0 text-muted" />
       </span>
@@ -65,7 +65,7 @@ export function DuplicateHint({ docs }: { docs: Doc[] }) {
           </span>
         ))}
       </span>
-      <span className="mt-3 block text-center text-[13px] font-semibold text-[#6d4aff]">Prüfen und zusammenführen</span>
+      <span className="mt-3 block text-center text-[13px] font-semibold text-brand-500">Prüfen und zusammenführen</span>
     </Link>
   );
 }
@@ -151,7 +151,7 @@ function Group({ g, onMerge, onDismiss }: { g: DupGroup; onMerge: (keep: string)
             </tbody>
           </table>
         )}
-        {diff.length > 6 && <button type="button" onClick={() => setAll(!all)} className="w-full border-t border-line px-3 py-1.5 text-left text-[12px] font-semibold text-selected">{all ? "Weniger" : `Alle ${diff.length} zeigen`}</button>}
+        {diff.length > 6 && <button type="button" onClick={() => setAll(!all)} className="w-full border-t border-line bg-surface-2 px-3 py-1.5 text-center text-[12px] font-semibold text-fg transition-colors hover:bg-surface-3">{all ? "Weniger" : `Alle ${diff.length} zeigen`}</button>}
       </div>
       <div className="mt-2.5 flex flex-wrap gap-2">
         <button type="button" disabled={busy} onClick={() => { if (!confirm(`${g.docs.length - 1} ${g.docs.length === 2 ? "Dokument" : "Dokumente"} löschen und nur das ausgewählte behalten?`)) return; setBusy(true); void onMerge(keep).finally(() => setBusy(false)); }} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas disabled:opacity-50">

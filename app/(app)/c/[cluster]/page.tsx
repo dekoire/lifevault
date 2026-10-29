@@ -20,7 +20,7 @@ export default function ClusterPage({ params }: { params: Promise<{ cluster: str
   const list = all.filter((d) => !d.archived);
   const archived = all.filter((d) => d.archived);
   return (
-    <div className="max-w-4xl space-y-5">
+    <div className="space-y-5">
       <BackLink href="/" label="Start" />
       <PageHeader icon={<ClusterIcon id={c.id} size={52} />} title={c.label} subtitle={`${list.length} ${list.length === 1 ? "Dokument" : "Dokumente"} · ${c.hint}`}
         action={list.length > 0 && (

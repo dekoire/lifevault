@@ -6,6 +6,7 @@ import { MergeSheet } from "@/components/MergeReview";
 import { SenderLogo } from "@/components/SenderLogo";
 import { cardOrder, KIND_BG, walletCards } from "@/lib/cards";
 import { useDocs } from "@/lib/docs";
+import { useEdgeFade } from "@/lib/edgefade";
 
 const fmtValid = (d?: Date) => (d ? d.toLocaleDateString("de-DE", { month: "2-digit", year: "numeric" }) : undefined);
 
@@ -15,12 +16,13 @@ export function CardWallet({ title = "Karten & Ausweise", compact = false }: { t
   const cards = useMemo(() => walletCards(allDocs), [allDocs]);
   const open = useDetail();
   const [ask, setAsk] = useState<string>();
+  const row = useEdgeFade<HTMLDivElement>();
   if (!cards.length) return null;
 
   return (
     <section>
       <h2 className="mb-3 flex items-center gap-2 text-[17px] font-semibold">{title} <span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] font-semibold text-muted">{cards.length}</span></h2>
-      <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2 [scrollbar-width:none]">
+      <div ref={row} className="fade-x -mx-1 -mt-2 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pt-2 pb-3 [scrollbar-width:none]">
         {cards.map((c) => {
           const soon = c.validDate && c.validDate.getTime() - Date.now() < 90 * 86_400_000;
           return (

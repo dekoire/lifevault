@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Loader2, X } from "lucide-react";
 
 /**
  * Alle Seiten eines PDFs als Bilder – das iPhone zeigt im iframe nur Seite 1.
@@ -40,22 +41,54 @@ export function PdfPages({ url, card = false, compact = false }: { url: string; 
     return () => { stop = true; made.forEach((u) => URL.revokeObjectURL(u)); };
   }, [url]);
 
+  const [zoom, setZoom] = useState<number>();
+  const [at, setAt] = useState(0);
   if (failed) return <iframe src={`${url}#toolbar=0&view=FitH`} title="Vorschau" className={`w-full ${compact ? "h-80" : "h-[60vh]"}`} />;
   const label = (i: number) => (card && total === 2 ? (i === 0 ? "Vorderseite" : "Rückseite") : `Seite ${i + 1} von ${total}`);
-  const two = card && total === 2;
+  const loading = pages.length < Math.min(total || 1, MAX);
   return (
-    <div className={`${compact ? "max-h-[28rem]" : "max-h-[75vh]"} overflow-y-auto p-2`}>
-      <div className={two ? "grid gap-2 sm:grid-cols-2" : "space-y-2"}>
+    <div className="p-2">
+      {/* zum Wischen: jede Seite passt ganz ins Bild, Tippen öffnet sie groß */}
+      <div onScroll={(e) => { const el = e.currentTarget; setAt(Math.round(el.scrollLeft / Math.max(1, el.clientWidth))); }} className="flex snap-x snap-mandatory gap-2 overflow-x-auto [scrollbar-width:none]">
         {pages.map((u, i) => (
-          <figure key={u} className="overflow-hidden rounded-lg border border-card-line bg-white">
-            <img src={u} alt={label(i)} className={`mx-auto block w-full object-contain ${two ? "" : compact ? "max-h-80" : ""}`} />
+          <figure key={u} className="w-full shrink-0 snap-center overflow-hidden rounded-lg border border-card-line bg-white">
+            <button type="button" onClick={() => setZoom(i)} className="block w-full" aria-label={`${label(i)} groß ansehen`}>
+              <img src={u} alt={label(i)} className={`mx-auto block w-full object-contain ${compact ? "h-64" : "h-[55vh]"}`} />
+            </button>
             {total > 1 && <figcaption className="border-t border-line bg-surface px-2.5 py-1 text-[11.5px] font-semibold text-soft">{label(i)}</figcaption>}
           </figure>
         ))}
+        {loading && <p className={`flex w-full shrink-0 items-center justify-center gap-2 text-[12.5px] text-muted ${compact ? "h-64" : "h-[55vh]"}`}><Loader2 size={14} className="animate-spin" /> {total ? `Seite ${pages.length + 1} von ${total} …` : "Lade Seiten …"}</p>}
       </div>
-      {pages.length < Math.min(total || 1, MAX) && <p className="flex items-center justify-center gap-2 py-6 text-[12.5px] text-muted"><Loader2 size={14} className="animate-spin" /> {total ? `Seite ${pages.length + 1} von ${total} …` : "Lade Seiten …"}</p>}
+      {total > 1 && (
+        <p className="mt-2 flex items-center justify-center gap-1.5">
+          {Array.from({ length: Math.min(total, MAX) }, (_, i) => <span key={i} className={`h-1.5 rounded-full transition-all ${i === at ? "w-4 bg-fg" : "w-1.5 bg-line-strong"}`} />)}
+        </p>
+      )}
       {total > MAX && <p className="py-2 text-center text-[12px] text-muted">Weitere {total - MAX} Seiten im Original.</p>}
+      {zoom !== undefined && pages[zoom] && <Viewer src={pages[zoom]} label={label(zoom)} onClose={() => setZoom(undefined)} />}
     </div>
+  );
+}
+
+/** Vollbild: erst ganz sichtbar, Tippen zoomt hinein (dann mit dem Finger verschieben), nochmal Tippen zoomt heraus */
+function Viewer({ src, label, onClose }: { src: string; label: string; onClose: () => void }) {
+  const [big, setBig] = useState(false);
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    addEventListener("keydown", k); return () => removeEventListener("keydown", k);
+  }, [onClose]);
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex flex-col bg-black/95 text-white" role="dialog" aria-label={label}>
+      <div className="flex items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
+        <span className="text-[13px] font-semibold">{label} · {big ? "Tippen zum Verkleinern" : "Tippen zum Vergrößern"}</span>
+        <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-white/15" aria-label="Schließen"><X size={18} /></button>
+      </div>
+      <div className={`flex-1 overflow-auto ${big ? "" : "grid place-items-center"}`}>
+        <img src={src} alt={label} onClick={() => setBig(!big)} className={big ? "block max-w-none w-[260%] cursor-zoom-out" : "block max-h-full max-w-full cursor-zoom-in object-contain"} />
+      </div>
+    </div>,
+    document.body,
   );
 }
 

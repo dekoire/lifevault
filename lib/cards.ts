@@ -93,6 +93,16 @@ export function walletCards(docs: Doc[]): WalletCard[] {
     if (!cur.validDate && valid) { cur.valid = valid; cur.validDate = parseValid(valid); }
     cur.holder ??= holderOf(d);
   }
+  // Logo: die Webadresse, die der Absender in deinen Dokumenten am häufigsten hat (eine abweichende Adresse hat oft kein Logo)
+  const domains = new Map<string, Map<string, number>>();
+  for (const d of docs) if (d.sender && d.sender_domain) {
+    const m = domains.get(d.sender.toLowerCase()) ?? new Map<string, number>();
+    m.set(d.sender_domain, (m.get(d.sender_domain) ?? 0) + 1); domains.set(d.sender.toLowerCase(), m);
+  }
+  for (const c of map.values()) {
+    const m = c.kind !== "id" && c.issuer ? domains.get(c.issuer.toLowerCase()) : undefined;
+    if (m) c.domain = [...m.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  }
   const now = Date.now();
   return [...map.values()].map((c) => {
     // Hinweis zum Prüfen: mehrere Einzelfotos, nur Rückseite, unklarer Aussteller, abgelaufen

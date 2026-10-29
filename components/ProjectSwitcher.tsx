@@ -24,13 +24,13 @@ export function ProjectSwitcher({ compact = false }: { compact?: boolean }) {
   return (
     <div ref={ref} className="relative">
       <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="listbox"
-        className={compact ? "flex h-10 max-w-[11rem] items-center gap-2 rounded-full border border-card-line bg-surface px-3 text-[13px] font-semibold" : "flex h-9 w-full items-center gap-2 rounded-xl border border-card-line bg-surface px-2.5 text-left hover:bg-surface-2"}>
+        className={compact ? "flex h-10 max-w-[11rem] items-center gap-2 rounded-full bg-surface-3 px-3 text-[13px] font-semibold transition-colors hover:bg-line-strong/50" : "flex h-9 w-full items-center gap-2 rounded-xl bg-surface-3 px-2.5 text-left transition-colors hover:bg-line-strong/50"}>
         {currentProject ? <Dot color={currentProject.color} size={8} /> : <Layers size={14} className="text-muted" />}
         <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{label}</span>
         <ChevronsUpDown size={14} className="shrink-0 text-muted" />
       </button>
       {open && (
-        <div role="listbox" className={`sheet-up absolute z-50 mt-1.5 w-64 rounded-2xl border border-card-line bg-surface p-1.5 shadow-[0_12px_32px_rgba(16,24,40,.14)] ${compact ? "right-0" : "left-0"}`}>
+        <div role="listbox" className={`pop-in absolute z-50 mt-1.5 w-64 rounded-2xl border border-card-line bg-surface p-1.5 shadow-[0_12px_32px_rgba(16,24,40,.14)] ${compact ? "right-0" : "left-0"}`}>
           {[{ id: "all", name: "Alle Projekte", color: "" }, ...projects].map((p) => (
             <button key={p.id} type="button" role="option" aria-selected={current === p.id} onClick={() => { setCurrent(p.id); setOpen(false); }}
               className="flex h-9 w-full items-center gap-2.5 rounded-xl px-2.5 text-left text-[13.5px] hover:bg-surface-2">

@@ -31,7 +31,7 @@ export type WidgetKind = (typeof WIDGETS)[number];
 
 // Kachel-Verläufe wie in Finastry
 export const TILE = {
-  purple: "linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%)",
+  purple: "var(--accent-grad, linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%))",
   teal: "linear-gradient(120deg,#1f9688 0%,#27a294 100%)",
   blue: "linear-gradient(120deg,#2b5fe6 0%,#3a6cf0 100%)",
   amber: "linear-gradient(120deg,#c46d06 0%,#d07a12 100%)",

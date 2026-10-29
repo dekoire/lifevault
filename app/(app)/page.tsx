@@ -1,4 +1,5 @@
 "use client";
+import { useEdgeFade } from "@/lib/edgefade";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CalendarClock, ChevronRight, FileText, Layers, ListChecks, Lock, Search, Sparkles } from "lucide-react";
@@ -26,6 +27,7 @@ export default function Home() {
   const { currentProject } = useProjects();
   const partners = useMemo(() => buildPartners(docs), [docs]);
   const [q, setQ] = useState("");
+  const partnerRow = useEdgeFade<HTMLDivElement>();
   const today = new Date().toISOString().slice(0, 10);
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -55,7 +57,7 @@ export default function Home() {
       <div className={`grid grid-cols-1 gap-5 lg:items-start ${side ? "lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]" : ""}`}>
         <div className="stagger min-w-0 space-y-5">
           {/* Kennzahlen: was bisher gesammelt ist */}
-          <section className="relative grid grid-cols-2 overflow-hidden rounded-2xl text-white shadow-card sm:grid-cols-4 [&>div:nth-of-type(odd)]:border-r [&>div:nth-of-type(-n+2)]:border-b sm:[&>div]:border-b-0 max-sm:[&>div:nth-of-type(even)]:border-r-0 sm:[&>div:not(:last-of-type)]:border-r" style={{ background: "linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%)" }}>
+          <section className="relative grid grid-cols-2 overflow-hidden rounded-2xl text-white shadow-card sm:grid-cols-4 [&>div:nth-of-type(odd)]:border-r [&>div:nth-of-type(-n+2)]:border-b sm:[&>div]:border-b-0 max-sm:[&>div:nth-of-type(even)]:border-r-0 sm:[&>div:not(:last-of-type)]:border-r" style={{ background: "var(--accent-grad, linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%))" }}>
             {/* dezenter Glanz wie bei Finastry */}
             <span aria-hidden className="pointer-events-none absolute -top-24 -right-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
             {kpis.map(({ icon: Icon, value, label, sub }) => (
@@ -79,7 +81,7 @@ export default function Home() {
               {partners.length > 0 && (
                 <section>
                   <div className="mb-3 flex items-center justify-between"><h2 className="text-[17px] font-semibold">Deine Partner</h2><Link href="/partner" className="text-[13px] font-semibold text-selected">Alle {partners.length}</Link></div>
-                  <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pt-1 pb-2 [scrollbar-width:none] md:mx-0 md:px-0">
+                  <div ref={partnerRow} className="fade-x -mx-4 flex gap-3 overflow-x-auto px-4 pt-1 pb-2 [scrollbar-width:none] md:mx-0 md:px-0">
                     {partners.slice(0, 12).map((p) => (
                       <Link key={p.key} href={`/partner/${p.key}`} title={p.name} className={`${TILE} flex w-[128px] shrink-0 flex-col items-center gap-2.5 px-3 pt-4 pb-3 text-center ${p.active ? "" : "opacity-60"}`}>
                         <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={52} bare />

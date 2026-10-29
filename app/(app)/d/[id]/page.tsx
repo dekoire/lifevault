@@ -259,7 +259,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
             return (
               <Section key={g} title={g} count={fs.length} open={isOpen(`g:${g}`, i < 2 && groupRank(g) === 0)} onToggle={() => toggle(`g:${g}`, i < 2 && groupRank(g) === 0)}>
                 <KeyValueTable rows={rows.map((f) => ({ label: f.label, value: f.value }))} />
-                {fs.length > 4 && <button type="button" onClick={() => setMore({ ...more, [g]: !all })} className="w-full border-t border-line px-4 py-2.5 text-left text-[13px] font-semibold text-selected hover:bg-surface-2">{all ? "Weniger anzeigen" : `Alle ${fs.length} anzeigen`}</button>}
+                {fs.length > 4 && <button type="button" onClick={() => setMore({ ...more, [g]: !all })} className="w-full border-t border-line bg-surface-2 px-4 py-2.5 text-center text-[13px] font-semibold text-fg transition-colors hover:bg-surface-3">{all ? "Weniger anzeigen" : `Alle ${fs.length} anzeigen`}</button>}
               </Section>
             );
           })}

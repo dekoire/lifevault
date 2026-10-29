@@ -142,7 +142,7 @@ export default function ProfilPage() {
               </li>
             ))}
           </ul>
-          {steck.length > 6 && <button type="button" onClick={() => setAllFields(!allFields)} className="-mt-px w-full border-t border-line px-5 py-3 text-left text-[13px] font-semibold text-selected hover:bg-surface-2">{allFields ? "Weniger anzeigen" : `Alle ${steck.length} Angaben anzeigen`}</button>}
+          {steck.length > 6 && <button type="button" onClick={() => setAllFields(!allFields)} className="-mt-px w-full border-t border-line bg-surface-2 px-5 py-3 text-center text-[13px] font-semibold text-fg transition-colors hover:bg-surface-3">{allFields ? "Weniger anzeigen" : `Alle ${steck.length} Angaben anzeigen`}</button>}
         </section>
       )}
       {error && <p role="alert" className="mb-4 rounded-xl bg-negative/10 px-4 py-3 text-[14px] text-negative-text">{error}</p>}

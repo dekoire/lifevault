@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Check, GitMerge, History, Loader2, PencilLine, Undo2, Users, X } from "lucide-react";
+import { ArrowRight, Check, GitMerge, History, Loader2, PencilLine, Undo2, Users, X } from "lucide-react";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD } from "@/components/ui";
 import { fmtDate, useDocs } from "@/lib/docs";
@@ -37,7 +37,7 @@ function Group({ g, onDismiss }: { g: PartnerGroup; onDismiss: () => void }) {
   const others = g.partners.filter((p) => p.key !== keep && picked.includes(p.key));
   const merge = async () => {
     const ids = others.flatMap((p) => p.docs.map((d) => d.id));
-    if (!ids.length || !confirm(`${ids.length} ${ids.length === 1 ? "Dokument" : "Dokumente"} von ${others.map((p) => `„${p.name}“`).join(", ")} zu „${target.name}“ verschieben?`)) return;
+    if (!ids.length || !confirm(`${others.map((p) => `„${p.name}“`).join(", ")} und „${target.name}“ als einen Partner führen? ${ids.length} ${ids.length === 1 ? "Dokument bekommt" : "Dokumente bekommen"} den Absender „${target.name}“.`)) return;
     setBusy(true);
     // vorher merken, wie jedes Dokument hieß – damit es rückgängig gemacht werden kann
     const entries = others.flatMap((p) => p.docs.map((d) => ({ doc_id: d.id, sender: d.sender, sender_domain: d.sender_domain })));
@@ -49,38 +49,57 @@ function Group({ g, onDismiss }: { g: PartnerGroup; onDismiss: () => void }) {
     setDone(true);
     await refresh();
   };
+  const total = target.docs.length + others.reduce((n, p) => n + p.docs.length, 0);
   return (
     <section className={`${CARD} overflow-hidden`}>
-      <div className="px-4 pt-3.5">
-        <p className="flex flex-wrap items-center gap-1.5 text-[12.5px] text-soft">
-          <span className={`rounded-full px-2 py-px text-[11px] font-semibold ${g.sure ? "bg-fg text-canvas" : "border border-card-line"}`}>{g.sure ? "sehr wahrscheinlich gleich" : "vielleicht gleich"}</span>
+      {/* Frage zuerst: ist das derselbe Partner? */}
+      <div className="px-4 pt-4">
+        <p className="text-[15px] font-semibold">Ist das derselbe Partner?</p>
+        <p className="mt-0.5 text-[12.5px] text-muted">
+          <span className={`mr-1.5 rounded-full px-2 py-px text-[11px] font-semibold ${g.sure ? "bg-fg text-canvas" : "border border-card-line text-soft"}`}>{g.sure ? "sehr wahrscheinlich" : "vielleicht"}</span>
           {g.reasons.join(" · ")}
         </p>
       </div>
-      <ul className="space-y-1.5 px-4 py-3">
-        {g.partners.map((p) => {
-          const on = picked.includes(p.key);
-          const isKeep = keep === p.key;
-          return (
-            <li key={p.key} className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${isKeep ? "border-fg bg-surface-2" : "border-card-line"} ${on ? "" : "opacity-50"}`}>
-              <button type="button" role="checkbox" aria-checked={on} disabled={isKeep} onClick={() => setPicked((c) => (on ? c.filter((x) => x !== p.key) : [...c, p.key]))} aria-label="Gehört dazu" className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 ${on ? "border-fg bg-fg text-canvas" : "border-line-strong"}`}>{on && <Check size={12} strokeWidth={3} />}</button>
-              <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={34} />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13.5px] font-semibold">{p.name}</span>
-                <span className="block truncate text-[12px] text-muted">{p.docs.length} {p.docs.length === 1 ? "Dokument" : "Dokumente"}{p.domain ? ` · ${p.domain}` : ""}{p.ids.length ? ` · ${p.ids.length} Kennungen` : ""}</span>
-              </span>
-              <button type="button" onClick={() => { setKeep(p.key); setPicked((c) => (c.includes(p.key) ? c : [...c, p.key])); }} className={`shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${isKeep ? "bg-fg text-canvas" : "border border-card-line text-soft hover:text-fg"}`}>{isKeep ? "Name behalten" : "Diesen Namen"}</button>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="grid gap-3 px-4 py-3.5 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+        {/* links: die Namen, unter denen er gerade auftaucht – einen als Namen wählen */}
+        <div>
+          <p className="mb-1.5 text-[11px] font-semibold tracking-wide text-muted uppercase">Steht bei dir unter {g.partners.length} Namen</p>
+          <ul className="space-y-1.5" role="radiogroup" aria-label="Welcher Name soll bleiben?">
+            {g.partners.map((p) => {
+              const on = picked.includes(p.key);
+              const isKeep = keep === p.key;
+              return (
+                <li key={p.key} className={`flex items-center gap-2.5 rounded-xl border px-2.5 py-2 ${isKeep ? "border-fg" : "border-card-line"} ${on ? "" : "opacity-45"}`}>
+                  <button type="button" role="radio" aria-checked={isKeep} onClick={() => { setKeep(p.key); setPicked((c) => (c.includes(p.key) ? c : [...c, p.key])); }} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
+                    <span className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border-2 ${isKeep ? "border-fg" : "border-line-strong"}`}>{isKeep && <span className="h-2 w-2 rounded-full bg-fg" />}</span>
+                    <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={30} />
+                    <span className="min-w-0 flex-1"><b className="block truncate text-[13.5px] font-semibold">{p.name}</b><span className="block truncate text-[11.5px] text-muted">{p.docs.length} {p.docs.length === 1 ? "Dokument" : "Dokumente"}{p.domain ? ` · ${p.domain}` : ""}</span></span>
+                  </button>
+                  {g.partners.length > 2 && !isKeep && <button type="button" onClick={() => setPicked((c) => (on ? c.filter((x) => x !== p.key) : [...c, p.key]))} className="shrink-0 text-[11.5px] font-semibold text-muted hover:text-fg">{on ? "gehört nicht dazu" : "doch dazu"}</button>}
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-1.5 text-[11.5px] text-muted">Tippe den Namen an, der bleiben soll.</p>
+        </div>
+        <ArrowRight size={18} className="mx-auto rotate-90 text-muted sm:rotate-0" />
+        {/* rechts: so sieht es danach aus */}
+        <div className="rounded-xl bg-surface-2 p-3">
+          <p className="mb-1.5 text-[11px] font-semibold tracking-wide text-muted uppercase">Danach ein Partner</p>
+          <span className="flex items-center gap-2.5">
+            <SenderLogo domain={target.domain} sender={target.name} cluster={target.cluster} size={36} />
+            <span className="min-w-0"><b className="block truncate text-[14px]">{target.name}</b><span className="block text-[12px] text-muted">alle {total} Dokumente zusammen</span></span>
+          </span>
+          <p className="mt-2 text-[11.5px] text-muted">Nur der Absendername wird angeglichen – kein Dokument wird gelöscht. Rückgängig jederzeit.</p>
+        </div>
+      </div>
       <div className="flex flex-wrap items-center gap-2 border-t border-line px-4 py-3">
-        {done ? <span className="text-[13px] font-semibold text-positive-text">Zusammengeführt zu „{target.name}“.</span> : (
+        {done ? <span className="text-[13px] font-semibold text-positive-text">Erledigt – jetzt ein Partner: „{target.name}“.</span> : (
           <>
             <button type="button" disabled={busy || !others.length} onClick={() => void merge()} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas disabled:opacity-40">
-              {busy ? <Loader2 size={14} className="animate-spin" /> : <GitMerge size={14} />} {others.length ? `${others.length + 1} zusammenführen` : "Auswählen"}
+              {busy ? <Loader2 size={14} className="animate-spin" /> : <GitMerge size={14} />} Ja, ein Partner
             </button>
-            <button type="button" onClick={onDismiss} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-card-line px-4 text-[13px] font-semibold hover:bg-surface-2"><X size={14} /> Sind verschieden</button>
+            <button type="button" onClick={onDismiss} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-card-line px-4 text-[13px] font-semibold hover:bg-surface-2"><X size={14} /> Nein, verschiedene</button>
           </>
         )}
       </div>

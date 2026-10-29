@@ -1,16 +1,19 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Lock, LockKeyhole, ShieldCheck } from "lucide-react";
 import { SenderLogo } from "@/components/SenderLogo";
 import { dateOf, fmtDate, fmtMoney, isUrgent } from "@/lib/docs";
 import type { Doc, SecretPart } from "@/lib/types";
 import { useMe } from "@/lib/me";
+import { useEdgeFade } from "@/lib/edgefade";
 import { openJson } from "@/lib/vault";
 
 /** Dokumente als Karten zum Wischen, zeitlich sortiert (links älter, rechts neuer) – startet beim neuesten */
 export function DocCarousel({ docs }: { docs: Doc[] }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
+  const fade = useEdgeFade<HTMLDivElement>();
+  const setRef = useCallback((el: HTMLDivElement | null) => { ref.current = el; fade(el); }, [fade]);
   const [index, setIndex] = useState(docs.length - 1);
   const card = () => (ref.current?.firstElementChild as HTMLElement | null)?.offsetWidth ?? 300;
   useEffect(() => {
@@ -34,7 +37,7 @@ export function DocCarousel({ docs }: { docs: Doc[] }) {
           <button type="button" onClick={() => go(1)} aria-label="Neuer" className="grid h-9 w-9 place-items-center rounded-full border border-card-line bg-surface hover:bg-surface-2"><ChevronRight size={17} /></button>
         </span>
       </div>
-      <div ref={ref} onScroll={onScroll} className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [scrollbar-width:none] md:mx-0 md:px-0">
+      <div ref={setRef} onScroll={onScroll} className="fade-x -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [scrollbar-width:none] md:mx-0 md:px-0">
         {docs.map((d) => (
           <Link key={d.id} href={`/d/${d.id}`} className="flex w-[84%] shrink-0 snap-center flex-col rounded-2xl border border-card-line bg-surface p-4 transition hover:border-brand-500/40 sm:w-[340px] sm:snap-start">
             <span className="flex items-center gap-3">
