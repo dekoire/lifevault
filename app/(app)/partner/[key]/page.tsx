@@ -7,6 +7,7 @@ import { DocTable } from "@/components/DocTable";
 import { PartnerSheet } from "@/components/PartnerInfo";
 import { MergeHistory } from "@/components/PartnerDupes";
 import { SenderLogo } from "@/components/SenderLogo";
+import { ClusterIcon } from "@/components/ClusterIcon";
 import { BackLink, CARD, PageHeader } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
 import { fmtDate, fmtMoney, useDocs } from "@/lib/docs";
@@ -20,7 +21,17 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
   const { key } = use(params);
   const { docs, loading, refresh } = useDocs();
   const router = useRouter();
-  const p = useMemo(() => buildPartners(docs).find((x) => x.key === key), [docs, key]);
+  const partners = useMemo(() => buildPartners(docs), [docs]);
+  const p = partners.find((x) => x.key === key);
+  // verlinkter Partner mit Logo (auch wenn er keine eigenen Dokumente hat: Logo über den Namen)
+  const PLink = ({ name, strong }: { name: string; strong?: boolean }) => {
+    const other = partners.find((x) => x.key === partnerKey(name));
+    return (
+      <Link href={`/partner/${partnerKey(name)}`} className={`inline-flex items-center gap-1.5 underline-offset-2 hover:underline ${strong ? "font-semibold" : "font-medium"}`}>
+        <SenderLogo domain={other?.domain} sender={name} cluster={other?.cluster ?? p?.cluster} size={22} bare />{name}
+      </Link>
+    );
+  };
   const { byPartner } = useHistoryLinks(docs);
   const link = byPartner.get(key);
   // angeklickte Kennung → rechts nur Dokumente, die sie enthalten
@@ -69,12 +80,11 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
       />
       {link && (link.prev || link.next || link.current) && (
         <section className={`mb-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border px-4 py-3 text-[13.5px] ${link.entry.status === "früher" ? "border-amber/30 bg-amber/5" : "border-card-line bg-surface"}`}>
-          <History size={16} className="shrink-0 text-soft" />
-          <span className="font-semibold">{link.role} · {span(link.entry)}</span>
+          <span className="inline-flex items-center gap-2 font-semibold"><ClusterIcon id={p.cluster} size={26} tone="plain" />{link.role} · {span(link.entry)}</span>
           {link.entry.status === "früher" && (link.next ?? link.current) && (
-            <span className="inline-flex items-center gap-1.5">Abgelöst durch <ArrowRight size={13} /> <Link href={`/partner/${partnerKey((link.next ?? link.current)!.name)}`} className="font-semibold underline">{(link.next ?? link.current)!.name}</Link>{link.next?.change && <span className="inline-flex items-center gap-1 rounded-full border border-card-line px-2 py-px text-[11px] font-semibold">{link.next.change === "uebergabe" && <GitBranch size={11} />}{CHANGE_LABEL[link.next.change]}</span>}</span>
+            <span className="inline-flex items-center gap-1.5">Abgelöst durch <ArrowRight size={13} /> <PLink name={(link.next ?? link.current)!.name} strong />{link.next?.change && <span className="inline-flex items-center gap-1 rounded-full border border-card-line px-2 py-px text-[11px] font-semibold">{link.next.change === "uebergabe" && <GitBranch size={11} />}{CHANGE_LABEL[link.next.change]}</span>}</span>
           )}
-          {link.prev && <span className="text-soft">Vorher: <Link href={`/partner/${partnerKey(link.prev.name)}`} className="font-medium underline">{link.prev.name}</Link> ({span(link.prev)})</span>}
+          {link.prev && <span className="inline-flex flex-wrap items-center gap-1.5 text-soft">Vorher: <PLink name={link.prev.name} /> <span className="text-muted">({span(link.prev)})</span></span>}
           {(link.entry.note || link.next?.note) && <span className="basis-full text-[12.5px] text-muted">{link.next?.note ?? link.entry.note}</span>}
         </section>
       )}
