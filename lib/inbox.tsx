@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDocs } from "@/lib/docs";
 import { startJob, updateJob } from "@/lib/jobs";
-import { fixMime, isCandidate } from "@/lib/mail";
+import { fixMime, isCandidate, mailBodyPdf, mailText } from "@/lib/mail";
 import { authFetch, supabase, useSession } from "@/lib/supabase";
 
 /**
@@ -82,7 +82,23 @@ export function useConfirmations() {
 
 export type InboxResult = { checked: number; imported: number; files: number; known: number; withoutDocs: number; rejected: { subject: string; from: string; reason: string }[] };
 
-/** Abholen und importieren. Ohne KI-Vorprüfung: was du selbst schickst, willst du auch haben (nur Logos/Deko fallen raus). */
+/**
+ * Mail ohne Dokument-Anhang: Ist der Mailtext selbst ein Beleg (z. B. Apple-Rechnung)? Dann als PDF zurück, sonst undefined.
+ * Hier prüft die KI kurz – sonst würde jede weitergeleitete Mail ohne Anhang abgelegt.
+ */
+async function bodyReceipt(m: Item): Promise<{ file?: File; reason: string }> {
+  const r = await authFetch(`/api/mail/inbox/body?email=${m.id}`);
+  if (!r.ok) return { reason: "Mailtext konnte nicht geladen werden" };
+  const { text, html } = (await r.json()) as { text: string; html: string };
+  const bodyText = mailText(html ?? "", text ?? "");
+  if (bodyText.replace(/\s/g, "").length < 80) return { reason: "Kein Dokument im Anhang" };
+  const t = await authFetch("/api/mail/triage", { method: "POST", body: JSON.stringify({ items: [{ id: m.id, from: m.from, subject: m.subject, date: m.date, snippet: m.snippet, attachments: [], body: bodyText.slice(0, 1500) }] }) });
+  const res = ((await t.json().catch(() => ({}))) as { results?: { relevant: boolean; reason: string; bodyDocument?: boolean }[] }).results?.[0];
+  if (!res?.relevant || !res.bodyDocument) return { reason: res?.reason ? `Kein Beleg: ${res.reason}` : "Kein Dokument im Anhang" };
+  return { file: await mailBodyPdf({ from: m.from, subject: m.subject, date: m.date, bodyText }), reason: res.reason || "Beleg im Mailtext" };
+}
+
+/** Abholen und importieren. Anhänge ohne KI-Vorprüfung: was du selbst schickst, willst du auch haben (nur Logos/Deko fallen raus). Mails ohne Anhang: Beleg im Mailtext → als PDF. */
 export async function importInbox(opts: { since: Date; until?: Date; upload: (files: File[], o?: { silent?: boolean }) => Promise<string[]>; silent?: boolean; advance?: boolean; onStep?: (s: string, done?: number, total?: number) => void }): Promise<InboxResult> {
   const { since, until, upload, onStep } = opts;
   onStep?.("Mails abrufen");
@@ -105,6 +121,7 @@ export async function importInbox(opts: { since: Date; until?: Date; upload: (fi
       if (job) updateJob(job, { done: n - 1 });
       const picks = m.attachments.filter((a) => isCandidate({ name: a.name, mime: fixMime(a.name, a.mime), size: a.size, inline: a.inline }));
       let docIds: string[] = [];
+      let reason = "";
       if (picks.length) {
         const files: File[] = [];
         for (const a of picks) {
@@ -115,17 +132,23 @@ export async function importInbox(opts: { since: Date; until?: Date; upload: (fi
         // alles aus einer Mail gehört zusammen → nach dem Auslesen gleicher Partner (im Hintergrund)
         if (docIds.length > 1) void unifyWhenReady(docIds, m.subject, m.from);
         if (docIds.length) { out.imported++; out.files += docIds.length; }
-      } else out.withoutDocs++;
+      } else {
+        // kein Anhang: vielleicht steht die Rechnung im Mailtext (Apple, PayPal …)
+        const b = await bodyReceipt(m).catch(() => ({ file: undefined, reason: "Mailtext konnte nicht geprüft werden" }));
+        reason = b.reason;
+        if (b.file) docIds = await upload([b.file], { silent: opts.silent });
+        if (docIds.length) { out.imported++; out.files += docIds.length; } else out.withoutDocs++;
+      }
       await supabase.from("mail_seen").upsert({
         msg_id: `inbox:${m.id}`, source: "inbox", subject: m.subject.slice(0, 500), sender: m.from.slice(0, 300), mail_date: m.date,
-        relevant: docIds.length > 0, reason: (docIds.length ? "An deine Lifevault-Adresse geschickt" : picks.length ? "Anhang konnte nicht geladen werden" : "Kein Dokument im Anhang").slice(0, 500), doc_ids: docIds,
+        relevant: docIds.length > 0, reason: (reason || (docIds.length ? "An deine Lifevault-Adresse geschickt" : picks.length ? "Anhang konnte nicht geladen werden" : "Kein Dokument im Anhang")).slice(0, 500), doc_ids: docIds,
       });
     }
   } catch (e) {
     if (job) updateJob(job, { state: "error", title: "E-Mail-Abruf unterbrochen", detail: (e as Error).message });
     throw e;
   }
-  if (job) updateJob(job, { done: fresh.length, state: "done", title: "E-Mails übernommen", detail: out.files ? `${out.files} ${out.files === 1 ? "Dokument" : "Dokumente"} aus ${out.imported} ${out.imported === 1 ? "Mail" : "Mails"}` : "Keine Dokumente im Anhang" });
+  if (job) updateJob(job, { done: fresh.length, state: "done", title: "E-Mails übernommen", detail: out.files ? `${out.files} ${out.files === 1 ? "Dokument" : "Dokumente"} aus ${out.imported} ${out.imported === 1 ? "Mail" : "Mails"}` : "Keine Dokumente oder Belege gefunden" });
   if (opts.advance !== false) await supabase.from("mail_inbox").update({ last_sync_at: new Date().toISOString() }).not("user_id", "is", null);
   window.dispatchEvent(new Event("lifevault:inbox"));
   onStep?.("Fertig", fresh.length, fresh.length);
