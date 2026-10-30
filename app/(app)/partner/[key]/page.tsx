@@ -135,7 +135,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
                     <h3 className="border-t border-line">
                       <button type="button" aria-expanded={isOpen} onClick={() => setOpenTopic(isOpen ? null : topic)} className="flex w-full items-center gap-2 px-4 py-[18px] md:px-6 text-left text-[15px] font-semibold transition-colors hover:bg-surface-2">
                         <span className="min-w-0 flex-1">{topic}</span>
-                        <span className="tnum rounded-full bg-surface px-3 py-2 text-[12px] leading-4 font-semibold text-soft">{n}</span>
+                        <span className="tnum inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-surface px-2 text-[12px] leading-none font-semibold text-soft">{n}</span>
                         <ChevronDown size={17} className={`shrink-0 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
                       </button>
                     </h3>

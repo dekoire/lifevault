@@ -185,7 +185,7 @@ export default function ProfilPage() {
                   <h3 className="flex items-center gap-2.5 px-5 pt-4 pb-3 text-[16px] font-semibold">
                     <IconTile icon={Icon} size={36} color={open ? "#b42318" : "#6d4aff"} />
                     <span className="flex-1">{s.title}</span>
-                    <span className="tnum rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">{s.items.length}</span>
+                    <span className="tnum rounded-full border border-card-line inline-flex h-6 min-w-6 items-center justify-center px-2 text-[12px] leading-none font-semibold text-soft">{s.items.length}</span>
                   </h3>
                   <ul className="flex-1 divide-y divide-line border-t border-line">
                     {(openSec.includes(s.id) ? s.items : s.items.slice(0, 4)).map((it, i) => (

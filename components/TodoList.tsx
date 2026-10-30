@@ -67,8 +67,8 @@ export function TodoList({ docs }: { docs: Doc[] }) {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 px-4 pt-5 pb-3 md:px-6">
         <h2 className="flex min-w-0 flex-1 items-center gap-2 text-[18px] leading-[26px] font-semibold">Zu erledigen
           {openList.length > 0 && (late > 0
-            ? <span className="tnum rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft" title={`${late} von ${openList.length} überfällig`}>{late} von {openList.length}</span>
-            : <span className="tnum rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">{openList.length}</span>)}
+            ? <span className="tnum rounded-full border border-card-line inline-flex h-6 min-w-6 items-center justify-center px-2 text-[12px] leading-none font-semibold text-soft" title={`${late} von ${openList.length} überfällig`}>{late} von {openList.length}</span>
+            : <span className="tnum rounded-full border border-card-line inline-flex h-6 min-w-6 items-center justify-center px-2 text-[12px] leading-none font-semibold text-soft">{openList.length}</span>)}
         </h2>
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
           <MultiSelect label="Status" name={(v) => ([...v].sort().join() === "late,later,soon" ? "Offen" : undefined)} value={status} onChange={(v) => { setStatus(v as Status[]); setAll(false); }} allLabel="Alle"

@@ -42,7 +42,7 @@ export function DuplicateHint({ docs }: { docs: Doc[] }) {
   return (
     <section className={`${CARD} overflow-hidden`}>
       <div className="px-4 pt-5 pb-3 md:px-6">
-        <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">Doppeltes aufräumen <span className="tnum rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">{n}</span></h2>
+        <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">Doppeltes aufräumen <span className="tnum rounded-full border border-card-line inline-flex h-6 min-w-6 items-center justify-center px-2 text-[12px] leading-none font-semibold text-soft">{n}</span></h2>
         <p className="mt-0.5 text-[13px] text-muted">Gleiches mehrfach abgelegt – eines behalten, den Rest löschen</p>
       </div>
       <ul className="divide-y divide-line border-t border-line">

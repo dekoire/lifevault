@@ -198,7 +198,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
                     <div className="flex items-center gap-2.5 px-4 pt-5 pb-2 md:px-6">
                       {g.partner && <SenderLogo domain={g.partner.domain} sender={g.partner.name} cluster={g.partner.cluster} size={24} />}
                       <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{g.label}</span>
-                      <span className="tnum rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">{g.docs.length}</span>
+                      <span className="tnum rounded-full border border-card-line inline-flex h-6 min-w-6 items-center justify-center px-2 text-[12px] leading-none font-semibold text-soft">{g.docs.length}</span>
                     </div>
                     {inner(g.docs)}
                   </div>

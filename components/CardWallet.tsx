@@ -21,7 +21,7 @@ export function CardWallet({ title = "Karten & Ausweise", compact = false }: { t
 
   return (
     <section>
-      <h2 className="mb-3 flex items-center gap-2 text-[17px] font-semibold">{title} <span className="tnum rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-muted">{cards.length}</span></h2>
+      <h2 className="mb-3 flex items-center gap-2 text-[17px] font-semibold">{title} <span className="tnum rounded-full border border-card-line inline-flex h-6 min-w-6 items-center justify-center px-2 text-[12px] leading-none font-semibold text-muted">{cards.length}</span></h2>
       <div ref={row} className="fade-x -mx-1 -mt-2 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pt-2 pb-3 [scrollbar-width:none]">
         {cards.map((c) => {
           const soon = c.validDate && c.validDate.getTime() - Date.now() < 90 * 86_400_000;
