@@ -91,7 +91,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
   // Desktop-Menü links ein-/ausklappen (wie bei Finastry), gemerkt; Breite als CSS-Variable --side für alle Seiten
   const [mini, setMini] = useState(false);
   useEffect(() => { try { setMini(localStorage.getItem("lifevault:side-mini") === "1"); } catch { /* egal */ } }, []);
-  useEffect(() => { document.documentElement.style.setProperty("--side", mini ? "4.5rem" : "15rem"); }, [mini]);
+  useEffect(() => { document.documentElement.style.setProperty("--side", mini ? "5.25rem" : "15.75rem"); }, [mini]);
   const toggleMini = () => setMini((v) => { try { localStorage.setItem("lifevault:side-mini", v ? "0" : "1"); } catch { /* egal */ } return !v; });
   const NAV: Nav[] = [
     { href: "/", label: "Start", icon: House, match: (p) => p === "/" || p.startsWith("/c/") || p.startsWith("/d/") },
@@ -111,7 +111,8 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       <JobToasts />
       <DraftHost />
       {/* Desktop: Seitenleiste wie bei Finastry */}
-      <aside className={`fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-card-line bg-surface py-5 transition-[width] duration-200 lg:flex ${mini ? "w-[4.5rem] px-2.5" : "w-60 px-3"}`}>
+      {/* schwebende, runde Karte mit Abstand zum Rand (oben, unten, links), leicht durchsichtig; --side enthält den Abstand */}
+      <aside className={`fixed top-3 bottom-3 left-3 z-30 hidden flex-col rounded-[24px] border border-card-line bg-surface/80 py-5 shadow-[0_8px_30px_rgba(15,23,42,.06)] backdrop-blur-xl transition-[width] duration-200 lg:flex ${mini ? "w-[4.5rem] px-2.5" : "w-60 px-3"}`}>
         <div className={`mb-5 flex items-center ${mini ? "flex-col gap-3" : "justify-between pl-2"}`}>
           <Link href="/" aria-label="Start">{mini ? <LogoMark size={30} /> : <Logo size={30} />}</Link>
           <button type="button" onClick={toggleMini} aria-label={mini ? "Menü aufklappen" : "Menü zuklappen"} title={mini ? "Menü aufklappen" : "Menü zuklappen"} className="grid h-9 w-9 place-items-center rounded-full text-soft hover:bg-surface-2 hover:text-fg">{mini ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}</button>
@@ -147,7 +148,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       )}
       {/* Desktop: oben rechts Hinzufügen und Avatar */}
       {!chat && (
-        <div className="relative z-20 hidden h-16 items-center gap-3 bg-page px-12 lg:ml-[var(--side,15rem)] lg:flex xl:px-16 2xl:px-20">
+        <div className="relative z-20 hidden h-16 items-center gap-3 bg-page px-12 lg:ml-[var(--side,15.75rem)] lg:flex xl:px-16 2xl:px-20">
           <GlobalSearch />
           <span className="flex-1" />
           {path === "/" && <button type="button" onClick={() => setExporting(true)} aria-label="Exportieren" title="Exportieren" className="grid h-10 w-10 place-items-center rounded-full border border-card-line bg-surface text-fg transition-colors hover:bg-surface-2"><FolderOutput size={17} /></button>}
@@ -156,7 +157,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
           <AvatarMenu email={email} />
         </div>
       )}
-      <main className={`lg:pl-[var(--side,15rem)] ${chat ? "" : "pb-28 lg:pb-12"}`}>
+      <main className={`lg:pl-[var(--side,15.75rem)] ${chat ? "" : "pb-28 lg:pb-12"}`}>
         {chat ? children : <div key={path} className="page-in app-scale mx-auto max-w-[88rem] px-4 pt-5 md:px-6 lg:px-12 lg:pt-6 xl:px-16 2xl:px-20"><ForwardConfirm />{children}</div>}
       </main>
 
