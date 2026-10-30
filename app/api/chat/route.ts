@@ -35,6 +35,14 @@ Bausteine (je Zeile eine ID/ein KEY):
 <Partner-KEY>
 \`\`\`
   Darunter höchstens 3 Stichpunkte: was davon jetzt wichtig ist (z. B. letzte Diagnose, offene Frage für den Termin).
+- „Wie sind meine Versicherungen?“, „Konditionen von …“, „was kostet / wie lange läuft / wie kündige ich …“ → je Vertrag eine Karte (eine JSON-Zeile je Vertrag; nur Werte aus den Dokumenten, fehlende Felder weglassen; Beträge mit €, Zeitraum dazu; kuendbarBis als YYYY-MM-DD, wenn berechenbar; leistungen/ausschluesse kurz, je höchstens 8 Wörter, die wichtigsten zuerst):
+\`\`\`konditionen
+{"id":"<Dokument-ID des Vertrags/der Police>","art":"Rechtsschutzversicherung","beitrag":"20,55 € monatlich","laufzeit":"bis 20.11.2026, verlängert sich jährlich","kuendigung":"täglich kündbar","kuendbarBis":"2026-11-20","selbstbeteiligung":"150 €","leistungen":["Privat-, Berufs-, Verkehrsrechtsschutz","Versicherungssumme 1 Mio. €"],"ausschluesse":["Mietrechtsschutz nicht enthalten"]}
+\`\`\`
+- „Bin ich bei … abgedeckt?“, „zahlt die Versicherung, wenn …“, „was deckt X bei …“ → Deckungs-Check als Karte (urteil: ja | teilweise | nein | unklar – unklar, wenn die Bedingungen fehlen; dann unter „Was noch fehlt“ die AVB nennen):
+\`\`\`deckung
+{"frage":"Streit mit dem Vermieter um die Kaution","urteil":"nein","id":"<Dokument-ID>","gruende":["Mietrechtsschutz ist im Tarif L nicht enthalten"],"bedingungen":["3 Monate Wartezeit ab Vertragsbeginn","150 € Selbstbeteiligung"],"quelle":"AVB L 2023, § 2.1 d","naechster":"Mietrechtsschutz zubuchen oder Mieterverein"}
+\`\`\`
 - „Zeig mir alle Partner“, „welche Firmen/Ärzte habe ich“ → Liste zum Arbeiten (antippen öffnet, Stift benennt um); leer = alle aktiven, sonst KEYs je Zeile:
 \`\`\`partnerliste
 \`\`\`
@@ -77,7 +85,7 @@ unit: €
 \`\`\`
 Nur echte Werte aus den Dokumenten, nichts schätzen.
 
-IMMER ZUM ARBEITEN DARSTELLEN: Person/Firma/Kontakt → partner; alle Partner → partnerliste; was offen ist → aufgaben; mehrere Dokumente eines Themas → gruppen; ein Partner über die Zeit → verlauf; Beträge/Zahlen → kpi oder Tabelle. Lieber ein Baustein mehr als ein Absatz.
+IMMER ZUM ARBEITEN DARSTELLEN: Konditionen/Versicherungen → konditionen; „bin ich abgedeckt“ → deckung; Person/Firma/Kontakt → partner; alle Partner → partnerliste; was offen ist → aufgaben; mehrere Dokumente eines Themas → gruppen; ein Partner über die Zeit → verlauf; Beträge/Zahlen → kpi oder Tabelle. Lieber ein Baustein mehr als ein Absatz.
 FORM – SCHNELL ZUM ERGEBNIS, WENIG TEXT (der Nutzer will nicht lesen, sondern sehen):
 1. Erste Zeile: das Ergebnis in EINEM kurzen Satz, **fett**, mit dem Betrag/Datum/Namen, um den es geht.
 2. Dann sofort der passende Baustein – Karten, Tabellen, kpi statt Fließtext. Mehrere Bausteine sind erlaubt (z. B. partner + verlauf, zahlung + aufgaben). Vergleiche und Listen mit mehreren Werten als kpi oder Markdown-Tabelle, nie als Absatz.

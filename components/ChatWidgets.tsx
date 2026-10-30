@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronRight, Copy, ExternalLink, FileText, Globe, Landmark, Lock, Mail, MapPin, Pencil, Phone, X } from "lucide-react";
 import { KindTag } from "@/components/KindTag";
+import { ConditionsWidget, CoverageWidget } from "@/components/ConditionCards";
 import { supabase } from "@/lib/supabase";
 import { nameFromEmail } from "@/components/AvatarMenu";
 import { ClusterTag } from "@/components/ClusterIcon";
@@ -29,7 +30,7 @@ import type { Doc } from "@/lib/types";
  * Bausteine im Chat: Die KI nennt nur Dokument-IDs bzw. Partner-Schlüssel – Beträge, IBAN, Adressen usw.
  * kommen hier aus den echten Daten. So erfindet die KI keine Bankverbindungen.
  */
-export const WIDGETS = ["zahlung", "partner", "dokumente", "aufgaben", "uebersicht", "gehalt", "aktion", "verlauf", "partnerliste", "gruppen"] as const;
+export const WIDGETS = ["zahlung", "partner", "dokumente", "aufgaben", "uebersicht", "gehalt", "aktion", "verlauf", "partnerliste", "gruppen", "konditionen", "deckung"] as const;
 export type WidgetKind = (typeof WIDGETS)[number];
 
 // Kachel-Verläufe wie in Finastry
@@ -547,6 +548,8 @@ export function ChatWidget({ kind, body }: { kind: string; body: string }) {
     case "verlauf": return <HistoryWidget body={body} />;
     case "partnerliste": return <PartnerListWidget body={body} />;
     case "gruppen": return <GroupsWidget body={body} />;
+    case "konditionen": return <ConditionsWidget body={body} />;
+    case "deckung": return <CoverageWidget body={body} />;
     default: return null;
   }
 }
