@@ -102,24 +102,29 @@ export default function ProfilPage() {
       />
 
       {/* Kopf: Avatar, Name, Alter, Kurzfassung, wichtigste Eckdaten */}
-      <section className="mb-4 overflow-hidden rounded-2xl p-4 text-white shadow-card md:p-5" style={{ background: "linear-gradient(135deg, #2f3947 0%, #3b4555 100%)" }}>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-          {email && <span className="rounded-full ring-2 ring-white/25"><Avatar email={email} size={52} /></span>}
+      <section className="relative mb-5 overflow-hidden rounded-2xl p-5 text-white shadow-md sm:p-6" style={{ background: "linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%)" }}>
+        {/* dezenter Glanz wie bei Finastry */}
+        <span aria-hidden className="pointer-events-none absolute -top-24 -right-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+        <div className="relative flex items-center gap-4">
+          {email && <span className="rounded-full ring-2 ring-white/30"><Avatar email={email} size={48} /></span>}
           <div className="min-w-0 flex-1">
-            <h2 className="text-[18px] leading-6 font-semibold">{fullName || "Du"}</h2>
-            {birth && <p className="text-[13px] text-white/70">geboren am {birth}{age !== null ? ` · ${age} Jahre` : ""}</p>}
+            <h2 className="truncate text-[18px] leading-6 font-semibold">{fullName || "Du"}</h2>
+            {birth && <p className="truncate text-[13px] text-white/75">geboren am {birth}{age !== null ? ` · ${age} Jahre` : ""}</p>}
           </div>
         </div>
         {chips.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {chips.map((c) => { const lp = c.icon === Home ? undefined : logoFor(c.v, []); return <span key={c.v} className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white/10 py-1 text-white ring-1 ring-white/15 pr-2.5 pl-1.5 text-[13px] font-semibold">{lp ? <span className="grid h-[22px] w-[22px] shrink-0 place-items-center overflow-hidden rounded-full bg-white"><SenderLogo domain={lp.domain} sender={lp.name} cluster={lp.cluster} size={16} bare /></span> : <c.icon size={13} className="mx-0.5 shrink-0" />}<span className="truncate">{c.v}</span></span>; })}
+          <div className="relative mt-4 flex flex-wrap gap-2">
+            {chips.map((c) => { const lp = c.icon === Home ? undefined : logoFor(c.v, []); return <span key={c.v} className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white/15 py-1 pr-3 pl-1.5 text-[12px] font-semibold text-white ring-1 ring-white/20">{lp ? <span className="grid h-5 w-5 shrink-0 place-items-center overflow-hidden rounded-full bg-white"><SenderLogo domain={lp.domain} sender={lp.name} cluster={lp.cluster} size={14} bare /></span> : <c.icon size={13} className="mx-0.5 shrink-0" />}<span className="truncate">{c.v}</span></span>; })}
           </div>
         )}
-        {/* Kennzahlen in einer Leiste, durch Striche getrennt */}
-        <dl className="-mx-4 mt-4 -mb-4 grid grid-cols-3 divide-x divide-white/15 border-t border-white/15 md:-mx-5 md:-mb-5">
-          <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-white/65">Dokumente</dt><dd className="tnum text-[18px] font-bold">{ready}</dd></div>
-          <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-white/65">Bereiche</dt><dd className="tnum text-[18px] font-bold">{profile?.sections.length ?? "–"}</dd></div>
-          <div className="px-4 py-3 md:px-5"><dt className="text-[12px] text-white/65">Stand</dt><dd className="tnum text-[18px] font-bold">{profile ? new Date(profile.generatedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "–"}</dd></div>
+        {/* Kennzahlen als Glas-Kacheln wie bei Finastry */}
+        <dl className="relative mt-5 grid grid-cols-3 gap-2.5">
+          {[["Dokumente", String(ready)], ["Bereiche", String(profile?.sections.length ?? "–")], ["Stand", profile ? new Date(profile.generatedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "–"]].map(([l, v]) => (
+            <div key={l} className="min-w-0 rounded-xl px-3.5 py-3 ring-1 ring-white/20" style={{ background: "rgba(255,255,255,.14)" }}>
+              <dt className="truncate text-[12px] text-white/75">{l}</dt>
+              <dd className="tnum truncate text-[17px] leading-6 font-semibold">{v}</dd>
+            </div>
+          ))}
         </dl>
       </section>
 
