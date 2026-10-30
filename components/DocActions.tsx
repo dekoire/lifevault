@@ -188,7 +188,8 @@ export function DocActions({ doc, url, fullText, related = [] }: { doc: Doc; url
   const codes = useDocQrCodes(url, doc.mime_type);
   const hasContact = contact.addresses.length + contact.phones.length + contact.emails.length > 0;
   const pay = PaymentSection({ doc, codes, links: contact.links, related });
-  const otherLinks = contact.links.filter((l) => !PAY_LINK.test(l));
+  // gleiche Seite nur einmal
+  const otherLinks = [...new Map(contact.links.filter((l) => !PAY_LINK.test(l)).map((l) => [host(l), l])).values()];
   return (
     <div className="space-y-3">
       {pay}
