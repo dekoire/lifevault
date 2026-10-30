@@ -127,7 +127,7 @@ export function TodoList({ docs }: { docs: Doc[] }) {
           );
         })}
       </ul>
-      {current.length > 6 && <button type="button" onClick={() => setAll(!all)} className="w-full border-t border-line bg-surface-2 px-4 py-2.5 text-center text-[13px] font-semibold text-fg transition-colors hover:bg-surface-3">{all ? "Weniger anzeigen" : `Alle ${current.length} anzeigen`}</button>}
+      {current.length > 6 && <button type="button" onClick={() => setAll(!all)} className="w-full bg-surface border-t border-line px-4 py-5 text-center text-[14px] font-semibold text-fg transition-colors hover:bg-canvas">{all ? "Weniger anzeigen" : `Alle ${current.length} anzeigen`}</button>}
     </section>
   );
 }

@@ -179,7 +179,7 @@ function Group({ g, onApply }: { g: DupGroup; onApply: (keep: string[]) => Promi
             </table>
           </div>
         )}
-        {diff.length > 6 && <button type="button" onClick={() => setAll(!all)} className="w-full border-t border-line bg-surface-2 px-3 py-1.5 text-center text-[12px] font-semibold text-fg transition-colors hover:bg-surface-3">{all ? "Weniger" : `Alle ${diff.length} zeigen`}</button>}
+        {diff.length > 6 && <button type="button" onClick={() => setAll(!all)} className="w-full bg-surface border-t border-line px-3 py-5 text-center text-[14px] font-semibold text-fg transition-colors hover:bg-canvas">{all ? "Weniger" : `Alle ${diff.length} zeigen`}</button>}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button type="button" disabled={busy || !keep.length} onClick={apply} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas disabled:opacity-40">

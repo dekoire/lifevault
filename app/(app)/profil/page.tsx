@@ -147,7 +147,7 @@ export default function ProfilPage() {
               </li>
             ))}
           </ul>
-          {steck.length > 6 && <button type="button" onClick={() => setAllFields(!allFields)} className="-mt-px w-full border-t border-line bg-surface-2 px-5 py-3 text-center text-[13px] font-semibold text-fg transition-colors hover:bg-surface-3">{allFields ? "Weniger anzeigen" : `Alle ${steck.length} Angaben anzeigen`}</button>}
+          {steck.length > 6 && <button type="button" onClick={() => setAllFields(!allFields)} className="-mt-px w-full bg-surface border-t border-line px-5 py-5 text-center text-[14px] font-semibold text-fg transition-colors hover:bg-canvas">{allFields ? "Weniger anzeigen" : `Alle ${steck.length} Angaben anzeigen`}</button>}
         </section>
       )}
       {error && <p role="alert" className="mb-4 rounded-xl bg-negative/10 px-4 py-3 text-[14px] text-negative-text">{error}</p>}
@@ -200,7 +200,7 @@ export default function ProfilPage() {
                       </li>
                     ))}
                   </ul>
-                  {s.items.length > 4 && <button type="button" aria-expanded={openSec.includes(s.id)} onClick={() => setOpenSec((c) => (c.includes(s.id) ? c.filter((x) => x !== s.id) : [...c, s.id]))} className="w-full border-t border-line bg-surface-2 px-5 py-2.5 text-center text-[13px] font-semibold text-fg transition-colors hover:bg-surface-3">{openSec.includes(s.id) ? "Weniger anzeigen" : `Alle ${s.items.length} anzeigen`}</button>}
+                  {s.items.length > 4 && <button type="button" aria-expanded={openSec.includes(s.id)} onClick={() => setOpenSec((c) => (c.includes(s.id) ? c.filter((x) => x !== s.id) : [...c, s.id]))} className="w-full bg-surface border-t border-line px-5 py-5 text-center text-[14px] font-semibold text-fg transition-colors hover:bg-canvas">{openSec.includes(s.id) ? "Weniger anzeigen" : `Alle ${s.items.length} anzeigen`}</button>}
                 </section>
               );
             })}

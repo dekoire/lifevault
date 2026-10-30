@@ -121,7 +121,7 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
             return <Row key={d.id} d={d} note={d.doc_type} dim={b === "erledigt" || b === "doppelt"} />;
           })}
         </div>
-        {byDate.length > 5 && <button type="button" onClick={() => setAll(!all)} className="w-full border-t border-line py-3.5 text-[13px] font-semibold text-selected hover:bg-canvas">{all ? "Weniger anzeigen" : `Alle ${byDate.length} anzeigen`}</button>}
+        {byDate.length > 5 && <button type="button" onClick={() => setAll(!all)} className="w-full bg-surface border-t border-line py-5 text-[14px] font-semibold text-selected hover:bg-canvas">{all ? "Weniger anzeigen" : `Alle ${byDate.length} anzeigen`}</button>}
       </section>
       {BUCKETS.map((b) => {
         const list = of(b.id).filter((d) => d.id !== main?.id);
