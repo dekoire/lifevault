@@ -13,7 +13,7 @@ const HEAD = "text-[12px] font-semibold text-muted";
 export function RecentTable({ docs }: { docs: Doc[] }) {
   return (
     <>
-      <div className={`hidden border-b border-line px-4 py-3.5 md:px-6 ${GRID}`} role="row">
+      <div className={`hidden border-b border-line px-4 py-[18px] md:px-6 ${GRID}`} role="row">
         <span className={HEAD}>Dokument</span><span className={HEAD}>Absender</span><span className={HEAD}>Bereich</span><span className={`${HEAD} text-right`}>Datum</span><span />
       </div>
       <div className="divide-y divide-line border-t border-line md:border-t-0">

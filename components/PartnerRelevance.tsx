@@ -70,7 +70,7 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
   const GRID = "md:grid md:grid-cols-[minmax(0,1fr)_8.5rem_6.5rem_3.5rem_1rem] md:items-center md:gap-4";
   const HEAD = "text-[12px] font-semibold text-muted";
   const Head = () => (
-    <div className={`hidden border-b border-line px-6 py-3.5 ${GRID}`} role="row">
+    <div className={`hidden border-b border-line px-6 py-[18px] ${GRID}`} role="row">
       <span className={HEAD}>Dokument</span><span className={HEAD}>Art</span><span className={HEAD}>Datum</span><span className={HEAD}>Wichtig</span><span />
     </div>
   );
