@@ -28,7 +28,8 @@ function inline(text: string, key: string) {
     if (m.index > last) parts.push(...money(text.slice(last, m.index), `${key}-t${i}`));
     const t = m[0];
     if (t.startsWith("[[q:")) parts.push(<Cite key={`${key}-${i++}`} {...parseCite(t.slice(4, -2))} />);
-    else if (t.startsWith("**")) parts.push(<strong key={`${key}-${i++}`} className="font-semibold">{money(t.slice(2, -2), `${key}-b${i}`)}</strong>);
+    // fett darf Links und Quellen enthalten („**… [Die Haftpflichtkasse](/partner/…) …**“)
+    else if (t.startsWith("**")) parts.push(<strong key={`${key}-${i++}`} className="font-semibold">{inline(t.slice(2, -2), `${key}-b${i}`)}</strong>);
     else {
       const [, label, href] = /\[([^\]]+)\]\(([^)]+)\)/.exec(t)!;
       parts.push(href.startsWith("/")

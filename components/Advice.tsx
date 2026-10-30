@@ -15,6 +15,8 @@ import { authFetch } from "@/lib/supabase";
  */
 export type AdviceItem = { title: string; why: string; kind: string; saving: number | null; effort: string; steps: string[]; doc_ids: string[]; draft: string | null };
 const KEY = "lifevault:advice";
+const GRID = "md:grid md:grid-cols-[minmax(0,1fr)_10rem_7rem_7rem_1rem] md:items-center md:gap-4";
+const HEAD = "text-[12px] font-semibold tracking-wide text-muted uppercase";
 const DAYS = 3;
 const KINDS: Record<string, { label: string; icon: typeof Coins; color: string }> = {
   geld: { label: "Geld", icon: Coins, color: "#16a34a" },
@@ -55,17 +57,22 @@ export function AdviceList() {
   const total = items.reduce((n, i) => n + (i.saving ?? 0), 0);
   return (
     <section className={`${CARD} overflow-hidden`}>
+      {/* Kopf wie „Zuletzt hinzugefügt“: schlichte Überschrift, darunter Spaltenköpfe und Zeilen */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-fg text-canvas"><Lightbulb size={17} /></span>
         <span className="min-w-0 flex-1">
-          <b className="block text-[16px]">Handlungsempfehlungen</b>
+          <h2 className="text-[16px] font-semibold">Handlungsempfehlungen</h2>
           <span className="block text-[12.5px] text-muted">{busy && !items.length ? "Deine Unterlagen werden durchgesehen …" : total > 0 ? `Bis zu ${Math.round(total).toLocaleString("de-DE")} € im Jahr möglich · nach Nutzen und Aufwand sortiert` : "Nach Nutzen und Aufwand sortiert"}</span>
         </span>
         <button type="button" onClick={() => void load()} disabled={busy} title="Neu bewerten" aria-label="Neu bewerten" className="grid h-9 w-9 place-items-center rounded-full text-soft hover:bg-surface-2 disabled:opacity-50">{busy ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}</button>
       </div>
       {error && <p className="mx-4 mb-3 rounded-xl bg-negative/10 px-3 py-2 text-[13px] text-negative-text">{error}</p>}
       {!busy && data && !items.length && <p className="px-4 pb-4 text-[13.5px] text-muted">Gerade nichts zu tun – alles im grünen Bereich.</p>}
-      <div className="divide-y divide-line border-t border-line">
+      {items.length > 0 && (
+        <div className={`hidden border-y border-line bg-surface-2/60 px-4 py-3.5 ${GRID}`} role="row">
+          <span className={HEAD}>Empfehlung</span><span className={HEAD}>Art</span><span className={HEAD}>Aufwand</span><span className={`${HEAD} text-right`}>Ersparnis</span><span />
+        </div>
+      )}
+      <div className="divide-y divide-line border-t border-line md:border-t-0">
         {items.map((it, i) => {
           const k = KINDS[it.kind] ?? KINDS.ordnung;
           const docs = it.doc_ids.map((id) => allDocs.find((d) => d.id === id)).filter((d): d is NonNullable<typeof d> => !!d);
@@ -73,16 +80,18 @@ export function AdviceList() {
           const isOpen = open === i;
           return (
             <div key={i}>
-              <button type="button" onClick={() => setOpen(isOpen ? null : i)} aria-expanded={isOpen} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-surface-2/60">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full" style={{ background: `${k.color}1a`, color: k.color }}><k.icon size={15} /></span>
+              <button type="button" onClick={() => setOpen(isOpen ? null : i)} aria-expanded={isOpen} className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-2/70 ${GRID}`}>
                 <span className="min-w-0 flex-1">
-                  <b className="block truncate text-[14.5px]">{it.title}</b>
-                  <span className="block truncate text-[12px] text-muted">{k.label} · Aufwand {it.effort}{it.saving ? ` · ca. ${Math.round(it.saving).toLocaleString("de-DE")} €/Jahr` : ""}</span>
+                  <b className="block truncate text-[14.5px] font-semibold">{it.title}</b>
+                  <span className="block truncate text-[12px] text-muted md:hidden">{k.label} · Aufwand {it.effort}{it.saving ? ` · ca. ${Math.round(it.saving).toLocaleString("de-DE")} €/Jahr` : ""}</span>
                 </span>
+                <span className="hidden items-center gap-1.5 text-[13.5px] md:inline-flex"><k.icon size={14} className="shrink-0" />{k.label}</span>
+                <span className="hidden text-[13.5px] text-soft md:block">{it.effort}</span>
+                <span className="tnum hidden text-right text-[13.5px] font-semibold md:block">{it.saving ? `${Math.round(it.saving).toLocaleString("de-DE")} €/J.` : "–"}</span>
                 <ChevronDown size={16} className={`shrink-0 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
               </button>
               {isOpen && (
-                <div className="space-y-3 px-4 pb-4 pl-15">
+                <div className="space-y-3 px-4 pb-4">
                   <p className="text-[13.5px] text-soft">{it.why}</p>
                   <ol className="space-y-1.5">{it.steps.map((s, j) => <li key={j} className="flex gap-2 text-[13.5px]"><span className="tnum grid h-5 w-5 shrink-0 place-items-center rounded-full bg-surface-3 text-[11px] font-bold">{j + 1}</span>{s}</li>)}</ol>
                   <div className="flex flex-wrap items-center gap-2">

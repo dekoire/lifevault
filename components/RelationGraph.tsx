@@ -21,6 +21,8 @@ const CONTRACT = /police|versicherungsschein|vertrag|mitgliedschaft|kontoeröffn
 
 type Group = "bedingungen" | "aenderung" | "zahlung" | "info";
 type Mode = "standard" | "arbeit";
+/** Farbe je Gruppe: Kachel vollflächig, Einträge darin weiß */
+const GROUP_COLOR: Record<Group, string> = { bedingungen: "#2563eb", aenderung: "#d97706", zahlung: "#059669", info: "#64748b" };
 type GroupDef = { id: Group; title: string; means: string; icon: React.ReactNode };
 /** Gruppen je Bereich benannt: beim Arbeitgeber geht es um Gehalt und Regeln, nicht um Rechnungen */
 const GROUPS: Record<Mode, GroupDef[]> = {
@@ -111,7 +113,7 @@ export function RelationGraph({ doc }: { doc: Doc }) {
     const here = d.id === doc.id;
     return (
       <li>
-        <Link href={`/d/${d.id}`} className={`flex items-start gap-2 rounded-lg px-2 py-1.5 text-[13px] hover:bg-surface-2 ${here ? "bg-brand-500/10 ring-1 ring-brand-500/40" : ""}`}>
+        <Link href={`/d/${d.id}`} className={`flex items-start gap-2 rounded-xl bg-surface px-2.5 py-2 text-[13px] text-fg shadow-[0_1px_2px_rgba(16,24,40,.08)] transition hover:-translate-y-px hover:shadow-card ${here ? "ring-2 ring-fg" : ""}`}>
           {w >= 4 ? <Star size={13} className="mt-[3px] shrink-0 fill-brand-500 text-brand-500" /> : <span className="w-[13px] shrink-0" />}
           <span className="min-w-0 flex-1">
             <span className="line-clamp-2 leading-[18px]">{short(d.title ?? d.file_name)}</span>
@@ -193,14 +195,14 @@ export function RelationGraph({ doc }: { doc: Doc }) {
               const list = [...(data.groups.get(g.id) ?? [])].sort((a, b) => Number(!!open(b)) - Number(!!open(a)) || (data.mode === "arbeit" && g.id === "zahlung" ? 0 : weight(b) - weight(a)) || dateOf(b).localeCompare(dateOf(a)));
               const due = list.filter(open).length;
               return (
-                <div key={g.id} className="relative w-full rounded-xl border border-card-line bg-surface p-2.5 sm:w-[270px]">
+                <div key={g.id} className="relative w-full rounded-2xl p-2.5 text-white shadow-card sm:w-[270px]" style={{ background: `linear-gradient(160deg, ${GROUP_COLOR[g.id]}, color-mix(in srgb, ${GROUP_COLOR[g.id]} 82%, black))` }}>
                   <span className="absolute -top-4 left-1/2 h-4 w-px bg-line-strong" aria-hidden />
-                  <div className="px-1">
-                    <span className="flex items-center gap-1.5 text-[13.5px] font-semibold"><span className="text-muted">{g.icon}</span>{g.title}<span className="tnum ml-auto rounded-full border border-card-line px-1.5 text-[11px] font-semibold text-soft">{list.length}</span></span>
-                    <span className="mt-0.5 block text-[12px] leading-[17px] text-muted">{due ? <b className="font-semibold text-negative-text">{due} offen · </b> : null}{g.means}</span>
+                  <div className="px-1.5 pt-0.5 pb-1">
+                    <span className="flex items-center gap-1.5 text-[14px] font-semibold"><span className="opacity-90">{g.icon}</span>{g.title}<span className="tnum ml-auto rounded-full bg-white/20 px-2 text-[11px] font-bold">{list.length}</span></span>
+                    <span className="mt-0.5 block text-[12px] leading-[17px] text-white/80">{due ? <b className="font-semibold text-white">{due} offen · </b> : null}{g.means}</span>
                   </div>
-                  <ul className="mt-1.5 space-y-0.5">{list.slice(0, 4).map((d) => <Leaf key={d.id} d={d} />)}</ul>
-                  {list.length > 4 && <Link href={`/partner/${data.partner}`} className="mt-1 block px-2 text-[12px] font-semibold text-selected hover:underline">+ {list.length - 4} weitere</Link>}
+                  <ul className="mt-1.5 space-y-1.5">{list.slice(0, 4).map((d) => <Leaf key={d.id} d={d} />)}</ul>
+                  {list.length > 4 && <Link href={`/partner/${data.partner}`} className="mt-2 block px-1.5 text-[12px] font-semibold text-white/90 hover:underline">+ {list.length - 4} weitere</Link>}
                 </div>
               );
             })}

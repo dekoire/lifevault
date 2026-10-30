@@ -123,7 +123,21 @@ const BTN = "inline-flex h-10 items-center justify-center gap-1.5 rounded-full p
 
 function ResearchCard({ r, onAnswer }: { r: Research; onAnswer?: (yes: boolean) => void }) {
   if (r.state === "running") return <div className="mt-3"><Typing label="Recherchiere im Internet …" /></div>;
-  if (r.state === "declined") return <p className="mt-3 text-[13px] text-muted">Keine Internetrecherche.</p>;
+  // abgelehnt: dieselbe Kachel, als Entscheidung erkennbar – und umkehrbar
+  if (r.state === "declined") return (
+    <div className="mt-4 rounded-2xl border border-card-line bg-surface p-4">
+      <div className="flex items-start gap-3">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-3 text-soft"><Globe size={17} /></span>
+        <div className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-center gap-2"><b className="text-[15px]">Internetrecherche</b><span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2 py-0.5 text-[11.5px] font-semibold text-soft"><X size={11} strokeWidth={3} /> Von dir abgelehnt</span></span>
+          {r.reason && <span className="mt-0.5 block text-[13px] text-soft">Fehlt weiterhin: {r.reason}</span>}
+          <span className="mt-2 flex items-start gap-1.5 text-[13px] text-muted line-through decoration-line-strong"><Globe size={14} className="mt-0.5 shrink-0" />{r.query}</span>
+          <span className="mt-2 block text-[12px] text-muted">Nichts wurde gesendet.</span>
+        </div>
+      </div>
+      {onAnswer && <div className="mt-3"><button type="button" onClick={() => onAnswer(true)} className={`${BTN} border border-card-line bg-surface hover:bg-surface-2`}>Doch recherchieren</button></div>}
+    </div>
+  );
   if (r.state === "done") return null;
   return (
     <div className="mt-4 rounded-2xl border border-card-line bg-surface p-4">
