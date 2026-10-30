@@ -1,4 +1,5 @@
 "use client";
+import { Panel } from "@/components/Panel";
 import { IconTile } from "@/components/ClusterIcon";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -135,27 +136,21 @@ function PaymentSection({ doc, codes, links, related, always = false }: { doc: D
   const isPay = !!(payment || total || epc || (todo && /zahl|fällig|überweis|rechnung|mahn|gebühr|abschlag/i.test(todo.what)));
   if (!isPay && !always) return null;
   const late = todo && todo.days < 0;
-  // nichts offen: bezahlt, Lastschrift oder kein Zahlungsdokument – trotzdem zeigen, wohin man zahlen würde
   const nothing = !todo && !isPay;
+  // nichts offen: bezahlt, Lastschrift oder kein Zahlungsdokument – trotzdem zeigen, wohin man zahlen würde
   return (
-    <section className="overflow-hidden rounded-2xl border border-card-line bg-surface">
-      <div className="flex items-start justify-between gap-3 px-4 pt-3.5 pb-3">
-        <span>
-          <span className="flex items-center gap-2 text-[12px] font-semibold tracking-wide text-muted uppercase"><Euro size={14} /> Bezahlung</span>
-          {nothing ? <b className="mt-1 block text-[18px] leading-7">Nichts offen</b> : total !== undefined ? <b className="tnum mt-1 block text-[26px] leading-8">{fmtMoney(total, "EUR")}</b> : <b className="mt-1 block text-[15px]">Betrag nicht erkannt</b>}
-          <span className="block text-[13px] text-muted">{nothing ? (doc.archived ? "erledigt bzw. archiviert" : "aus diesem Dokument ist gerade nichts zu zahlen") : todo?.items?.length ? `offen insgesamt · ${todo.items.length} Posten` : todo ? "offen" : "laut Dokument"}</span>
-        </span>
-        {todo && <span className={`mt-1 shrink-0 rounded-full border px-3.5 py-1 text-[12px] font-semibold ${late ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>{late ? dueLabel(todo.days) : `bis ${fmtDate(todo.date)}`}</span>}
-      </div>
+    <Panel title="Bezahlen" icon={Euro} color={late ? "#b42318" : "#ea580c"}
+      sub={<>{todo ? `${late ? dueLabel(todo.days) : `bis ${fmtDate(todo.date)}`} · ` : ""}{todo?.items?.length ? `${todo.items.length} Posten` : todo ? "offen" : "laut Dokument"}</>}
+      aside={total !== undefined ? <b className="tnum shrink-0 text-[18px] leading-[26px]">{fmtMoney(total, "EUR")}</b> : undefined}>
       {todo?.items && todo.items.length > 1 && (
-        <div className="border-t border-line">
-          <button type="button" onClick={() => setShowItems(!showItems)} className="flex w-full items-center justify-between px-4 py-2.5 text-[13px] font-semibold hover:bg-surface-2">Zusammensetzung<ChevronDown size={15} className={`text-muted transition-transform ${showItems ? "rotate-180" : ""}`} /></button>
+        <div className="border-b border-line">
+          <button type="button" onClick={() => setShowItems(!showItems)} className="flex w-full items-center justify-between px-5 py-3 text-[13px] font-semibold hover:bg-surface-2">Zusammensetzung<ChevronDown size={15} className={`text-muted transition-transform ${showItems ? "rotate-180" : ""}`} /></button>
           {showItems && <ul className="divide-y divide-line border-t border-line text-[13px]">{todo.items.map((x, i) => <li key={i} className="flex gap-3 px-4 py-2"><span className="tnum w-20 shrink-0 text-muted">{fmtDate(x.date)}</span><span className="min-w-0 flex-1">{x.what}</span></li>)}</ul>}
         </div>
       )}
       {related.length > 0 && <RelatedDocs doc={doc} related={related} />}
       {/* Wege zu zahlen – jeweils klar benannt */}
-      <div className="space-y-2.5 border-t border-line p-3">
+      <div className="space-y-2.5 p-4">
         {payment && <PaymentCard p={{ ...payment, amount: total ?? payment.amount }} doc={doc} />}
         {!payment && epc && <PaymentCard p={{ iban: epc.iban, recipient: epc.recipient, amount: epc.amount ?? total, reference: epc.reference, currency: "EUR" }} label="GiroCode aus dem Schreiben" doc={doc} />}
         {last && purpose && <PaymentCard p={{ ...last.payment, amount: total, reference: purpose.text }} refLabel={purpose.note ? "Verwendungszweck (wie zuletzt)" : purpose.given ? "Verwendungszweck" : "Verwendungszweck (Vorschlag)"} label="Zuletzt bekannte Bankverbindung" doc={doc} note={<>In diesem Schreiben steht keine IBAN. Das ist die zuletzt verwendete von {doc.sender} – aus <Link href={`/d/${last.source.id}`} className="font-semibold underline">{last.source.title ?? last.source.file_name}</Link> vom {fmtDate(last.source.doc_date ?? last.source.received_at)}{last.payment.reference ? <> (Verwendungszweck damals: „{last.payment.reference}“)</> : null}. Bitte vor dem Zahlen kurz prüfen.</>} />}
@@ -177,7 +172,7 @@ function PaymentSection({ doc, codes, links, related, always = false }: { doc: D
         ))}
         {!payment && !epc && !last && !payLinks.length && <p className="px-1 text-[13px] text-muted">{nothing ? "Keine Bankverbindung bekannt – bei diesem Absender gab es bisher nichts zu überweisen (z. B. Lastschrift)." : "Keine Bankverbindung oder Zahlungslink im Schreiben – vermutlich per Lastschrift oder im Kundenkonto des Absenders."}</p>}
       </div>
-    </section>
+    </Panel>
   );
 }
 

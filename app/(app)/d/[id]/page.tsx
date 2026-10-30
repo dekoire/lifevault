@@ -8,7 +8,8 @@ import { use, useEffect, useMemo, useRef, useState } from "react";
 import { Archive, ArchiveRestore, CalendarClock, Check, Copy, ChevronLeft, ChevronRight, Download, FileDown, FileText, Lock, LockOpen, RefreshCw, Scissors, ShieldAlert, ShieldCheck, Trash2, Wallet } from "lucide-react";
 import { Composer, MessageList, useChat } from "@/components/ChatPanel";
 import { SenderLogo } from "@/components/SenderLogo";
-import { CARD, ICON_BTN, KeyValueTable, Section } from "@/components/ui";
+import { CARD, ICON_BTN } from "@/components/ui";
+import { CopyButton, InfoRows, InfoTiles, Panel } from "@/components/Panel";
 import { VaultUnlock } from "@/components/VaultUnlock";
 import { clusterOf } from "@/lib/clusters";
 import { chrono, fmtDate, fmtMoney, isUrgent, useDocs } from "@/lib/docs";
@@ -34,7 +35,7 @@ import { addressesInDoc } from "@/lib/mailcore";
 import type { Doc, DocView, Fact, SecretPart } from "@/lib/types";
 import { contactOf } from "@/lib/actions";
 import { RelationGraph } from "@/components/RelationGraph";
-import { ChevronDown, Mail, MapPin, Phone, UserRound, Globe } from "lucide-react";
+import { ChevronDown, ListChecks, Mail, MessageCircle, Phone, Sparkles, Upload, UserRound } from "lucide-react";
 
 /** Fakten nach Gruppe sortieren (Reihenfolge wie vom Modell geliefert) */
 function groupFacts(facts: Fact[]) {
@@ -107,20 +108,21 @@ function useMailOrigin(id: string) {
 
 /** Herkunft: per Mail (mit Postfach, ursprünglichem Absender und Empfänger) oder hochgeladen */
 function originRows(doc: Doc, mail: MailSeen | null, fullText?: string | null) {
-  const small = (t: string) => <span className="block text-[12px] font-normal text-muted">{t}</span>;
   const inDoc = fullText ? addressesInDoc(fullText, doc.sender_domain) : [];
-  const rows: { label: string; value: React.ReactNode }[] = [];
+  const rows: { label: string; value: string }[] = [];
   if (mail) {
     const sender = (mail.sender ?? "").match(/<([^>]+)>/)?.[1] ?? mail.sender;
     // direkt aus dem eigenen Postfach geschickt (nicht weitergeleitet): das Postfach ist der Absender
     const direct = mail.source === "inbox" && !mail.forwarded_by && !mail.original_to?.length;
     const via = mail.forwarded_by ?? (direct ? mail.original_from ?? sender : null);
     const from = direct ? null : mail.original_from ?? (mail.source === "inbox" ? null : sender);
-    rows.push({ label: "Herkunft", value: <>Per E-Mail{mail.source === "inbox" ? " an deine Lifevault-Adresse" : ` (${mail.source})`}{small(`${mail.subject || "(ohne Betreff)"} · ${fmtDate(mail.mail_date)}`)}</> });
+    rows.push({ label: "Weg", value: mail.source === "inbox" ? "Per E-Mail an deine Lifevault-Adresse" : `Per E-Mail (${mail.source})` });
+    rows.push({ label: "Betreff", value: mail.subject || "(ohne Betreff)" });
+    if (mail.mail_date) rows.push({ label: "Empfangen", value: fmtDate(mail.mail_date) });
     if (via) rows.push({ label: "Über Postfach", value: via });
     if (from) rows.push({ label: "Ursprünglich von", value: from });
     if (mail.original_to?.length) rows.push({ label: "Ursprünglich an", value: mail.original_to.join(", ") });
-  } else rows.push({ label: "Herkunft", value: doc.web_source ? "Aus dem Web gespeichert" : "Hochgeladen" });
+  } else rows.push({ label: "Weg", value: doc.web_source ? "Aus dem Web gespeichert" : "Hochgeladen" });
   if (inDoc.length) rows.push({ label: "Adresse im Dokument", value: inDoc.join(", ") });
   return rows;
 }
@@ -132,6 +134,8 @@ const TILE_GRADS = [
   "linear-gradient(120deg,#1d4ed8 0%,#2563eb 55%,#3f74f0 100%)",
   "linear-gradient(120deg,#c2410c 0%,#ea580c 55%,#f97316 100%)",
 ];
+/** Schimmer unter den Kacheln, jeweils in ihrer Farbe */
+const TILE_GLOW = ["rgb(100 56 218 / .45)", "rgb(31 150 136 / .45)", "rgb(37 99 235 / .45)", "rgb(234 88 12 / .45)"];
 const TILE_URGENT = "linear-gradient(120deg,#9f1239 0%,#b42318 55%,#d92d20 100%)";
 
 /** Vorschläge für den Dokument-Chat, solange noch nichts gefragt wurde */
@@ -333,11 +337,11 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
             <div className={`grid gap-3 ${tiles.length >= 3 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2"}`}>
               {/* farbig mit Verlauf wie die Kacheln in Finastry – jede Kachel eine eigene Farbe, dringend immer rot */}
               {tiles.map((g, i) => (
-                <div key={i} className={`group relative min-w-0 rounded-2xl px-4 py-4 text-white shadow-card ${tiles.length === 3 && i === 2 ? "col-span-2 sm:col-span-1" : ""}`} style={{ background: g.urgent ? TILE_URGENT : TILE_GRADS[i % TILE_GRADS.length] }}>
+                <div key={i} className={`group relative min-w-0 rounded-2xl px-4 py-4 text-white shadow-card ${tiles.length === 3 && i === 2 ? "col-span-2 sm:col-span-1" : ""}`} style={{ background: g.urgent ? TILE_URGENT : TILE_GRADS[i % TILE_GRADS.length], boxShadow: `0 10px 24px -8px ${g.urgent ? "rgb(180 35 24 / .45)" : TILE_GLOW[i % TILE_GLOW.length]}, inset 0 1px 0 rgb(255 255 255 / .18)` }}>
                   <span className="block truncate text-[12px] font-medium text-white/80">{g.label}</span>
                   <span className="tnum mt-1 block truncate text-[19px] leading-7 font-semibold" title={g.value}>{g.value}</span>
                   {g.sub && <span className="block truncate text-[12px] text-white/75" title={g.sub}>{g.sub}</span>}
-                  {g.copy && <CopyBtn value={g.copy} className="absolute top-2.5 right-2.5 !text-white hover:!bg-white/20" />}
+                  {g.copy && <CopyButton value={g.copy} className="absolute top-2 right-2 !text-white hover:!bg-white/20" />}
                 </div>
               ))}
             </div>
@@ -345,81 +349,89 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
 
           {/* 2. Inhalt: worum es geht – Befund, Leistungen, was versichert ist … */}
           {(view?.content.points.length || explain || (show.summary && content?.summary)) && (
-            <section className={`${CARD} p-5`}>
-              <h2 className="mb-2 text-[18px] leading-[26px] font-semibold">{view?.content.title ?? explain ?? "Worum es geht"}</h2>
-              {show.summary && content?.summary && <Clamp className="text-[15px] leading-6 text-soft">{content.summary}</Clamp>}
-              {!!view?.content.points.length && <ul className="mt-3 space-y-1.5 text-[14px] leading-6">{view.content.points.map((p, i) => <li key={i} className="flex gap-2.5"><span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />{p}</li>)}</ul>}
-              {!doc.encrypted && !view && doc.status === "ready" && <p className="mt-3 text-[13px] text-muted">Wird aufbereitet …</p>}
-            </section>
+            <Panel title={view?.content.title ?? explain ?? "Worum es geht"} icon={Sparkles} color="#6d4aff" open={isOpen("sum", true)} onToggle={() => toggle("sum", true)}>
+              <div className="px-5 py-4">
+                {show.summary && content?.summary && <Clamp className="text-[15px] leading-6 text-soft">{content.summary}</Clamp>}
+                {!!view?.content.points.length && <ul className={`space-y-2.5 text-[14px] leading-6 ${show.summary && content?.summary ? "mt-4 border-t border-line pt-4" : ""}`}>{view.content.points.map((p, i) => <li key={i} className="flex gap-3"><span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-500/12 text-brand-500"><Check size={12} strokeWidth={3} /></span>{p}</li>)}</ul>}
+                {!doc.encrypted && !view && doc.status === "ready" && <p className="mt-3 text-[13px] text-muted">Wird aufbereitet …</p>}
+              </div>
+            </Panel>
           )}
 
-          {/* 3. Überblick – immer offen, nur das Nötige */}
-          <section className={`${CARD} overflow-hidden`}>
-            <h2 className="flex items-center gap-2 px-5 pt-5 pb-2 text-[18px] leading-[26px] font-semibold"><FileText size={16} /> Überblick</h2>
-            <KeyValueTable rows={[
+          {/* 3. Bezahlen – nur wenn etwas offen ist */}
+          <DocPayment doc={doc} url={fileUrl} fullText={content?.full_text} related={relatedPayDocs(doc, docs)} />
+
+          {/* 4. Ausgaben – Summe, Einzelheiten zum Aufklappen */}
+          {view?.costs ? <CostCard costs={view.costs} /> : show.amounts && !!content?.amounts?.length && (
+            <Panel title="Beträge" icon={Wallet} color="#1f9688" count={content.amounts.length} open={isOpen("am", false)} onToggle={() => toggle("am", false)}>
+              <InfoRows rows={content.amounts.map((a) => ({ label: a.label, value: fmtMoney(a.value, a.currency) }))} />
+            </Panel>
+          )}
+
+          {/* 5. Überblick – die Eckdaten */}
+          <Panel title="Überblick" icon={FileText} color="#2563eb" sub={[doc.doc_type, fmtDate(doc.doc_date)].filter(Boolean).join(" · ")} open={isOpen("ov", true)} onToggle={() => toggle("ov", true)}>
+            <InfoRows rows={[
               { label: "Art", value: doc.doc_type ?? "–" },
               { label: "Absender", value: doc.sender ?? "–" },
               { label: "Datum", value: fmtDate(doc.doc_date) || "–" },
               { label: "Eingang", value: fmtDate(doc.received_at) },
-              ...originRows(doc, mail, content?.full_text),
-              ...(projects.length > 1 ? [{ label: "Projekt", value: (
+              ...(projects.length > 1 ? [{ label: "Projekt", copy: false as const, value: (
                 <select value={doc.project_id ?? ""} onChange={(e) => void run(async () => { const { error } = await supabase.from("documents").update({ project_id: e.target.value }).eq("id", doc.id); if (error) throw error; setDoc({ ...doc, project_id: e.target.value }); })}
                   className="h-8 rounded-full border border-card-line bg-surface px-3.5 text-[13px] font-semibold">
                   {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               ) }] : []),
             ]} />
-          </section>
+          </Panel>
 
-          {/* 4. Bezahlen – nur wenn etwas offen ist */}
-          <DocPayment doc={doc} url={fileUrl} fullText={content?.full_text} related={relatedPayDocs(doc, docs)} />
+          {/* 6. Herkunft: wie das Dokument hereingekommen ist */}
+          {(() => {
+            const rows = originRows(doc, mail, content?.full_text);
+            return (
+              <Panel title="Herkunft" icon={mail ? Mail : Upload} color="#0891b2" sub={rows[0]?.value} open={isOpen("or", false)} onToggle={() => toggle("or", false)}>
+                <InfoRows rows={rows} />
+              </Panel>
+            );
+          })()}
 
-          {/* 5. Kosten Stand heute – zusammengefasst, Einzelheiten zum Aufklappen */}
-          {view?.costs ? <CostCard costs={view.costs} /> : show.amounts && !!content?.amounts?.length && (
-            <Section title="Beträge" icon={<Wallet size={16} />} count={content.amounts.length} open={isOpen("am", false)} onToggle={() => toggle("am", false)}>
-              <KeyValueTable rows={content.amounts.map((a) => ({ label: a.label, value: <span className="tnum">{fmtMoney(a.value, a.currency)}</span> }))} />
-            </Section>
-          )}
-
-          {/* 6. Daten über dich */}
+          {/* 7. Daten über dich */}
           {show.facts && personal.length > 0 && (
-            <Section title="Daten über dich" icon={<UserRound size={16} />} count={personal.length} open={isOpen("me", false)} onToggle={() => toggle("me", false)}>
-              <FactGrid facts={personal} />
-            </Section>
+            <Panel title="Daten über dich" icon={UserRound} color="#be185d" count={personal.length} open={isOpen("me", false)} onToggle={() => toggle("me", false)}>
+              <InfoTiles items={personal} />
+            </Panel>
           )}
 
-          {/* 7. Kontakt */}
+          {/* 8. Kontakt */}
           {contact && (contact.phones.length + contact.emails.length + contact.addresses.length + contact.links.length > 0) && (
-            <Section title="Kontakt" icon={<Phone size={16} />} open={isOpen("ct", true)} onToggle={() => toggle("ct", true)}>
-              <ul className="divide-y divide-line border-t border-line text-[14px]">
-                {doc.sender && <li className="px-5 py-3 font-semibold">{doc.sender}</li>}
-                {contact.phones.map((p) => <li key={p} className="group relative flex items-center gap-2.5 px-5 py-3"><Phone size={14} className="shrink-0 text-muted" /><a href={`tel:${p.replace(/[^\d+]/g, "")}`} className="font-semibold hover:underline">{p}</a><CopyBtn value={p} className="absolute top-1/2 right-2.5 -translate-y-1/2" /></li>)}
-                {contact.emails.map((e) => <li key={e} className="group relative flex items-center gap-2.5 px-5 py-3"><Mail size={14} className="shrink-0 text-muted" /><a href={`mailto:${e}`} className="font-semibold break-all hover:underline">{e}</a><CopyBtn value={e} className="absolute top-1/2 right-2.5 -translate-y-1/2" /></li>)}
-                {contact.addresses.map((a) => <li key={a} className="group relative flex items-start gap-2.5 px-5 py-3"><MapPin size={14} className="mt-1 shrink-0 text-muted" /><span className="pr-8">{a}</span><CopyBtn value={a} className="absolute top-1/2 right-2.5 -translate-y-1/2" /></li>)}
-                {contact.links.slice(0, 3).map((l) => <li key={l} className="flex items-center gap-2.5 px-5 py-3"><Globe size={14} className="shrink-0 text-muted" /><a href={l} target="_blank" rel="noopener noreferrer" className="truncate font-semibold text-selected hover:underline">{l.replace(/^https?:\/\//, "")}</a></li>)}
-              </ul>
-            </Section>
+            <Panel title="Kontakt" icon={Phone} color="#16a34a" sub={doc.sender ?? undefined} open={isOpen("ct", false)} onToggle={() => toggle("ct", false)}>
+              <InfoRows rows={[
+                ...contact.phones.map((p) => ({ label: "Telefon", value: <a href={`tel:${p.replace(/[^\d+]/g, "")}`} className="font-semibold hover:underline">{p}</a>, copy: p })),
+                ...contact.emails.map((e) => ({ label: "E-Mail", value: <a href={`mailto:${e}`} className="font-semibold break-all hover:underline">{e}</a>, copy: e })),
+                ...contact.addresses.map((a) => ({ label: "Adresse", value: a })),
+                ...contact.links.slice(0, 3).map((l) => ({ label: "Web", value: <a href={l} target="_blank" rel="noopener noreferrer" className="font-semibold break-all text-selected hover:underline">{l.replace(/^https?:\/\//, "")}</a>, copy: l })),
+              ]} />
+            </Panel>
           )}
 
-          {/* 8. weitere Angaben in EINER Kachel (Kennungen, Hinweise, Konsequenzen …) – Gruppen als Zwischenüberschriften */}
+          {/* 9. weitere Angaben in EINER Kachel (Kennungen, Hinweise …) – Gruppen als Zwischenüberschriften */}
           {show.facts && restGroups.length > 0 && (
-            <Section title="Weitere Angaben" icon={<FileText size={16} />} count={restGroups.reduce((n, [, fs]) => n + fs.length, 0)} open={isOpen("rest", false)} onToggle={() => toggle("rest", false)}>
+            <Panel title="Weitere Angaben" icon={ListChecks} color="#d97706" count={restGroups.reduce((n, [, fs]) => n + fs.length, 0)} open={isOpen("rest", false)} onToggle={() => toggle("rest", false)}>
               {restGroups.map(([g, fs]) => {
                 const all = more[g];
                 return (
-                  <div key={g}>
-                    <h3 className="border-t border-line px-5 pt-4 pb-1.5 text-[12px] font-semibold text-muted">{g}</h3>
-                    <FactGrid facts={all ? fs : fs.slice(0, 8)} />
-                    {fs.length > 8 && <button type="button" onClick={() => setMore({ ...more, [g]: !all })} className="w-full border-t border-line px-5 py-2.5 text-center text-[13px] font-semibold text-fg hover:bg-surface-2">{all ? "Weniger anzeigen" : `Alle ${fs.length} anzeigen`}</button>}
+                  <div key={g} className="border-b border-line last:border-b-0">
+                    <h3 className="px-5 pt-4 text-[13px] font-semibold text-soft">{g}</h3>
+                    <InfoTiles items={all ? fs : fs.slice(0, 8)} />
+                    {fs.length > 8 && <button type="button" onClick={() => setMore({ ...more, [g]: !all })} className="mb-3 ml-4 rounded-full border border-card-line px-3.5 py-1.5 text-[13px] font-semibold hover:bg-surface-2">{all ? "Weniger anzeigen" : `Alle ${fs.length} anzeigen`}</button>}
                   </div>
                 );
               })}
-            </Section>
+            </Panel>
           )}
           {show.deadlines && !!content?.deadlines?.length && (
-            <Section title="Fristen & Termine" icon={<CalendarClock size={16} />} count={content.deadlines.length} open={isOpen("dl", false)} onToggle={() => toggle("dl", false)}>
-              <KeyValueTable rows={content.deadlines.map((x) => ({ label: fmtDate(x.date), value: x.what }))} />
-            </Section>
+            <Panel title="Fristen & Termine" icon={CalendarClock} color="#ea580c" count={content.deadlines.length} open={isOpen("dl", false)} onToggle={() => toggle("dl", false)}>
+              <InfoRows rows={content.deadlines.map((x) => ({ label: fmtDate(x.date), value: x.what }))} />
+            </Panel>
           )}
         </div>
 
@@ -438,24 +450,18 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
           <MergedParts doc={doc} onSplit={() => router.push("/")} />
           {!doc.encrypted && <WebSourceCard doc={doc} onChanged={() => void refresh()} />}
           {show.chat && (
-            <section className={`${CARD} overflow-hidden`}>
-              <div className="flex items-center gap-3 px-5 pt-5 pb-4">
-                <AiAvatar size={40} state={chat.busy ? "think" : "idle"} />
-                <span className="min-w-0">
-                  <h2 className="text-[18px] leading-[26px] font-semibold">Fragen zum Dokument</h2>
-                  <p className="truncate text-[13px] text-muted">Antwort aus genau diesem Dokument</p>
-                </span>
-              </div>
+            <Panel title="Fragen zum Dokument" icon={MessageCircle} color="#6d4aff" sub="Antwort aus genau diesem Dokument" open={isOpen("chat", true)} onToggle={() => toggle("chat", true)}>
               {chat.msgs.length === 0 && (
-                <div className="flex flex-wrap gap-2 px-5 pb-4">
+                <div className="flex flex-wrap gap-2 px-5 pt-4">
                   {DOC_QUESTIONS.map((q) => <button key={q} type="button" onClick={() => void chat.send(q)} className="rounded-full border border-card-line bg-surface px-3.5 py-1.5 text-[13px] font-medium text-soft hover:bg-surface-2 hover:text-fg">{q}</button>)}
                 </div>
               )}
-              {chat.msgs.length > 0 && <div className="max-h-[50vh] overflow-y-auto px-5 pb-4"><MessageList msgs={chat.msgs} compact busy={chat.busy} onAsk={(q) => void chat.send(q)} onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} /></div>}
-              <div className="border-t border-line bg-canvas/60 px-5 py-4">
-              <Composer plain busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} placeholder="Frag etwas zu diesem Dokument …" depth={chat.depth} onDepth={chat.setDepth} />
+              {chat.msgs.length > 0 && <div className="max-h-[50vh] overflow-y-auto px-5 pt-4"><MessageList msgs={chat.msgs} compact busy={chat.busy} onAsk={(q) => void chat.send(q)} onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} /></div>}
+              <div className="flex items-end gap-3 px-5 py-4">
+                <AiAvatar size={36} state={chat.busy ? "think" : "idle"} className="mb-1 shrink-0" />
+                <div className="min-w-0 flex-1"><Composer plain busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} placeholder="Frag etwas zu diesem Dokument …" depth={chat.depth} onDepth={chat.setDepth} /></div>
               </div>
-            </section>
+            </Panel>
           )}
         </div>
       </div>
@@ -465,49 +471,17 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
   );
 }
 
-/** Kosten Stand heute: Summe groß, Positionen zum Aufklappen (brutto, zusammengefasst) */
+/** Ausgaben: Summe im Kopf, Positionen beim Aufklappen (brutto, zusammengefasst) */
 function CostCard({ costs }: { costs: NonNullable<DocView["costs"]> }) {
-  const [open, setOpen] = useState(false);
   const per = costs.total?.per && costs.total.per !== "einmalig" ? ` ${costs.total.per}` : "";
+  const sum = costs.total ? `${fmtMoney(costs.total.value, "EUR")}${per}` : `${costs.items.length} Positionen`;
   return (
-    <section className={`${CARD} overflow-hidden`}>
-      <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-4">
-        <span className="min-w-0">
-          <span className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold"><Wallet size={16} /> Ausgaben</span>
-          {costs.total ? <><b className="tnum mt-1 block text-[24px] leading-8">{fmtMoney(costs.total.value, "EUR")}<span className="text-[14px] font-semibold text-muted">{per}</span></b><span className="block text-[13px] text-muted">{costs.total.label}</span></> : <b className="mt-1 block text-[15px]">{costs.items.length} Positionen</b>}
-        </span>
-      </div>
-      {costs.items.length > 0 && (
-        <>
-          <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center justify-between border-t border-line px-5 py-3 text-[13px] font-semibold hover:bg-surface-2">Zusammensetzung<ChevronDown size={15} className={`text-muted transition-transform ${open ? "rotate-180" : ""}`} /></button>
-          {open && <ul className="divide-y divide-line border-t border-line text-[14px]">{costs.items.map((x, i) => <li key={i} className="flex items-baseline gap-3 px-5 py-2.5"><span className="min-w-0 flex-1">{x.label}{x.note && <span className="block text-[12px] text-muted">{x.note}</span>}</span><span className="tnum shrink-0 font-semibold">{fmtMoney(x.value, "EUR")}</span></li>)}</ul>}
-        </>
-      )}
-    </section>
+    <Panel title="Ausgaben" icon={Wallet} color="#1f9688" sub={costs.total?.label} defaultOpen={false}
+      aside={<b className="tnum shrink-0 text-[18px] leading-[26px]">{sum}</b>}>
+      {costs.items.length > 0
+        ? <InfoRows rows={costs.items.map((x) => ({ label: x.label, value: <span className="tnum font-semibold">{fmtMoney(x.value, "EUR")}{x.note && <span className="block text-[12px] font-normal text-muted">{x.note}</span>}</span>, copy: fmtMoney(x.value, "EUR") }))} />
+        : <p className="px-5 py-4 text-[14px] text-muted">Keine Einzelpositionen.</p>}
+    </Panel>
   );
 }
 
-/** Angaben kompakt in zwei Spalten, jeder Wert mit Kopieren (z. B. Aktenzeichen fürs Telefonat) */
-function FactGrid({ facts }: { facts: Fact[] }) {
-  return (
-    <dl className="grid sm:grid-cols-2">
-      {facts.map((f, i) => (
-        <div key={i} className="group relative min-w-0 border-t border-line px-5 py-3 sm:odd:border-r">
-          <dt className="truncate pr-8 text-[12px] text-muted" title={f.label}>{f.label}</dt>
-          <dd className="pr-8 text-[14px] font-semibold break-words">{f.value}</dd>
-          <CopyBtn value={f.value} className="absolute top-1/2 right-2.5 -translate-y-1/2" />
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-function CopyBtn({ value, className = "" }: { value: string; className?: string }) {
-  const [ok, setOk] = useState(false);
-  return (
-    <button type="button" onClick={() => { void navigator.clipboard?.writeText(value); setOk(true); setTimeout(() => setOk(false), 1200); }} aria-label="Kopieren" title="Kopieren"
-      className={`grid h-7 w-7 place-items-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg sm:opacity-0 sm:group-hover:opacity-100 ${ok ? "!opacity-100 text-positive-text" : ""} ${className}`}>
-      {ok ? <Check size={14} /> : <Copy size={13} />}
-    </button>
-  );
-}
