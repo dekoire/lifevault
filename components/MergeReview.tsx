@@ -155,7 +155,7 @@ export function MergeReview({ docs, title, reason, skip: preSkip = [], onDone, o
         {(onNotSame || onCancel) && (
           <div className="grid grid-cols-2 gap-2">
             {onNotSame ? <button type="button" disabled={busy} onClick={onNotSame} className="flex h-11 items-center justify-center gap-1.5 rounded-full border border-card-line text-[14px] font-semibold hover:bg-surface-2"><X size={15} /> Nicht zusammen</button> : <span />}
-            {onCancel && <button type="button" disabled={busy} onClick={onCancel} className="flex h-11 items-center justify-center rounded-full text-[14px] font-semibold text-soft hover:bg-surface-2 hover:text-fg">Später</button>}
+            {onCancel && <button type="button" disabled={busy} onClick={onCancel} className="flex h-11 items-center justify-center rounded-full border border-card-line bg-surface-2 text-[14px] font-semibold text-fg hover:bg-surface-3">Später</button>}
           </div>
         )}
       </div>
