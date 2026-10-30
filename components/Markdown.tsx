@@ -2,7 +2,21 @@
 import { Fragment } from "react";
 import { EntityLink } from "@/components/EntityLink";
 
-/** Kleines Markdown für Chat-Antworten: Absätze, Listen, Überschriften, **fett** und [Links](/d/…) */
+/** Eurobeträge („711,69 €“, „75 €“, „EUR 12,50“) hervorheben – man sieht sofort, worum es geht */
+const MONEY = /(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d{1,2})?\s?(?:€|EUR\b|Euro\b)|(?:€|EUR)\s?(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d{1,2})?/g;
+function money(text: string, key: string): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  let last = 0, i = 0;
+  for (const m of text.matchAll(MONEY)) {
+    if (m.index! > last) out.push(text.slice(last, m.index));
+    out.push(<span key={`${key}-m${i++}`} className="tnum rounded-md bg-brand-500/10 px-1 py-px font-semibold whitespace-nowrap text-fg">{m[0]}</span>);
+    last = m.index! + m[0].length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
+/** Kleines Markdown für Chat-Antworten: Absätze, Listen, Überschriften, **fett** und [Links](/d/…); Beträge hervorgehoben */
 function inline(text: string, key: string) {
   const parts: React.ReactNode[] = [];
   const re = /(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g;
@@ -10,9 +24,9 @@ function inline(text: string, key: string) {
   let m: RegExpExecArray | null;
   let i = 0;
   while ((m = re.exec(text))) {
-    if (m.index > last) parts.push(text.slice(last, m.index));
+    if (m.index > last) parts.push(...money(text.slice(last, m.index), `${key}-t${i}`));
     const t = m[0];
-    if (t.startsWith("**")) parts.push(<strong key={`${key}-${i++}`} className="font-semibold">{t.slice(2, -2)}</strong>);
+    if (t.startsWith("**")) parts.push(<strong key={`${key}-${i++}`} className="font-semibold">{money(t.slice(2, -2), `${key}-b${i}`)}</strong>);
     else {
       const [, label, href] = /\[([^\]]+)\]\(([^)]+)\)/.exec(t)!;
       parts.push(href.startsWith("/")
@@ -21,7 +35,7 @@ function inline(text: string, key: string) {
     }
     last = m.index + t.length;
   }
-  if (last < text.length) parts.push(text.slice(last));
+  if (last < text.length) parts.push(...money(text.slice(last), `${key}-e`));
   return parts;
 }
 
