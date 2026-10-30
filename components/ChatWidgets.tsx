@@ -29,7 +29,7 @@ import type { Doc } from "@/lib/types";
  * Bausteine im Chat: Die KI nennt nur Dokument-IDs bzw. Partner-Schlüssel – Beträge, IBAN, Adressen usw.
  * kommen hier aus den echten Daten. So erfindet die KI keine Bankverbindungen.
  */
-export const WIDGETS = ["zahlung", "partner", "dokumente", "aufgaben", "uebersicht", "gehalt", "aktion", "verlauf"] as const;
+export const WIDGETS = ["zahlung", "partner", "dokumente", "aufgaben", "uebersicht", "gehalt", "aktion", "verlauf", "partnerliste", "gruppen"] as const;
 export type WidgetKind = (typeof WIDGETS)[number];
 
 // Kachel-Verläufe wie in Finastry
@@ -299,6 +299,87 @@ function DocEditor({ d, onClose }: { d: Doc; onClose: () => void }) {
   );
 }
 
+// ---------- Partner als Liste zum Arbeiten: öffnen (Pfeil) oder gleich umbenennen (Stift) ----------
+function PartnerListWidget({ body }: { body: string }) {
+  const { allDocs, refresh } = useDocs();
+  const partners = useMemo(() => buildPartners(allDocs), [allDocs]);
+  const wanted = keys(body);
+  const list = (wanted.length ? wanted.map((k) => partners.find((p) => p.key === k)).filter(Boolean) : partners.filter((p) => p.active)) as ReturnType<typeof buildPartners>;
+  const [edit, setEdit] = useState<string>();
+  const [name, setName] = useState("");
+  if (!list.length) return null;
+  const rename = async (p: (typeof list)[number]) => {
+    const n = name.trim();
+    if (!n || n === p.name) return setEdit(undefined);
+    await supabase.from("documents").update({ sender: n }).in("id", p.docs.map((d) => d.id));
+    await refresh();
+    setEdit(undefined);
+  };
+  return (
+    <div className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
+      <p className="flex items-center justify-between px-4 pt-3 pb-2 text-[12px] font-semibold tracking-wide text-muted uppercase">Partner<span className="tnum">{list.length}</span></p>
+      <ul className="divide-y divide-line border-t border-line">
+        {list.slice(0, 40).map((p) => (
+          <li key={p.key} className="flex items-center gap-3 px-4 py-2.5">
+            <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={34} />
+            {edit === p.key ? (
+              <form onSubmit={(e) => { e.preventDefault(); void rename(p); }} className="flex min-w-0 flex-1 gap-2">
+                <input autoFocus value={name} onChange={(e) => setName(e.target.value)} className="h-9 min-w-0 flex-1 rounded-lg border border-card-line bg-surface px-2.5 text-[14px] outline-none focus:border-fg" />
+                <button type="submit" aria-label="Speichern" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-fg text-canvas"><Check size={15} /></button>
+                <button type="button" aria-label="Abbrechen" onClick={() => setEdit(undefined)} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-card-line"><X size={15} /></button>
+              </form>
+            ) : (
+              <>
+                <Link href={`/partner/${p.key}`} className="min-w-0 flex-1">
+                  <b className="block truncate text-[14px]">{p.name}</b>
+                  <span className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted"><ClusterTag id={p.cluster} /><span className="truncate">· {p.docs.length} Dok. · zuletzt {fmtDate(p.last)}</span></span>
+                </Link>
+                <button type="button" aria-label={`${p.name} umbenennen`} title="Umbenennen" onClick={() => { setEdit(p.key); setName(p.name); }} className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-fg"><Pencil size={14} /></button>
+                <Link href={`/partner/${p.key}`} aria-label={`${p.name} öffnen`} className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-fg"><ChevronRight size={16} /></Link>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// ---------- Dokumente nach Thema gruppiert (z. B. Befunde je Fachgebiet): je Gruppe Überschrift + Tabelle ----------
+function GroupsWidget({ body }: { body: string }) {
+  const { allDocs } = useDocs();
+  const open = useDetail();
+  const list = ids(body).map((id) => allDocs.find((d) => d.id === id)).filter(Boolean) as Doc[];
+  if (!list.length) return null;
+  const groups = new Map<string, Doc[]>();
+  for (const d of list) { const g = d.topic ?? d.doc_type ?? "Sonstiges"; groups.set(g, [...(groups.get(g) ?? []), d]); }
+  const gist = (d: Doc) => (d.summary ?? "").split(/(?<=[.!?])\s/)[0]?.slice(0, 140) ?? "";
+  return (
+    <div className="space-y-3">
+      {[...groups.entries()].sort((a, b) => b[1].length - a[1].length).map(([g, ds]) => (
+        <section key={g} className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
+          <h4 className="flex items-center gap-2.5 px-4 pt-3.5 pb-2.5 text-[15px] font-bold"><span className="h-4 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />{g}<span className="tnum ml-auto rounded-full border border-card-line px-2 text-[11.5px] font-semibold text-soft">{ds.length}</span></h4>
+          <ul className="divide-y divide-line border-t border-line">
+            {ds.sort((a, b) => dateOf(b).localeCompare(dateOf(a))).map((d) => (
+              <li key={d.id}>
+                <button type="button" onClick={() => open?.({ kind: "doc", id: d.id })} className="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-surface-2">
+                  <span className="h-12 w-9 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2"><Thumb d={d} /></span>
+                  <span className="min-w-0 flex-1">
+                    <b className="line-clamp-2 text-[13.5px] leading-[18px]">{d.title ?? d.file_name}</b>
+                    {gist(d) && <span className="mt-0.5 line-clamp-2 block text-[12.5px] leading-[17px] text-soft">{gist(d)}</span>}
+                    <span className="mt-1 flex min-w-0 items-center gap-1.5 text-[11.5px] text-muted"><KindTag d={d} /><span className="truncate">{[d.sender, fmtDate(dateOf(d))].filter(Boolean).join(" · ")}</span></span>
+                  </span>
+                  <ChevronRight size={15} className="mt-1 shrink-0 text-muted" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
 // ---------- Verlauf bei einem Partner (z. B. Arzt): kompakt als Tabelle mit Vorschaubild ----------
 function HistoryWidget({ body }: { body: string }) {
   const { allDocs } = useDocs();
@@ -464,6 +545,8 @@ export function ChatWidget({ kind, body }: { kind: string; body: string }) {
     case "gehalt": return <SalaryWidget body={body} />;
     case "aktion": return <ActionsWidget body={body} />;
     case "verlauf": return <HistoryWidget body={body} />;
+    case "partnerliste": return <PartnerListWidget body={body} />;
+    case "gruppen": return <GroupsWidget body={body} />;
     default: return null;
   }
 }
