@@ -6,6 +6,8 @@ import { openDraft } from "@/components/DraftSheet";
 import { DRAFT_PURPOSES, suggestedPurposes } from "@/lib/drafts";
 import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { VaultUnlock } from "@/components/VaultUnlock";
+import { useMe } from "@/lib/me";
 import { ArrowLeft, CalendarClock, Download, ExternalLink, Lock, Maximize2, PenLine, Quote, X } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
 import { Clamp } from "@/components/Clamp";
@@ -70,6 +72,7 @@ const BTN = "inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded
 
 function DocDetail({ id, page, quote, open, close, back = false }: { id: string; page?: number; quote?: string; open: (d: Detail) => void; close: () => void; back?: boolean }) {
   const { allDocs } = useDocs();
+  const { unlocked } = useMe();
   const [doc, setDoc] = useState<Doc | undefined>(allDocs.find((d) => d.id === id));
   const [url, setUrl] = useState<string>();
   useEffect(() => {
@@ -80,6 +83,8 @@ function DocDetail({ id, page, quote, open, close, back = false }: { id: string;
     void supabase.storage.from("documents").createSignedUrl(doc.file_path, 600).then(({ data }) => setUrl(data?.signedUrl));
   }, [doc]);
   if (!doc) return <p className="p-6 text-[14px] text-muted">Dokument nicht gefunden.</p>;
+  // gesperrt: weder Titel noch Absender oder Tags zeigen – nur Entsperren, mittig
+  if (doc.encrypted && !unlocked) return <div className="grid min-h-[70dvh] place-items-center p-4 pt-14"><div className="w-full"><VaultUnlock /></div></div>;
   const c = clusterOf(doc.cluster);
   const image = doc.mime_type.startsWith("image/");
   // andere Schreiben zum selben Zahlungs-Vorgang
