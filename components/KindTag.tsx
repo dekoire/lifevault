@@ -1,4 +1,4 @@
-import { BookOpen, CircleAlert, CircleCheck, ClipboardList, FileSignature, IdCard, Landmark, Mail, Receipt, Stethoscope, Tags, type LucideIcon } from "lucide-react";
+import { BookOpen, CircleAlert, CircleCheck, ClipboardList, FileSignature, IdCard, Landmark, Mail, Receipt, Stethoscope, Tags, Wallet, type LucideIcon } from "lucide-react";
 import { IconAvatar } from "@/components/ListControls";
 import { KINDS, kindOf } from "@/lib/kinds";
 import type { Doc } from "@/lib/types";
@@ -11,7 +11,7 @@ export function KindTag({ d }: { d: Pick<Doc, "doc_type" | "title"> }) {
 }
 
 const KIND_ICONS: Record<string, LucideIcon> = {
-  mahnung: CircleAlert, medizin: Stethoscope, ausweis: IdCard, angebot: Tags, bescheid: Landmark, formular: ClipboardList,
+  mahnung: CircleAlert, gehalt: Wallet, medizin: Stethoscope, ausweis: IdCard, angebot: Tags, bescheid: Landmark, formular: ClipboardList,
   bedingungen: BookOpen, rechnung: Receipt, bestaetigung: CircleCheck, vertrag: FileSignature, schreiben: Mail,
 };
 
