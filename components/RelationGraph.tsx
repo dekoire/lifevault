@@ -178,7 +178,7 @@ export function RelationGraph({ doc }: { doc: Doc }) {
             <div className="flex items-center gap-3">
               <IconTile color={GROUP_COLOR[g.id]} size={32}>{g.icon}</IconTile>
               <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-2 text-[15px] font-semibold">{g.title}<span className="tnum rounded-full border border-card-line px-3 py-1 text-[12px] leading-4 text-soft">{list.length}</span></span>
+                <span className="flex items-center gap-2 text-[15px] font-semibold">{g.title}<span className="tnum rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 text-soft">{list.length}</span></span>
                 <span className="block truncate text-[12px] text-muted">{due ? <b className="font-semibold text-negative-text">{due} offen · </b> : null}{g.means}</span>
               </span>
             </div>

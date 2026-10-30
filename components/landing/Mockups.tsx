@@ -33,7 +33,7 @@ export function ChatMock() {
         <p className="flex items-center gap-1.5 text-[11px] font-semibold text-selected"><Sparkles size={12} /> Lifevault</p>
         <p><b>30 Urlaubstage pro Jahr</b> bei einer 5-Tage-Woche.</p>
         <p className="text-soft">Dazu kommen tarifliche Zusatztage nach IG-Metall-Tarif. Resturlaub verfällt am 31. März des Folgejahres.</p>
-        <p className="flex flex-wrap gap-1 pt-1"><span className="rounded-full border border-card-line px-3 py-1 text-[12px] font-medium text-fg">Arbeitsvertrag Nordwerk</span></p>
+        <p className="flex flex-wrap gap-1 pt-1"><span className="rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-medium text-fg">Arbeitsvertrag Nordwerk</span></p>
       </div>
     </div>
   );

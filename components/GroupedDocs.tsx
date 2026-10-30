@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, ArrowDownAZ, Building2, CalendarDays, CalendarRange, Check, ChevronDown, CircleAlert, CircleCheck, Clock, Download, Hash, History, Info, Rows3, Search, Shapes, Star, Tag, Users, X, type LucideIcon } from "lucide-react";
 import { DocCarousel } from "@/components/DocCarousel";
 import { DocRow, DocRowHead } from "@/components/DocRow";
+import { Panel } from "@/components/Panel";
 import { Box, stateOf } from "@/components/ExportSheet";
 import { FilterBar, FilterSelect, FilterToggle, IconAvatar } from "@/components/ListControls";
 import { KindAvatar } from "@/components/KindTag";
@@ -132,6 +133,8 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
     : <DocCarousel docs={ds} grid />;
   // Liste in einer Kachel, Karten frei im Raster
   const block = (ds: Doc[]) => (picking || view === "list" ? <div className={`${CARD} overflow-hidden`}>{rows(ds)}</div> : rows(ds));
+  // in der Jahres-Kachel: Liste direkt, Karten mit Innenabstand
+  const inner = (ds: Doc[]) => (picking || view === "list" ? rows(ds) : <div className="p-4">{rows(ds)}</div>);
 
   if (!docs.length) return <p className={`${CARD} p-6 text-center text-[14px] text-muted`}>Noch keine Dokumente in diesem Bereich.</p>;
   return (
@@ -183,34 +186,26 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
       {sections.map((s) => {
         const isOpen = !closed.includes(s.year) || !!term;
         return (
-          <section key={s.year} className="space-y-3">
-            {/* schlichte Überschrift: Jahr links, feine Linie, Anzahl, auf-/zuklappen */}
-            <div className="flex items-center gap-3">
-              {picking && <button type="button" onClick={() => pickMany(s.docs.map((d) => d.id), stateOf(s.docs.map((d) => d.id), picked) !== "on")} aria-label={`${s.year} auswählen`}><Box state={stateOf(s.docs.map((d) => d.id), picked)} /></button>}
-              <button type="button" aria-expanded={isOpen} onClick={() => setClosed((c) => (c.includes(s.year) ? c.filter((x) => x !== s.year) : [...c, s.year]))} className="group flex min-w-0 flex-1 items-center gap-3 text-left">
-                <span className="tnum text-[22px] leading-7 font-bold tracking-tight">{s.year}</span>
-                {s.open > 0 && <span className="text-[12px] font-semibold text-negative-text">{s.open} offen</span>}
-                <span className="h-px flex-1 bg-line" />
-                <span className="tnum rounded-full border border-card-line bg-surface px-3.5 py-1 text-[12px] font-semibold text-fg">{s.docs.length} {s.docs.length === 1 ? "Dokument" : "Dokumente"}</span>
-                <ChevronDown size={15} className={`shrink-0 text-muted transition-transform group-hover:text-fg ${isOpen ? "rotate-180" : ""}`} />
-              </button>
-            </div>
-            {isOpen && (sub ? (
-              <div className="space-y-4">
+          <Panel key={s.year} title={s.year} icon={CalendarDays} color={s.open > 0 ? "#b42318" : "#6d4aff"} count={s.docs.length}
+            sub={s.open > 0 ? <span className="font-semibold text-negative-text">{s.open} offen</span> : undefined}
+            aside={picking ? <button type="button" onClick={() => pickMany(s.docs.map((d) => d.id), stateOf(s.docs.map((d) => d.id), picked) !== "on")} aria-label={`${s.year} auswählen`}><Box state={stateOf(s.docs.map((d) => d.id), picked)} /></button> : undefined}
+            open={isOpen} onToggle={() => setClosed((c) => (c.includes(s.year) ? c.filter((x) => x !== s.year) : [...c, s.year]))} noLine={!sub && view === "list" && !picking}>
+            {sub ? (
+              <div>
                 {s.groups.map((g) => (
-                  <div key={g.key} className="space-y-2">
-                    <div className="flex items-center gap-2 pl-0.5">
+                  <div key={g.key} className="border-b border-line last:border-b-0">
+                    {/* Untergruppe (z. B. Partner): kleine Zwischenüberschrift */}
+                    <div className="flex items-center gap-2.5 px-4 pt-5 pb-2 md:px-6">
                       {g.partner && <SenderLogo domain={g.partner.domain} sender={g.partner.name} cluster={g.partner.cluster} size={24} />}
-                      <span className="truncate text-[14px] font-semibold text-fg">{g.label}</span>
-                      <span className="h-px flex-1 bg-line/70" />
-                      <span className="tnum rounded-full border border-card-line bg-surface px-3 py-1 text-[12px] font-semibold text-soft">{g.docs.length}</span>
+                      <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{g.label}</span>
+                      <span className="tnum rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">{g.docs.length}</span>
                     </div>
-                    {block(g.docs)}
+                    {inner(g.docs)}
                   </div>
                 ))}
               </div>
-            ) : block(s.docs))}
-          </section>
+            ) : inner(s.docs)}
+          </Panel>
         );
       })}
       {/* Export-Leiste: per Portal am Bildschirmrand (sonst verschiebt sie die Animation der Seite);

@@ -42,9 +42,9 @@ export function HistoryTimeline({ history, docs }: { history: History; docs: Doc
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1.5">
                         {home ? <span className={`text-[15px] ${now ? "" : "text-soft"}`}><CopyValue value={e.name} /></span> : <Link href={`/partner/${partnerKey(sender?.sender ?? e.name)}`} className={`text-[15px] font-semibold hover:underline ${now ? "" : "text-soft"}`}>{e.name}</Link>}
-                        {now ? <span className="rounded-full bg-positive/10 px-3 py-1 text-[12px] font-semibold text-positive-text">aktuell</span> : <span className="rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold text-soft">früher</span>}
+                        {now ? <span className="rounded-full bg-positive/10 px-3 py-2 text-[12px] leading-4 font-semibold text-positive-text">aktuell</span> : <span className="rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">früher</span>}
                         {e.change && e.change !== "start" && i > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold text-fg">{e.change === "uebergabe" ? <GitBranch size={11} /> : <Repeat size={11} />}{CHANGE_LABEL[e.change]}</span>
+                          <span className="inline-flex items-center gap-1 rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-fg">{e.change === "uebergabe" ? <GitBranch size={11} /> : <Repeat size={11} />}{CHANGE_LABEL[e.change]}</span>
                         )}
                       </span>
                       <span className="block text-[13px] text-muted">{span(e)}{e.note ? ` · ${e.note}` : ""}</span>

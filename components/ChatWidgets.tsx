@@ -137,7 +137,7 @@ function PaymentWidget({ body }: { body: string }) {
                 <span className="text-right">
                   {amount !== undefined && <b className="tnum block text-[20px] leading-6">{fmtMoney(amount)}</b>}
                   {partial && <span className="block text-[11px] text-muted">von {fmtMoney(x.total!)} offen</span>}
-                  {x.todo && <span className={`mt-1 inline-block rounded-full border px-3 py-1 text-[12px] font-semibold ${x.todo.days < 0 ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>bis {fmtDate(x.todo.date)}</span>}
+                  {x.todo && <span className={`mt-1 inline-block rounded-full border px-3 py-2 text-[12px] leading-4 font-semibold ${x.todo.days < 0 ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>bis {fmtDate(x.todo.date)}</span>}
                 </span>
               </div>
               <CaseDocs d={x.d} rel={x.rel} />

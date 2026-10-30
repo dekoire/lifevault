@@ -74,9 +74,9 @@ export default function PartnersPage() {
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center gap-1.5">
                           <b className="truncate text-[15px]">{p.name}</b>
-                          {p.isShop && <span className="shrink-0 rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold text-soft">Händler</span>}
-                          {!p.active && <span className="shrink-0 rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold text-soft">früher</span>}
-                          {byPartner.get(p.key)?.entry.status === "aktuell" && byPartner.get(p.key)?.prev && <span className="shrink-0 rounded-full bg-positive/10 px-3 py-1 text-[12px] font-semibold text-positive-text">aktuell · {byPartner.get(p.key)!.role}</span>}
+                          {p.isShop && <span className="shrink-0 rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">Händler</span>}
+                          {!p.active && <span className="shrink-0 rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">früher</span>}
+                          {byPartner.get(p.key)?.entry.status === "aktuell" && byPartner.get(p.key)?.prev && <span className="shrink-0 rounded-full bg-positive/10 px-3 py-2 text-[12px] leading-4 font-semibold text-positive-text">aktuell · {byPartner.get(p.key)!.role}</span>}
                         </span>
                         {!p.active && (byPartner.get(p.key)?.next ?? byPartner.get(p.key)?.current) && <span className="hidden truncate text-[13px] text-muted md:block">abgelöst durch {(byPartner.get(p.key)!.next ?? byPartner.get(p.key)!.current)!.name}</span>}
                         <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted md:hidden">

@@ -139,7 +139,7 @@ export function useCaptureTray() {
                     <span className="absolute top-1.5 left-1.5 grid h-6 min-w-6 place-items-center rounded-full bg-fg px-1.5 text-[12px] font-bold text-canvas">{i + 1}</span>
                     {it.scanning && <span className="absolute inset-0 grid place-items-center bg-black/30 text-white"><Loader2 size={22} className="animate-spin" /></span>}
                     {it.quality && !it.scanning && (
-                      <span title={it.quality.note} className={`absolute inset-x-1.5 top-9 inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold text-white ${it.quality.ok ? "bg-positive" : "bg-amber"}`}>
+                      <span title={it.quality.note} className={`absolute inset-x-1.5 top-9 inline-flex items-center gap-1 rounded-full px-3 py-2 text-[12px] leading-4 font-semibold text-white ${it.quality.ok ? "bg-positive" : "bg-amber"}`}>
                         {it.quality.ok ? <Check size={11} strokeWidth={3} /> : <AlertTriangle size={11} />}<span className="truncate">{it.quality.ok ? "Gut eingerahmt" : it.quality.note}</span>
                       </span>
                     )}
