@@ -150,3 +150,17 @@ export function todoKind(t: Pick<Todo, "what" | "doc" | "payment">): TodoKind {
   if (/termin|untersuchung|vorstellung|kontrolle|sprechstunde/.test(what)) return "termin";
   return "frist";
 }
+
+/**
+ * Ist aus diesem Dokument etwas zu zahlen? Dieselbe Entscheidung wie „Zu erledigen“: nur mit einer Zahlungsfrist im
+ * Dokument (Rechnung, Mahnung, Bescheid mit Zahlungsaufforderung) – Infos wie eine Meldebescheinigung sind nie offen.
+ * Für verbundene Apps (Finastry), damit sie nicht selbst raten müssen.
+ */
+export function openPayment(d: Doc, today = new Date().toISOString().slice(0, 10)): { amount: number; due: string; overdue: boolean; what: string } | null {
+  if (d.purpose === "info" || d.archived) return null;
+  const t = todos([d], today).find((x) => x.doc.id === d.id && PAY_ITEM.test(`${x.what}`) && !/kündig|widerruf|widerspruch|termin|rücksend/i.test(x.what));
+  if (!t) return null;
+  const amount = t.total ?? t.payment?.amount ?? openTotal(d);
+  if (!amount || /bezahlt|beglichen|abgebucht|eingezogen|lastschrift/i.test(t.what)) return null;
+  return { amount, due: t.date, overdue: t.days < 0, what: t.what.slice(0, 120) };
+}
