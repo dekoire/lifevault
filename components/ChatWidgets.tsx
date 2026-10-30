@@ -286,7 +286,7 @@ function DocEditor({ d, onClose }: { d: Doc; onClose: () => void }) {
   return (
     <div className="rounded-2xl border border-brand-500/40 bg-surface p-3.5 shadow-card">
       <p className="mb-2 flex items-center gap-2 text-[12px] font-semibold tracking-wide text-muted uppercase"><Pencil size={13} /> Bearbeiten<button type="button" onClick={onClose} aria-label="Schließen" className="ml-auto grid h-7 w-7 place-items-center rounded-full hover:bg-surface-2"><X size={14} /></button></p>
-      <div className="grid gap-2 text-[12px] text-muted sm:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_10rem]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-2 text-[12px] text-muted sm:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_10rem]">
         <label>Titel<input value={title} onChange={(e) => setTitle(e.target.value)} className={`mt-0.5 ${field}`} /></label>
         <label>Absender / Partner<input value={sender} onChange={(e) => setSender(e.target.value)} className={`mt-0.5 ${field}`} /></label>
         <label>Datum<input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`mt-0.5 ${field}`} /></label>

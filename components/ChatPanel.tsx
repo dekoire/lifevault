@@ -8,7 +8,7 @@ import { ChatWidget } from "@/components/ChatWidgets";
 import { useDetail } from "@/components/DetailPanel";
 import { EntityLink } from "@/components/EntityLink";
 import { SenderLogo } from "@/components/SenderLogo";
-import { useDocs } from "@/lib/docs";
+import { fmtDate, useDocs } from "@/lib/docs";
 import { useMe } from "@/lib/me";
 import { openJson, vaultKey } from "@/lib/vault";
 import type { SecretPart } from "@/lib/types";
@@ -97,11 +97,12 @@ export function Sources({ text }: { text: string }) {
   return (
     <div className="mt-4">
       <div className="mb-2 text-[12px] font-semibold tracking-wide text-muted uppercase">Quellen</div>
-      <div className="grid gap-2 sm:grid-cols-2">
+      {/* minmax(0,1fr): lange Titel werden gekürzt statt die Karte über den Rand zu schieben */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-2">
         {list.map((d) => (
-          <Link key={d.id} href={`/d/${d.id}`} onClick={(e) => { if (open) { e.preventDefault(); open({ kind: "doc", id: d.id }); } }} className="flex items-center gap-3 rounded-xl border border-card-line bg-surface px-3 py-2.5 hover:bg-surface-2">
-            <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={34} />
-            <span className="min-w-0"><span className="block truncate text-[14px] font-semibold">{d.title ?? d.file_name}</span><span className="block truncate text-[12px] text-muted">{[d.sender, d.doc_date].filter(Boolean).join(" · ")}</span></span>
+          <Link key={d.id} href={`/d/${d.id}`} onClick={(e) => { if (open) { e.preventDefault(); open({ kind: "doc", id: d.id }); } }} className="flex min-w-0 items-center gap-3 rounded-xl border border-card-line bg-surface px-3 py-2.5 hover:bg-surface-2">
+            <span className="shrink-0"><SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={34} /></span>
+            <span className="min-w-0 flex-1"><span className="block truncate text-[14px] font-semibold">{d.title ?? d.file_name}</span><span className="block truncate text-[12px] text-muted">{[d.doc_type, d.sender, fmtDate(d.doc_date ?? d.received_at)].filter(Boolean).join(" · ")}</span></span>
           </Link>
         ))}
       </div>
