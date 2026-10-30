@@ -45,7 +45,7 @@ export function ImportanceChips({ doc, onChange, relation = false }: { doc: Doc;
           {IMPORTANCE.map((x) => <option key={x.value} value={x.value}>{x.value} – {x.label}</option>)}
         </select>
       </label>
-      {(relation ? doc.partner_role === "grundlage" : doc.partner_role) && <span className={`${CHIP} text-soft`} title={children ? `Grundlage für ${children} ${children === 1 ? "Dokument" : "Dokumente"}` : "Rolle beim Partner"}>{roleLabel(doc.partner_role)}{relation && children > 0 && <span className="tnum text-muted">· {children}</span>}</span>}
+      {doc.partner_role === "grundlage" && <span className={`${CHIP} text-soft`} title={children ? `Grundlage für ${children} ${children === 1 ? "Dokument" : "Dokumente"}` : "Rolle beim Partner"}>{roleLabel(doc.partner_role)}{relation && children > 0 && <span className="tnum text-muted">· {children}</span>}</span>}
       {basis && <Link href={`/d/${basis.id}`} className={`${CHIP} max-w-[16rem] text-selected hover:bg-surface-2`} title={`Gehört zu ${basis.title ?? basis.file_name}`}><Link2 size={12} className="shrink-0" /><span className="truncate">{basis.title ?? basis.file_name}</span></Link>}
     </>
   );
@@ -96,16 +96,15 @@ export function ImportanceCard({ doc, onChange }: { doc: Doc; onChange: (d: Doc)
   const reason = doc.importance === null ? "Wird gerade bewertet …" : doc.importance_reason === "von dir festgelegt" ? "" : doc.importance_reason ?? "";
   const docLink = (d: Doc) => <Link key={d.id} href={`/d/${d.id}`} className="block truncate font-semibold text-selected hover:underline">{d.title ?? d.file_name}</Link>;
   const rows = [
-    doc.partner_role && { k: "Rolle", v: <span className="font-semibold">{roleLabel(doc.partner_role)}</span> },
     basis && { k: "Gehört zu", v: docLink(basis) },
     children.length > 0 && { k: "Grundlage für", v: <>{children.slice(0, 3).map(docLink)}{children.length > 3 && <span className="text-muted">+ {children.length - 3} weitere</span>}</> },
   ].filter((r): r is { k: string; v: React.JSX.Element } => !!r);
   return (
     <section className="rounded-2xl border border-card-line bg-surface shadow-card">
-      <div className="px-4 pt-3.5 pb-3">
+      <div className="px-5 pt-5 pb-4">
         <div className="flex items-start gap-3">
           <span className="min-w-0 flex-1">
-            <span className="block text-[12px] font-semibold tracking-wide text-muted uppercase">Wichtigkeit</span>
+            <span className="block text-[13px] font-medium text-muted">Wichtigkeit</span>
             <b className="block text-[19px] leading-7">{importanceLabel(value)}</b>
           </span>
           <label className={`${CHIP} relative mt-1 shrink-0 cursor-pointer text-soft hover:bg-surface-2`} title="Wichtigkeit ändern">
@@ -126,7 +125,7 @@ export function ImportanceCard({ doc, onChange }: { doc: Doc; onChange: (d: Doc)
       </div>
       {rows.length > 0 && (
         <dl className="divide-y divide-line border-t border-line text-[13px]">
-          {rows.map((r) => <div key={r.k} className="grid grid-cols-[7rem_minmax(0,1fr)] gap-2 px-4 py-2.5"><dt className="text-muted">{r.k}</dt><dd className="min-w-0 space-y-0.5">{r.v}</dd></div>)}
+          {rows.map((r) => <div key={r.k} className="grid grid-cols-[7rem_minmax(0,1fr)] gap-2 px-5 py-3"><dt className="text-muted">{r.k}</dt><dd className="min-w-0 space-y-0.5">{r.v}</dd></div>)}
         </dl>
       )}
     </section>

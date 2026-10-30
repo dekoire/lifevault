@@ -1,4 +1,5 @@
 "use client";
+import { AiAvatar } from "@/components/AiAvatar";
 import { NotFound } from "@/components/NotFound";
 import { isCardDoc, PdfPages } from "@/components/PdfPages";
 import Link from "next/link";
@@ -132,6 +133,9 @@ const TILE_GRADS = [
   "linear-gradient(120deg,#c2410c 0%,#ea580c 55%,#f97316 100%)",
 ];
 const TILE_URGENT = "linear-gradient(120deg,#9f1239 0%,#b42318 55%,#d92d20 100%)";
+
+/** Vorschläge für den Dokument-Chat, solange noch nichts gefragt wurde */
+const DOC_QUESTIONS = ["Worum geht es kurz?", "Muss ich etwas tun?", "Welche Fristen gibt es?", "Was kostet das?"];
 
 export default function DocPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -367,8 +371,8 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
             ]} />
           </section>
 
-          {/* 4. Bezahlen – immer als Kachel, auch wenn gerade nichts offen ist */}
-          <DocPayment always doc={doc} url={fileUrl} fullText={content?.full_text} related={relatedPayDocs(doc, docs)} />
+          {/* 4. Bezahlen – nur wenn etwas offen ist */}
+          <DocPayment doc={doc} url={fileUrl} fullText={content?.full_text} related={relatedPayDocs(doc, docs)} />
 
           {/* 5. Kosten Stand heute – zusammengefasst, Einzelheiten zum Aufklappen */}
           {view?.costs ? <CostCard costs={view.costs} /> : show.amounts && !!content?.amounts?.length && (
@@ -421,6 +425,8 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
 
         {/* rechts: Original und Chat */}
         <div className="space-y-3 lg:sticky lg:top-6">
+          {/* Wichtigkeit zuerst – sieht man sofort */}
+          <ImportanceCard doc={doc} onChange={setDoc} />
           {/* Schutz-Hinweis als Kopf der Bild-Kachel, Bild ohne eigenen Rahmen */}
           {!(show.original && fileUrl) && <SensitiveBadge doc={doc} unlocked={unlocked} onProtect={() => void run(() => protectDoc(doc))} />}
           {show.original && fileUrl && (
@@ -429,14 +435,26 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
               {image ? <img src={fileUrl} alt={doc.title ?? doc.file_name} className="max-h-[60vh] w-full bg-surface-2 object-contain p-3" /> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={fileUrl} mime={doc.mime_type} name={doc.file_name} /> : doc.mime_type === "application/pdf" ? <PdfPages url={fileUrl} card={isCardDoc(doc)} bare /> : <iframe src={fileUrl} title="Original" className="h-[60vh] w-full bg-surface-2" />}
             </section>
           )}
-          <ImportanceCard doc={doc} onChange={setDoc} />
           <MergedParts doc={doc} onSplit={() => router.push("/")} />
           {!doc.encrypted && <WebSourceCard doc={doc} onChanged={() => void refresh()} />}
           {show.chat && (
-            <section className={`${CARD} p-5`}>
-              <h2 className="mb-3 text-[18px] leading-[26px] font-semibold">Frag zu diesem Dokument</h2>
-              {chat.msgs.length > 0 && <div className="mb-4 max-h-[50vh] overflow-y-auto pr-1"><MessageList msgs={chat.msgs} compact busy={chat.busy} onAsk={(q) => void chat.send(q)} onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} /></div>}
-              <Composer plain busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} placeholder="z. B. Wie hoch ist mein Netto?" depth={chat.depth} onDepth={chat.setDepth} />
+            <section className={`${CARD} overflow-hidden`}>
+              <div className="flex items-center gap-3 px-5 pt-5 pb-4">
+                <AiAvatar size={40} state={chat.busy ? "think" : "idle"} />
+                <span className="min-w-0">
+                  <h2 className="text-[18px] leading-[26px] font-semibold">Fragen zum Dokument</h2>
+                  <p className="truncate text-[13px] text-muted">Antwort aus genau diesem Dokument</p>
+                </span>
+              </div>
+              {chat.msgs.length === 0 && (
+                <div className="flex flex-wrap gap-2 px-5 pb-4">
+                  {DOC_QUESTIONS.map((q) => <button key={q} type="button" onClick={() => void chat.send(q)} className="rounded-full border border-card-line bg-surface px-3.5 py-1.5 text-[13px] font-medium text-soft hover:bg-surface-2 hover:text-fg">{q}</button>)}
+                </div>
+              )}
+              {chat.msgs.length > 0 && <div className="max-h-[50vh] overflow-y-auto px-5 pb-4"><MessageList msgs={chat.msgs} compact busy={chat.busy} onAsk={(q) => void chat.send(q)} onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} /></div>}
+              <div className="border-t border-line bg-canvas/60 px-5 py-4">
+              <Composer plain busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} placeholder="Frag etwas zu diesem Dokument …" depth={chat.depth} onDepth={chat.setDepth} />
+              </div>
             </section>
           )}
         </div>
@@ -455,7 +473,7 @@ function CostCard({ costs }: { costs: NonNullable<DocView["costs"]> }) {
     <section className={`${CARD} overflow-hidden`}>
       <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-4">
         <span className="min-w-0">
-          <span className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold"><Wallet size={16} /> Kosten · Stand heute</span>
+          <span className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold"><Wallet size={16} /> Ausgaben</span>
           {costs.total ? <><b className="tnum mt-1 block text-[24px] leading-8">{fmtMoney(costs.total.value, "EUR")}<span className="text-[14px] font-semibold text-muted">{per}</span></b><span className="block text-[13px] text-muted">{costs.total.label}</span></> : <b className="mt-1 block text-[15px]">{costs.items.length} Positionen</b>}
         </span>
       </div>
