@@ -12,7 +12,7 @@ export function ForwardConfirm() {
     <div className="mb-4 space-y-2">
       {list.map((c) => (
         <div key={c.id} className="flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3 text-white shadow-card" style={{ background: "var(--accent-grad, linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%))" }}>
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15"><Mail size={18} /></span>
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] bg-white/15"><Mail size={18} /></span>
           <span className="min-w-0 flex-1">
             <b className="block text-[15px]">Gmail-Weiterleitung bestätigen</b>
             <span className="block text-[13px] text-white/80">{c.forwarder ? `${c.forwarder} möchte` : "Gmail möchte"} Mails an deine Lifevault-Adresse weiterleiten. Ein Klick genügt – danach kommen Rechnungen automatisch an.</span>

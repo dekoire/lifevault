@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, FileSearch, FolderOutput, FolderTree, KeyRound, Lightbulb, Lock, Mail, MessageSquare, Monitor, PenLine, ScanLine, ShieldCheck, Smartphone, Tags, UserRound } from "lucide-react";
 import { ChatMock, HomeMock } from "@/components/landing/Mockups";
-import { ClusterIcon } from "@/components/ClusterIcon";
+import { ClusterIcon, IconTile } from "@/components/ClusterIcon";
 import { CLUSTERS } from "@/lib/clusters";
 
 export const metadata = { title: "Lifevault – alle Unterlagen in einem Tresor", description: "Hochladen, automatisch sortieren, alles fragen. Verträge, Rechnungen, Arztbriefe, Belege – sicher an einem Ort." };
@@ -56,7 +56,7 @@ export default function Landing() {
       <section className="grid gap-4 md:grid-cols-3">
         {STEPS.map(({ icon: Icon, t, d }, i) => (
           <div key={t} className="rounded-2xl border border-card-line bg-surface p-6">
-            <span className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-full border border-card-line bg-surface text-fg"><Icon size={20} /></span><span className="text-[13px] font-semibold text-muted">Schritt {i + 1}</span></span>
+            <span className="flex items-center gap-3"><IconTile icon={Icon} size={44} /><span className="text-[13px] font-semibold text-muted">Schritt {i + 1}</span></span>
             <h3 className="mt-4 text-[18px] font-semibold">{t}</h3>
             <p className="mt-1 text-[15px] leading-6 text-muted">{d}</p>
           </div>
@@ -93,7 +93,7 @@ export default function Landing() {
         <ul className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {NEW.map(({ icon: Icon, t, d }) => (
             <li key={t} className="flex gap-3 rounded-2xl border border-card-line bg-surface p-4">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-500 text-white"><Icon size={18} /></span>
+              <IconTile icon={Icon} size={40} />
               <span><b className="block text-[15px]">{t}</b><span className="block text-[14px] leading-5 text-muted">{d}</span></span>
             </li>
           ))}
@@ -122,7 +122,7 @@ export default function Landing() {
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {TRUST.map(({ icon: Icon, t, d }) => (
             <div key={t} className="rounded-2xl border border-card-line bg-surface p-6">
-              <span className="grid h-11 w-11 place-items-center rounded-full bg-fg text-canvas"><Icon size={20} /></span>
+              <IconTile icon={Icon} size={44} />
               <h3 className="mt-4 text-[17px] font-semibold">{t}</h3>
               <p className="mt-1 text-[14px] leading-6 text-muted">{d}</p>
             </div>

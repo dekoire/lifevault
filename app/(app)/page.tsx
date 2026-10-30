@@ -3,7 +3,7 @@ import { useEdgeFade } from "@/lib/edgefade";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CalendarClock, ChevronRight, FileText, Layers, ListChecks, Lock, Search, Sparkles } from "lucide-react";
-import { ClusterIcon } from "@/components/ClusterIcon";
+import { ClusterIcon, IconTile } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
 import { TodoList } from "@/components/TodoList";
 import { AdviceList } from "@/components/Advice";
@@ -68,7 +68,7 @@ export default function Home() {
               {kpis.map(({ icon: Icon, value, label, sub }) => (
                 <div key={label} className="min-w-0 rounded-2xl px-4 py-3.5 ring-1 ring-white/20 sm:p-4" style={{ background: "rgba(255,255,255,.14)" }}>
                   <span className="flex min-w-0 items-center gap-2 text-[12px] font-medium opacity-85 sm:text-[14px]">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/18"><Icon size={16} /></span>
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-[10px] bg-white/18"><Icon size={16} /></span>
                     <span className="truncate">{label}</span>
                   </span>
                   <span className="tnum mt-2 block text-[24px] leading-8 font-semibold tracking-tight">{loading ? "–" : <CountUp value={value} />}</span>
@@ -141,7 +141,7 @@ export default function Home() {
         {side && <aside className="hidden space-y-5 lg:sticky lg:top-6 lg:block">
           {pendingProtect > 0 && (
             <Link href="/einstellungen/tresor" className={`${CARD} flex items-center gap-3 p-4`}>
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-fg text-canvas"><Lock size={18} /></span>
+              <IconTile icon={Lock} size={40} />
               <span className="text-[13px]"><b className="block text-[14px]">{pendingProtect} warten auf Verschlüsselung</b><span className="text-muted">Tresor entsperren, dann werden sie geschützt.</span></span>
             </Link>
           )}

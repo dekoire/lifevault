@@ -79,7 +79,7 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
   );
   const chip = restrict && (
     <div className="flex items-center gap-3 rounded-2xl px-4 py-3 text-white shadow-card" style={{ background: "var(--accent-grad, linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%))" }}>
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15"><Hash size={17} /></span>
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-white/15"><Hash size={17} /></span>
       <span className="min-w-0 flex-1">
         <span className="block text-[12px] text-white/75">Gefiltert nach {restrict.label.split(":")[0]} · {list.length} {list.length === 1 ? "Dokument" : "Dokumente"}</span>
         <b className="tnum block truncate text-[15px]">{restrict.label.includes(":") ? restrict.label.split(":").slice(1).join(":").trim() : restrict.label}</b>

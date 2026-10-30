@@ -155,7 +155,7 @@ export default function ProfilPage() {
         <div className="grid h-40 place-items-center"><Loader2 className="animate-spin text-muted" /></div>
       ) : !profile ? (
         <section className={`${CARD} p-8 text-center`}>
-          <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-brand-500/10 text-brand-500"><Sparkles size={26} /></span>
+          <IconTile icon={Sparkles} size={56} className="mx-auto" />
           <h2 className="mt-4 text-[18px] font-semibold">Noch kein Lebensprofil</h2>
           <p className="mx-auto mt-1 max-w-md text-[14px] text-muted">Die KI liest deine {ready} Dokumente und stellt zusammen: Arbeitgeber, Wohnung, Versicherungen, laufende Verträge, Fahrzeug – und was früher war.</p>
         </section>
@@ -178,7 +178,7 @@ export default function ProfilPage() {
               return (
                 <section key={s.id} className={`${CARD} flex flex-col overflow-hidden ${open ? "lg:col-span-2" : ""}`}>
                   <h3 className="flex items-center gap-2.5 px-5 pt-4 pb-3 text-[16px] font-semibold">
-                    <span className={`grid h-9 w-9 place-items-center rounded-full ${open ? "bg-urgent text-white" : "bg-brand-500/10 text-brand-500"}`}><Icon size={17} /></span>
+                    <IconTile icon={Icon} size={36} color={open ? "#b42318" : "#6d4aff"} />
                     <span className="flex-1">{s.title}</span>
                     <span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] font-semibold text-soft">{s.items.length}</span>
                   </h3>

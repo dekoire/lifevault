@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { IconTile } from "@/components/ClusterIcon";
 import { Archive, ArrowRight, Download, FileSearch, FolderTree, Globe, KeyRound, Lock, Mail, MessageSquare, ScanLine, ShieldCheck, Sparkles, Table2, UserRound } from "lucide-react";
 import { ChatMock, DocMock, HomeMock } from "@/components/landing/Mockups";
 
@@ -55,7 +56,7 @@ export default function Funktionen() {
             <span className="text-[13px] font-semibold tracking-wide text-selected uppercase">{b.eyebrow}</span>
             <h2 className="mt-2 text-[30px] leading-10 font-[650] tracking-tight">{b.title}</h2>
             <p className="mt-4 text-[16px] leading-7 text-soft">{b.text}</p>
-            <ul className="mt-6 grid gap-3 sm:grid-cols-2">{b.points.map(({ icon: Icon, t }) => <li key={t} className="flex items-start gap-2.5 text-[14px] font-medium"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-card-line bg-surface text-fg"><Icon size={15} /></span><span className="pt-1.5">{t}</span></li>)}</ul>
+            <ul className="mt-6 grid gap-3 sm:grid-cols-2">{b.points.map(({ icon: Icon, t }) => <li key={t} className="flex items-start gap-2.5 text-[14px] font-medium"><IconTile icon={Icon} size={32} /><span className="pt-1.5">{t}</span></li>)}</ul>
           </div>
           {b.mock}
         </section>
@@ -64,7 +65,7 @@ export default function Funktionen() {
       <section className="grid gap-4 py-10 md:grid-cols-2 lg:grid-cols-3">
         {MORE.map(({ id, icon: Icon, t, d }) => (
           <div key={id} id={id} className="scroll-mt-24 rounded-2xl border border-card-line bg-surface p-6">
-            <span className="grid h-11 w-11 place-items-center rounded-full border border-card-line bg-surface text-fg"><Icon size={20} /></span>
+            <IconTile icon={Icon} size={44} />
             <h3 className="mt-4 text-[17px] font-semibold">{t}</h3>
             <p className="mt-1 text-[14px] leading-6 text-muted">{d}</p>
           </div>

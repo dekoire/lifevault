@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import Link from "next/link";
 import { useState } from "react";
 import { Check, Eye, EyeOff, Loader2, LockKeyhole, X } from "lucide-react";
@@ -41,7 +42,7 @@ export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib de
   const card = (inner?: React.ReactNode) => (
     <div className="w-full rounded-2xl px-3.5 py-3 text-white shadow-card" style={{ background: "var(--accent-grad, linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%))" }}>
       <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 text-white"><LockKeyhole size={16} /></span>
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-white/15 text-white"><LockKeyhole size={16} /></span>
         <span className="min-w-0 flex-1 pt-0.5">
           <b className="block text-[14px] leading-5">{vault ? title : "Noch kein Tresor"}</b>
           <span className="block text-[12px] leading-4 text-white/75">{vault ? text : "Lege einen Tresor an, um Dokumente zu verschlüsseln."}</span>
@@ -66,7 +67,7 @@ export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib de
 
   return (
     <div className="mx-auto w-full max-w-sm rounded-3xl border border-card-line bg-surface px-6 py-6 text-center shadow-card">
-      <span className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-brand-500 text-white"><LockKeyhole size={18} /></span>
+      <IconTile icon={LockKeyhole} size={40} className="mx-auto" />
       <h2 className="mt-3 text-[16px] leading-6 font-semibold">{vault ? title : "Noch kein Tresor"}</h2>
       <p className="mt-0.5 text-[13px] text-soft">{vault ? text : "Lege einen Tresor an, um Dokumente Ende-zu-Ende zu verschlüsseln."}</p>
       {vault ? (

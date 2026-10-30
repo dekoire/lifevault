@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowLeftRight, Check, FolderPlus, Link2, Loader2, ShieldCheck } from "lucide-react";
 import { AppIcon } from "@/components/AppIcon";
@@ -83,7 +84,7 @@ export default function ConnectPage() {
   if (req === undefined || (typeof req !== "string" && (!app || grant === undefined))) return <div className="grid min-h-[50vh] place-items-center"><Loader2 className="animate-spin text-muted" /></div>;
   if (typeof req === "string") return (
     <div className={`${CARD} mx-auto mt-8 max-w-lg space-y-3 p-6 text-center`}>
-      <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-negative/10 text-negative-text"><AlertTriangle size={22} /></span>
+      <IconTile icon={AlertTriangle} size={48} color="#b42318" className="mx-auto" />
       <h1 className="text-[18px] font-semibold">Verbindung nicht möglich</h1>
       <p className="text-[14px] text-muted">{req}</p>
     </div>

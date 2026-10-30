@@ -162,7 +162,7 @@ export function useCaptureTray() {
 
               {/* erst erklären, was der Scan-Modus macht – darunter beide Knöpfe je halb so breit */}
               <div className={`mt-4 flex items-start gap-3 rounded-2xl px-4 py-3 ${scan ? "bg-gradient-to-br from-brand-500/[.05] to-brand-500/[.12]" : "bg-surface-2"}`}>
-                <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${scan ? "bg-brand-500 text-white" : "bg-surface text-soft"}`}><ScanLine size={17} /></span>
+                <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-[10px] ${scan ? "bg-brand-500 text-white" : "bg-surface text-soft"}`}><ScanLine size={17} /></span>
                 <span className="min-w-0 text-[13px] leading-5">
                   <b className="block text-[14px] text-fg">{scan ? "Fotos werden wie ein Scan" : "Fotos bleiben wie aufgenommen"}</b>
                   <span className="block text-soft">{scan ? "Geradegezogen und schwarz-weiß aufgehellt – gut lesbar und zum Drucken." : "Ohne Geradeziehen und Aufhellen, in Farbe."}</span>

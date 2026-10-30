@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import { TopicBackfill } from "@/components/TopicBackfill";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -204,7 +205,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
                 { icon: FileUp, title: "Datei wählen", text: "Fotos oder PDFs", go: openFiles },
               ] as const).map(({ icon: Icon, title, text, go }) => (
                 <button key={title} type="button" onClick={() => { setSheet(false); go(); }} className="flex flex-col items-center gap-3 rounded-2xl bg-surface-2 px-4 py-7 text-center transition-colors hover:bg-surface-3 active:scale-[.98]">
-                  <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-500 text-white"><Icon size={24} /></span>
+                  <IconTile icon={Icon} size={56} />
                   <span><b className="block text-[15px]">{title}</b><span className="block text-[13px] text-muted">{text}</span></span>
                 </button>
               ))}

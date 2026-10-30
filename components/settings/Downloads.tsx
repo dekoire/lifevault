@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Download, FileArchive, FolderDown, KeyRound, Loader2, Mail, Trash2 } from "lucide-react";
@@ -24,7 +25,7 @@ function Running({ compact = false }: { compact?: boolean }) {
   const running = useJobs().filter((j) => j.kind === "export" && j.state === "running");
   return running.map((j) => (
     <div key={j.id} className={`flex items-center gap-3 ${compact ? "px-3 py-2.5" : "px-5 py-4"}`}>
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-500 text-white"><Loader2 size={17} className="animate-spin" /></span>
+      <IconTile icon={Loader2} size={40} />
       <span className="min-w-0 flex-1">
         <b className="block text-[14px]">Export wird erstellt …</b>
         <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-surface-3"><span className="block h-full rounded-full bg-brand-500 transition-[width]" style={{ width: `${j.total ? Math.max(4, (j.done / j.total) * 100) : 10}%` }} /></span>
@@ -37,7 +38,7 @@ function Running({ compact = false }: { compact?: boolean }) {
 function Row({ d, compact = false }: { d: SavedDownload; compact?: boolean }) {
   return (
     <div className={`group flex items-center gap-3 ${compact ? "px-3 py-2.5" : "px-5 py-4"} hover:bg-surface-2/60`}>
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg text-canvas"><FileArchive size={17} /></span>
+      <IconTile icon={FileArchive} size={40} />
       <span className="min-w-0 flex-1">
         <b className="block truncate text-[14px]">{d.name}</b>
         <span className="block truncate text-[12px] text-muted">{when(d.created)} · {d.count} {d.count === 1 ? "Dokument" : "Dokumente"} · {mb(d.size)}{d.locked && " · mit Passwort"}</span>
@@ -59,7 +60,7 @@ export function DownloadsList() {
         <Running />
         {list === undefined ? null : list.length === 0 ? (
           <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-            <span className="grid h-12 w-12 place-items-center rounded-full bg-fg text-canvas"><FolderDown size={20} /></span>
+            <IconTile icon={FolderDown} size={48} />
             <b className="text-[15px]">Noch keine Downloads</b>
             <span className="max-w-sm text-[13px] text-muted">Starte einen Export auf der Startseite oder in einem Bereich über „Export“. Die ZIP-Dateien erscheinen dann hier.</span>
           </div>

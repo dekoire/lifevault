@@ -25,9 +25,9 @@ export const tintGradient = (color: string) => `linear-gradient(135deg, color-mi
 
 /** Symbol-Kachel wie die Kategorie-Avatare in Finastry: abgerundetes Quadrat, heller Farbverlauf, Symbol in der Farbe.
  *  Überall statt runder Symbol-Avatare verwenden, damit alles gleich aussieht. */
-export function IconTile({ icon: Icon, color = "#6d4aff", size = 40, children }: { icon?: LucideIcon; color?: string; size?: number; children?: React.ReactNode }) {
+export function IconTile({ icon: Icon, color = "#6d4aff", size = 40, className = "", children }: { icon?: LucideIcon; color?: string; size?: number; className?: string; children?: React.ReactNode }) {
   return (
-    <span className="grid shrink-0 place-items-center" style={{ width: size, height: size, borderRadius: Math.round(size * 0.26), color, background: tintGradient(color) }}>
+    <span className={`grid shrink-0 place-items-center ${className}`} style={{ width: size, height: size, borderRadius: Math.round(size * 0.26), color, background: tintGradient(color) }}>
       {Icon ? <Icon size={Math.round(size * 0.45)} strokeWidth={1.75} /> : children}
     </span>
   );

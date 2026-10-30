@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { IconTile } from "@/components/ClusterIcon";
 import { ChevronDown } from "lucide-react";
 
 /** Karte wie bei Finastry: weiß, feiner Rahmen, kaum Schatten, moderater Radius */
@@ -53,13 +54,16 @@ export function KeyValueTable({ rows }: { rows: { label: string; value: React.Re
   );
 }
 
+const MENU_COLORS = ["#6d4aff", "#1f9688", "#2563eb", "#ea580c", "#be185d", "#0891b2", "#65a30d", "#d97706"];
+
 /** Kachel-Menü wie bei Finastry (Einstellungen, Admin) */
 export function TileMenu({ tiles }: { tiles: { href: string; title: string; text: string; icon: React.ReactNode }[] }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {tiles.map((t) => (
+      {tiles.map((t, i) => (
         <Link key={t.href} href={t.href} className="group flex items-center gap-4 rounded-2xl border border-card-line bg-surface px-5 py-5 transition hover:bg-surface-2">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-fg text-canvas">{t.icon}</span>
+          {/* Symbol als Kachel mit Farbverlauf, jede Kachel eine eigene Farbe */}
+          <IconTile size={48} color={MENU_COLORS[i % MENU_COLORS.length]}>{t.icon}</IconTile>
           <span className="min-w-0 flex-1"><span className="block font-semibold">{t.title}</span><span className="block text-sm text-muted">{t.text}</span></span>
           <span className="shrink-0 text-muted transition group-hover:translate-x-0.5">›</span>
         </Link>
