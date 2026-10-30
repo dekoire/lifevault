@@ -106,12 +106,6 @@ function DocDetail({ id, page, quote, open, close, back = false }: { id: string;
           </p>
         </div>
       </div>
-      {/* Eigenschaften als ruhige Liste: links was, rechts der Wert – statt bunter Chip-Wolke */}
-      <dl className="divide-y divide-line rounded-xl border border-card-line text-[12.5px]">
-        <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-2 px-3 py-2"><dt className="text-muted">Einordnung</dt><dd className="min-w-0"><Classify doc={doc} onChange={(d) => setDoc(d)} /></dd></div>
-        {doc.importance !== undefined && doc.status === "ready" && <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-2 px-3 py-2"><dt className="pt-1.5 text-muted">Wichtigkeit</dt><dd className="min-w-0"><DocImportance doc={doc} onChange={(d) => setDoc(d)} /></dd></div>}
-        <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-2 px-3 py-2"><dt className="pt-1.5 text-muted">Tags</dt><dd className="flex min-w-0 flex-wrap items-center gap-1.5"><DocLabels inline doc={doc} onChange={(d) => setDoc(d)} /></dd></div>
-      </dl>
       <DocAdvice id={doc.id} />
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="mr-1 text-[12px] font-semibold text-muted">Schreiben</span>
@@ -152,6 +146,12 @@ function DocDetail({ id, page, quote, open, close, back = false }: { id: string;
           {doc.amounts?.[0] && <p className="text-[13px] text-muted">{doc.amounts[0].label}: <b className="text-fg">{fmtMoney(doc.amounts[0].value, doc.amounts[0].currency)}</b></p>}
         </>
       )}
+      {/* Einordnung, Wichtigkeit, Tags: selten gebraucht – ganz unten */}
+      <dl className="divide-y divide-line rounded-xl border border-card-line text-[12.5px]">
+        <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-2 px-3 py-2"><dt className="text-muted">Einordnung</dt><dd className="min-w-0"><Classify doc={doc} onChange={(d) => setDoc(d)} /></dd></div>
+        {doc.importance !== undefined && doc.status === "ready" && <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-2 px-3 py-2"><dt className="pt-1.5 text-muted">Wichtigkeit</dt><dd className="min-w-0"><DocImportance doc={doc} onChange={(d) => setDoc(d)} /></dd></div>}
+        <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-2 px-3 py-2"><dt className="pt-1.5 text-muted">Tags</dt><dd className="flex min-w-0 flex-wrap items-center gap-1.5"><DocLabels inline doc={doc} onChange={(d) => setDoc(d)} /></dd></div>
+      </dl>
     </div>
   );
 }
