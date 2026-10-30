@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Building2, Download, X, CalendarDays, Check, ChevronDown, Search, Tag, Users, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ArrowDownAZ, Building2, CalendarDays, CalendarRange, Check, ChevronDown, CircleAlert, CircleCheck, Clock, Download, Hash, History, Info, Rows3, Search, Shapes, Star, Tag, Users, X, type LucideIcon } from "lucide-react";
 import { DocCarousel } from "@/components/DocCarousel";
 import { DocRow } from "@/components/DocRow";
 import { Box, stateOf } from "@/components/ExportSheet";
-import { FilterBar, FilterSelect, FilterToggle } from "@/components/ListControls";
+import { FilterBar, FilterSelect, FilterToggle, IconAvatar } from "@/components/ListControls";
+import { KindAvatar } from "@/components/KindTag";
 import { KINDS, kindOf } from "@/lib/kinds";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD } from "@/components/ui";
@@ -25,13 +26,15 @@ import type { Doc } from "@/lib/types";
  */
 // immer chronologisch nach Jahr; optional innerhalb des Jahres unterteilt
 type Sub = "" | "sender" | "topic" | "kind";
-const SUBS: { value: Sub; label: string }[] = [{ value: "", label: "Nicht unterteilen" }, { value: "sender", label: "Absender" }, { value: "topic", label: "Thema" }, { value: "kind", label: "Art" }];
+const SUBS: { value: Sub; label: string; icon?: React.ReactNode }[] = [{ value: "", label: "Nicht unterteilen" }, { value: "sender", label: "Absender", icon: <IconAvatar icon={Building2} /> }, { value: "topic", label: "Thema", icon: <IconAvatar icon={Hash} /> }, { value: "kind", label: "Art", icon: <IconAvatar icon={Shapes} /> }];
 const dateOf = (d: Doc) => d.doc_date ?? d.received_at.slice(0, 10);
 type Range = "all" | "year" | "12m";
 type Filter = { kind: string; purpose: string; topic: string; label: string; sender: string; range: Range; year: string; encOnly: boolean; imp: string };
 const NONE: Filter = { kind: "", purpose: "", topic: "", label: "", sender: "", range: "all", year: "", encOnly: false, imp: "" };
 type SortBy = "new" | "old" | "sender" | "title" | "important";
-const SORTS: { value: SortBy; label: string }[] = [{ value: "important", label: "Wichtigste zuerst" }, { value: "old", label: "Älteste zuerst" }, { value: "sender", label: "Absender A–Z" }, { value: "title", label: "Titel A–Z" }];
+const SORTS: { value: SortBy; label: string; icon: React.ReactNode }[] = [{ value: "important", label: "Wichtigste zuerst", icon: <IconAvatar icon={Star} /> }, { value: "old", label: "Älteste zuerst", icon: <IconAvatar icon={History} /> }, { value: "sender", label: "Absender A–Z", icon: <IconAvatar icon={Building2} /> }, { value: "title", label: "Titel A–Z", icon: <IconAvatar icon={ArrowDownAZ} /> }];
+const TOPIC_COLOR = "#6d4aff";
+const PURPOSE_ICON: Record<string, [LucideIcon, string | undefined]> = { zu_erledigen: [CircleAlert, "#dc2626"], wichtig: [Star, "#6d4aff"], info: [Info, "#64748b"], erledigt: [CircleCheck, "#16a34a"] };
 
 export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" | "list" }) {
   const { docs: visible } = useDocs();
@@ -104,11 +107,11 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   // nur Auswahl mit Treffern anzeigen (z. B. kein leeres „Betriebsrat“)
   const purposeN = countBy("purpose", purposeOf);
   const kindN = countBy("kind", (d) => kindOf(d).id);
-  const kindOpts = KINDS.filter((k) => kindN.get(k.id) || f.kind === k.id).map((k) => ({ value: k.id, label: `${k.label} (${kindN.get(k.id) ?? 0})` }));
+  const kindOpts = KINDS.filter((k) => kindN.get(k.id) || f.kind === k.id).map((k) => ({ value: k.id, label: k.label, n: kindN.get(k.id) ?? 0, icon: <KindAvatar id={k.id} /> }));
   const topicN = countBy("topic", topicOf);
   const senderN = countBy("sender", senderOf);
-  const purposeOpts = PURPOSES.filter((p) => purposeN.get(p.id) || f.purpose === p.id).map((p) => ({ value: p.id, label: `${p.label} (${purposeN.get(p.id) ?? 0})` }));
-  const topicOpts = [...topicN.keys()].sort((a, b) => (topicN.get(b) ?? 0) - (topicN.get(a) ?? 0) || a.localeCompare(b, "de")).map((t) => ({ value: t, label: `${t} (${topicN.get(t)})` }));
+  const purposeOpts = PURPOSES.filter((p) => purposeN.get(p.id) || f.purpose === p.id).map((p) => ({ value: p.id, label: p.label, n: purposeN.get(p.id) ?? 0, icon: <IconAvatar icon={PURPOSE_ICON[p.id]?.[0] ?? Info} color={PURPOSE_ICON[p.id]?.[1]} /> }));
+  const topicOpts = [...topicN.keys()].sort((a, b) => (topicN.get(b) ?? 0) - (topicN.get(a) ?? 0) || a.localeCompare(b, "de")).map((t) => ({ value: t, label: t, n: topicN.get(t), icon: <IconAvatar icon={Hash} color={TOPIC_COLOR} /> }));
   const senders = [...senderN.entries()].filter(([k]) => k).map(([k, n]) => { const p = partners.get(k); return { key: k, name: p?.name ?? k, n, domain: p?.domain ?? null, cluster: p?.cluster ?? cluster }; }).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name, "de"));
   const labelN = new Map<string, number>();
   for (const d of docs) if (match(d, "label")) for (const t of d.labels ?? []) labelN.set(t, (labelN.get(t) ?? 0) + 1);
@@ -133,16 +136,16 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
     <div className="space-y-6">
       {/* Steuerung schlicht: Suche + „Filter“; alles Weitere als Auswahlfelder im Seitenpanel rechts */}
       <FilterBar q={q} onQ={setQ} placeholder="In diesem Bereich suchen" actions={<button type="button" onClick={() => (picking ? stopPicking() : setPicking(true))} aria-pressed={picking} className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-[14px] font-semibold ${picking ? "border-brand-500 bg-brand-500 text-white" : "border-card-line bg-surface text-fg hover:bg-surface-2"}`}><Download size={16} /> Export</button>} activeCount={active} onReset={() => setF(NONE)} count={`${list.length} von ${docs.length} Dokumenten`}>
-        <FilterSelect label="Sortieren" value={sortBy === "new" ? "" : sortBy} onChange={(v) => setSortBy((v || "new") as SortBy)} options={SORTS} empty="Neueste zuerst" />
-        {yearN.size > 1 && <FilterSelect label="Jahr" value={f.year} onChange={(v) => set({ year: v })} options={[...yearN.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([y, n]) => ({ value: y, label: `${y} (${n})` }))} />}
-        <FilterSelect label="Je Jahr unterteilen nach" value={sub} onChange={(v) => pickSub(v as Sub)} options={SUBS.slice(1)} empty="Nicht unterteilen" />
+        <FilterSelect label="Sortieren" icon={Clock} value={sortBy === "new" ? "" : sortBy} onChange={(v) => setSortBy((v || "new") as SortBy)} options={SORTS} empty="Neueste zuerst" />
+        {yearN.size > 1 && <FilterSelect label="Jahr" value={f.year} onChange={(v) => set({ year: v })} options={[...yearN.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([y, n]) => ({ value: y, label: y, n, icon: <IconAvatar text={`’${y.slice(2)}`} /> }))} icon={CalendarDays} />}
+        <FilterSelect label="Je Jahr unterteilen nach" value={sub} onChange={(v) => pickSub(v as Sub)} options={SUBS.slice(1)} empty="Nicht unterteilen" icon={Rows3} />
         {senders.length > 1 && <SenderPick value={f.sender} onChange={(v) => set({ sender: v })} options={senders} />}
-        {kindOpts.length > 1 && <FilterSelect label="Art" value={f.kind} onChange={(v) => set({ kind: v })} options={kindOpts} />}
-        {topicOpts.length > 1 && <FilterSelect label="Thema" value={f.topic} onChange={(v) => set({ topic: v })} options={topicOpts} />}
+        {kindOpts.length > 1 && <FilterSelect label="Art" icon={Shapes} value={f.kind} onChange={(v) => set({ kind: v })} options={kindOpts} />}
+        {topicOpts.length > 1 && <FilterSelect label="Thema" icon={Hash} value={f.topic} onChange={(v) => set({ topic: v })} options={topicOpts} />}
         {labelN.size > 0 && <LabelPick value={f.label} onChange={(v) => set({ label: v })} counts={labelN} />}
-        {docs.some((d) => d.importance != null) && <FilterSelect label="Wichtigkeit" value={f.imp} onChange={(v) => set({ imp: v })} options={IMPORTANCE.filter((x) => x.value > 1).map((x) => ({ value: String(x.value), label: `ab ${x.label} (${docs.filter((d) => match(d, "imp") && importanceOf(d) >= x.value).length})` }))} empty="Alle" />}
-        {purposeOpts.length > 1 && <FilterSelect label="Status" value={f.purpose} onChange={(v) => set({ purpose: v })} options={purposeOpts} />}
-        <FilterSelect label="Zeitraum" value={f.range === "all" ? "" : f.range} onChange={(v) => set({ range: (v || "all") as Range })} options={[{ value: "year", label: "Dieses Jahr" }, { value: "12m", label: "Letzte 12 Monate" }]} />
+        {docs.some((d) => d.importance != null) && <FilterSelect label="Wichtigkeit" icon={Star} value={f.imp} onChange={(v) => set({ imp: v })} options={IMPORTANCE.filter((x) => x.value > 1).map((x) => ({ value: String(x.value), label: `ab ${x.label}`, n: docs.filter((d) => match(d, "imp") && importanceOf(d) >= x.value).length, icon: <IconAvatar text={`${x.value}+`} color="#6d4aff" /> }))} empty="Alle" />}
+        {purposeOpts.length > 1 && <FilterSelect label="Status" icon={CircleCheck} value={f.purpose} onChange={(v) => set({ purpose: v })} options={purposeOpts} />}
+        <FilterSelect label="Zeitraum" value={f.range === "all" ? "" : f.range} onChange={(v) => set({ range: (v || "all") as Range })} options={[{ value: "year", label: "Dieses Jahr", icon: <IconAvatar icon={CalendarDays} /> }, { value: "12m", label: "Letzte 12 Monate", icon: <IconAvatar icon={CalendarRange} /> }]} empty="Gesamter Zeitraum" icon={Clock} />
         {docs.some((d) => d.encrypted) && <FilterToggle label="Nur verschlüsselte" on={f.encOnly} onChange={(v) => set({ encOnly: v })} />}
       </FilterBar>
       {active > 0 && (
@@ -222,22 +225,10 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
   );
 }
 
-/** Tag-Auswahl: nach Typ gruppiert, mit Farbe und Anzahl (nur Tags mit Treffern) */
+/** Tag-Auswahl: nach Typ gruppiert, Avatar in der Farbe des Typs, mit Anzahl (nur Tags mit Treffern) */
 function LabelPick({ value, onChange, counts }: { value: string; onChange: (v: string) => void; counts: Map<string, number> }) {
-  const color = value ? groupOf(value)?.color : undefined;
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-[13px] font-semibold text-soft">Tag</span>
-      <span className="relative block">
-        {color && <span className="pointer-events-none absolute top-1/2 left-3.5 h-2.5 w-2.5 -translate-y-1/2 rounded-full" style={{ background: color }} />}
-        <select value={value} onChange={(e) => onChange(e.target.value)} className={`h-11 w-full appearance-none rounded-xl border bg-surface pr-9 text-[14.5px] ${value ? "border-fg pl-8 font-semibold" : "border-card-line pl-3.5"}`}>
-          <option value="">Alle</option>
-          {LABEL_GROUPS.map((g) => { const tags = g.tags.filter((t) => counts.get(t) || t === value); return tags.length ? <optgroup key={g.id} label={g.label}>{tags.map((t) => <option key={t} value={t}>{t} ({counts.get(t) ?? 0})</option>)}</optgroup> : null; })}
-        </select>
-        <ChevronDown size={16} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted" />
-      </span>
-    </label>
-  );
+  const options = LABEL_GROUPS.flatMap((g) => g.tags.filter((t) => counts.get(t) || t === value).map((t) => ({ value: t, label: t, n: counts.get(t) ?? 0, group: g.label, icon: <IconAvatar icon={Tag} color={g.color} /> })));
+  return <FilterSelect label="Tag" icon={Tag} value={value} onChange={onChange} options={options} />;
 }
 
 /** Platzhalter ohne Logo: schwarzer Kreis, weißes Icon */
