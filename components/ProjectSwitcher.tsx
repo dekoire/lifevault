@@ -24,7 +24,7 @@ export function ProjectSwitcher({ compact = false }: { compact?: boolean }) {
   return (
     <div ref={ref} className="relative">
       <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="listbox"
-        className={compact ? "flex h-10 max-w-[11rem] items-center gap-2 rounded-full bg-surface-3 px-3 text-[13px] font-semibold transition-colors hover:bg-line-strong/50" : "flex h-9 w-full items-center gap-2 rounded-xl bg-surface-3 px-2.5 text-left transition-colors hover:bg-line-strong/50"}>
+        className={compact ? "flex h-10 max-w-[11rem] items-center gap-2 rounded-full bg-surface-3 px-3 text-[13px] font-semibold transition-colors hover:bg-line-strong/50" : "flex h-11 w-full items-center gap-2 rounded-xl border border-card-line bg-surface px-3 text-left shadow-[0_2px_8px_rgba(15,23,42,.06)] transition-colors hover:bg-surface-2"}>
         {currentProject ? <Dot color={currentProject.color} size={8} /> : <Layers size={14} className="text-muted" />}
         <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{label}</span>
         <ChevronsUpDown size={14} className="shrink-0 text-muted" />

@@ -112,7 +112,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       <DraftHost />
       {/* Desktop: Seitenleiste wie bei Finastry */}
       {/* schwebende, runde Karte mit Abstand zum Rand (oben, unten, links), leicht durchsichtig; --side enthält den Abstand */}
-      <aside className={`fixed top-3 bottom-3 left-3 z-30 hidden flex-col rounded-[24px] border border-card-line bg-surface/80 py-5 shadow-[0_8px_30px_rgba(15,23,42,.06)] backdrop-blur-xl transition-[width] duration-200 lg:flex ${mini ? "w-[4.5rem] px-2.5" : "w-60 px-3"}`}>
+      <aside className={`fixed top-3 bottom-3 left-3 z-30 hidden flex-col rounded-2xl border border-card-line bg-surface/80 py-5 shadow-[0_8px_30px_rgba(15,23,42,.07)] backdrop-blur-xl transition-[width] duration-200 lg:flex ${mini ? "w-[4.5rem] px-2.5" : "w-60 px-3"}`}>
         <div className={`mb-5 flex items-center ${mini ? "flex-col gap-3" : "justify-between pl-2"}`}>
           <Link href="/" aria-label="Start">{mini ? <LogoMark size={30} /> : <Logo size={30} />}</Link>
           <button type="button" onClick={toggleMini} aria-label={mini ? "Menü aufklappen" : "Menü zuklappen"} title={mini ? "Menü aufklappen" : "Menü zuklappen"} className="grid h-9 w-9 place-items-center rounded-full text-soft hover:bg-surface-2 hover:text-fg">{mini ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}</button>
