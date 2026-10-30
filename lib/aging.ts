@@ -8,7 +8,8 @@ import { partnerKey } from "@/lib/partners";
  * 3. Änderung (z. B. Beitragsanpassung), die durch eine neuere Änderung derselben Grundlage überholt ist
  * 4. Reine Info/Werbung (Nebensache) älter als 3 Monate – Versicherungsbedingungen/AGB bleiben (darin steht, was gilt)
  * 5. Früherer Arbeitgeber: letzte Post älter als 18 Monate und es gibt einen neueren Arbeitgeber – auch der
- *    Arbeitsvertrag (Zeugnis, Lohnsteuerbescheinigung, Renten-/SV-Nachweise bleiben)
+ *    Arbeitsvertrag (Zeugnis, Lohnsteuerbescheinigung, Renten-/SV-Nachweise bleiben). Arbeitgeber ist nur, wer
+ *    Vertrag, Gehalt oder Personalunterlagen geschickt hat – Gewerkschaft, Tarifverträge, Betriebsvereinbarungen nie
  * Nie: Medizinisches (Historie), Urkunden/Ausweise/Zeugnisse, Steuer- und Rentenbescheide, von dir selbst (ent)archivierte.
  */
 export type AgingDoc = {
@@ -23,6 +24,10 @@ const INVOICE = /(?<!an)rechnung|mahnung|zahlungserinnerung|zahlungsaufforderung
 const RECEIPT = /kassenbon|kaufbeleg|quittung|\bbeleg\b|bon\b/i;
 const KEEP = /urkunde|ausweis|pass\b|zeugnis|testament|grundbuch|bescheid|steuer|lohnsteuer|rente|renten|sozialversicherung|police|versicherungsschein|vertrag\b|arbeitsvertrag|mietvertrag/i;
 const PAYSLIP = /gehalt|entgelt|lohn|bezüge/i;
+/** woran man einen Arbeitgeber erkennt – und was nie „früherer Arbeitgeber“ ist (gilt für den aktuellen Job weiter) */
+const EMPLOYER = /arbeitsvertrag|anstellung|entgelt|gehalt|lohnabrechnung|verdienst|personal|arbeitszeugnis|kündigung des arbeitsverhältnis/i;
+const COLLECTIVE = /tarifvertrag|manteltarif|entgelttarif|betriebsvereinbarung|gewerkschaft|ig metall|verdi|ver\.di/i;
+export const FORMER_EMPLOYER = "Früherer Arbeitgeber – nicht mehr aktuell";
 const AGE_OF = (d: AgingDoc) => d.doc_date ?? d.received_at.slice(0, 10);
 
 export function agingVerdicts(docs: AgingDoc[], today = new Date().toISOString().slice(0, 10)): Map<string, Verdict> {
@@ -32,16 +37,17 @@ export function agingVerdicts(docs: AgingDoc[], today = new Date().toISOString()
   const text = (d: AgingDoc) => `${d.doc_type ?? ""} ${d.title ?? ""}`;
   // neueste Arbeitgeber-Post je Partner (Regel 5)
   const lastWork = new Map<string, string>();
-  for (const d of docs) if (d.cluster === "arbeit" && d.sender) { const k = partnerKey(d.sender); if (AGE_OF(d) > (lastWork.get(k) ?? "")) lastWork.set(k, AGE_OF(d)); }
+  const employers = new Set(docs.filter((d) => d.cluster === "arbeit" && d.sender && EMPLOYER.test(text(d)) && !COLLECTIVE.test(`${text(d)} ${d.sender}`)).map((d) => partnerKey(d.sender!)));
+  for (const d of docs) if (d.cluster === "arbeit" && d.sender && employers.has(partnerKey(d.sender))) { const k = partnerKey(d.sender); if (AGE_OF(d) > (lastWork.get(k) ?? "")) lastWork.set(k, AGE_OF(d)); }
   const newestWork = [...lastWork.values()].sort().pop() ?? "";
   for (const d of docs) {
     if (d.archived || d.archive_manual || d.cluster === "gesundheit") continue;
     const t = text(d);
     const age = ageDays(d);
     // 5. früherer Arbeitgeber (auch der Arbeitsvertrag; Zeugnis, Lohnsteuer- und Rentennachweise bleiben)
-    if (d.cluster === "arbeit" && d.sender && !/zeugnis|lohnsteuer|rente|bescheinigung|sozialversicherung/i.test(t)) {
+    if (d.cluster === "arbeit" && d.sender && employers.has(partnerKey(d.sender)) && !COLLECTIVE.test(t) && !/zeugnis|lohnsteuer|rente|bescheinigung|sozialversicherung/i.test(t)) {
       const last = lastWork.get(partnerKey(d.sender)) ?? "";
-      if (last && newestWork > last && (Date.parse(today) - Date.parse(last)) / DAY > 548) { out.set(d.id, { reason: "Früherer Arbeitgeber – nicht mehr aktuell", cap: 2 }); continue; }
+      if (last && newestWork > last && (Date.parse(today) - Date.parse(last)) / DAY > 548) { out.set(d.id, { reason: FORMER_EMPLOYER, cap: 2 }); continue; }
     }
     // 4. reine Info/Werbung (Bedingungen, AGB, Tarifinfos bleiben – darin steht, was gilt)
     if ((d.partner_role === "nebensache" || d.importance === 1) && age > 90 && !/bedingung|avb|agb|tarif|produktinformation|leistungsbeschreibung/i.test(t)) { out.set(d.id, { reason: "Nur zur Info – älter als 3 Monate", cap: 1 }); continue; }

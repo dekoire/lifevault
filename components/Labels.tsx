@@ -9,11 +9,12 @@ import type { Doc } from "@/lib/types";
 /** Ein Tag als Pill in der Farbe seines Typs */
 export function LabelChip({ tag, on = true, onClick }: { tag: string; on?: boolean; onClick?: () => void }) {
   const color = groupOf(tag)?.color ?? "#64748b";
-  const cls = "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[12px] font-semibold transition-colors";
-  const style = on ? { background: `${color}1a`, color, boxShadow: `inset 0 0 0 1px ${color}33` } : { color: "var(--color-soft)", boxShadow: "inset 0 0 0 1px var(--color-card-line)" };
+  // ruhig: weiße Pill mit feinem Rand, die Farbe nur als Punkt (Typ des Tags)
+  const cls = `inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12px] font-semibold transition-colors ${on ? "border-card-line bg-surface text-fg" : "border-dashed border-card-line text-muted hover:text-fg"}`;
+  const dot = <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: on ? color : "var(--color-line-strong)" }} />;
   return onClick
-    ? <button type="button" onClick={onClick} aria-pressed={on} className={cls} style={style}>{on && <Check size={12} strokeWidth={3} />}{tag}</button>
-    : <span className={cls} style={style}>{tag}</span>;
+    ? <button type="button" onClick={onClick} aria-pressed={on} className={cls}>{on ? <Check size={12} strokeWidth={3} /> : dot}{tag}</button>
+    : <span className={cls}>{dot}{tag}</span>;
 }
 
 /** Tags eines Dokuments, nach Typ gruppiert; „Bearbeiten“ zeigt den ganzen Katalog zum An-/Abwählen */
