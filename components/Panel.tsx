@@ -25,7 +25,7 @@ export function Panel({ title, icon, color, count, sub, aside, open: given, onTo
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">
               <span className="truncate">{title}</span>
-              {count !== undefined && <span className="tnum shrink-0 rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">{count}</span>}
+              {count !== undefined && <span className="tnum shrink-0 rounded-full border border-card-line inline-flex h-6 min-w-6 items-center justify-center px-2 text-[12px] leading-none font-semibold text-soft">{count}</span>}
             </span>
             {sub && <span className="block truncate text-[13px] text-muted">{sub}</span>}
           </span>

@@ -256,7 +256,7 @@ export default function MailPage() {
 
       {rows.length > 0 && (
         <section className={`${CARD} mt-4 overflow-hidden`}>
-          <h2 className="flex items-center gap-2 px-4 pt-5 pb-3 md:px-6 text-[18px] leading-[26px] font-semibold"><Sparkles size={17} className="text-brand-500" /> Relevant <span className="tnum rounded-full border border-card-line px-3 py-2 text-[12px] leading-4">{relevant.length}</span></h2>
+          <h2 className="flex items-center gap-2 px-4 pt-5 pb-3 md:px-6 text-[18px] leading-[26px] font-semibold"><Sparkles size={17} className="text-brand-500" /> Relevant <span className="tnum rounded-full border border-card-line inline-flex h-6 min-w-6 items-center justify-center px-2 text-[12px] leading-none">{relevant.length}</span></h2>
           <ul className="divide-y divide-line border-t border-line">
             {relevant.map((r) => <MailRow key={r.m.id} r={r} />)}
             {!relevant.length && <li className="px-5 py-4 text-[14px] text-muted">Nichts Relevantes gefunden.</li>}

@@ -32,7 +32,7 @@ export function Section({ title, icon, count, open, onToggle, children }: { titl
       <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-2.5 px-5 py-4 text-left">
         {icon && <span className="text-fg">{icon}</span>}
         <span className="flex-1 text-[18px] leading-[26px] font-semibold">{title}</span>
-        {count !== undefined && <span className="tnum rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">{count}</span>}
+        {count !== undefined && <span className="tnum rounded-full border border-card-line inline-flex h-6 min-w-6 items-center justify-center px-2 text-[12px] leading-none font-semibold text-soft">{count}</span>}
         <ChevronDown size={18} className={`text-muted transition ${open ? "rotate-180" : ""}`} />
       </button>
       {open && <div className="border-t border-line">{children}</div>}

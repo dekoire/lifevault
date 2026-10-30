@@ -135,7 +135,7 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
             <button type="button" onClick={() => setOpen({ ...open, [b.id]: !open[b.id] })} aria-expanded={open[b.id]} className="flex w-full items-center gap-3 px-4 py-5 text-left hover:bg-canvas md:px-6">
               <Badge icon={b.icon} color={b.color} />
               <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">{b.title}<span className="tnum rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">{list.length}</span></span>
+                <span className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">{b.title}<span className="tnum rounded-full border border-card-line inline-flex h-6 min-w-6 items-center justify-center px-2 text-[12px] leading-none font-semibold text-soft">{list.length}</span></span>
                 <span className="block truncate text-[13px] text-muted">{b.hint}</span>
               </span>
               <ChevronDown size={16} className={`shrink-0 text-muted transition-transform ${open[b.id] ? "rotate-180" : ""}`} />

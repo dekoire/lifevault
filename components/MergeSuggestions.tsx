@@ -75,7 +75,7 @@ export function MergeSuggestions({ intro, empty }: { intro?: React.ReactNode; em
     {intro}
     <section className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
       <div className="px-4 pt-5 pb-3 md:px-6">
-        <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">Gehören zusammen? <span className="tnum rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">{groups.length}</span></h2>
+        <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">Gehören zusammen? <span className="tnum rounded-full border border-card-line inline-flex h-6 min-w-6 items-center justify-center px-2 text-[12px] leading-none font-semibold text-soft">{groups.length}</span></h2>
       </div>
       {/* Kopfzeile wie eine Tabelle; Zeile antippen öffnet die Prüfung – dort „Zusammenführen“, „Nicht zusammen“ oder „Später“ */}
       <div className="hidden border-b border-line px-6 py-[18px] text-[12px] font-semibold text-muted sm:flex sm:items-center sm:gap-3">
@@ -96,7 +96,7 @@ export function MergeSuggestions({ intro, empty }: { intro?: React.ReactNode; em
                   </span>
                 </span>
                 <b className="min-w-0 flex-1 truncate text-[14px]">{g.title}</b>
-                <span className="tnum shrink-0 rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">{g.docs.length} Teile</span>
+                <span className="tnum shrink-0 rounded-full border border-card-line inline-flex h-6 min-w-6 items-center justify-center px-2 text-[12px] leading-none font-semibold text-soft">{g.docs.length} Teile</span>
                 <ChevronRight size={16} className="shrink-0 text-muted" />
               </button>
             </li>
