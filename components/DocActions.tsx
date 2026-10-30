@@ -12,6 +12,8 @@ import { nameFromEmail } from "@/components/AvatarMenu";
 import { useSession } from "@/lib/supabase";
 import type { Doc } from "@/lib/types";
 
+const ACCESS = /\bpin\b|kennwort|passwort|code|filiale|zahlschein|barcode|kunden-?\s?n|vertragskonto|vertrags-?\s?n|rechnungs-?\s?n|referenz|verwendungszweck|zugang|login|benutzer|transaktions|kassenzeichen|aktenzeichen|mandats/i;
+
 function CopyRow({ label, value, shown }: { label: string; value: string; shown?: string }) {
   const [done, setDone] = useState(false);
   return (
@@ -125,7 +127,10 @@ function PaymentSection({ doc, codes, links, related, always = false }: { doc: D
   const session = useSession();
   const purpose = last ? purposeFor(doc, session?.user.email ? nameFromEmail(session.user.email) : "", last.payment.reference) : undefined;
   const qrLinks = codes.filter((c) => /^https?:\/\//i.test(c) && PAY_LINK.test(c));
-  const payLinks = [...new Set([...qrLinks, ...links.filter((l) => PAY_LINK.test(l))])].slice(0, 3);
+  // gleiche Seite nur einmal (z. B. zweimal viacash.com)
+  const payLinks = [...new Map([...qrLinks, ...links.filter((l) => PAY_LINK.test(l))].map((l) => [host(l), l])).values()].slice(0, 3);
+  // Zugangsdaten fürs Bezahlen aus den Angaben: PIN, Code, Zahlschein-/Kunden-/Vertragsnummer, Referenz …
+  const access = [...new Map((doc.key_facts ?? []).filter((f) => ACCESS.test(f.label) && f.value && f.value.length <= 80).map((f) => [f.value.replace(/\s/g, ""), f])).values()].slice(0, 6);
   const isPay = !!(payment || total || epc || (todo && /zahl|fällig|überweis|rechnung|mahn|gebühr|abschlag/i.test(todo.what)));
   if (!isPay && !always) return null;
   const late = todo && todo.days < 0;
@@ -153,12 +158,21 @@ function PaymentSection({ doc, codes, links, related, always = false }: { doc: D
         {payment && <PaymentCard p={{ ...payment, amount: total ?? payment.amount }} doc={doc} />}
         {!payment && epc && <PaymentCard p={{ iban: epc.iban, recipient: epc.recipient, amount: epc.amount ?? total, reference: epc.reference, currency: "EUR" }} label="GiroCode aus dem Schreiben" doc={doc} />}
         {last && purpose && <PaymentCard p={{ ...last.payment, amount: total, reference: purpose.text }} refLabel={purpose.note ? "Verwendungszweck (wie zuletzt)" : purpose.given ? "Verwendungszweck" : "Verwendungszweck (Vorschlag)"} label="Zuletzt bekannte Bankverbindung" doc={doc} note={<>In diesem Schreiben steht keine IBAN. Das ist die zuletzt verwendete von {doc.sender} – aus <Link href={`/d/${last.source.id}`} className="font-semibold underline">{last.source.title ?? last.source.file_name}</Link> vom {fmtDate(last.source.doc_date ?? last.source.received_at)}{last.payment.reference ? <> (Verwendungszweck damals: „{last.payment.reference}“)</> : null}. Bitte vor dem Zahlen kurz prüfen.</>} />}
-        {payLinks.map((l) => (
-          <a key={l} href={l} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-card-line px-3.5 py-3 hover:bg-surface-2">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2"><Globe size={16} /></span>
-            <span className="min-w-0 flex-1"><b className="block text-[13.5px]">{qrLinks.includes(l) ? "Online bezahlen (QR-Code im Brief)" : "Online bezahlen / Kundenportal"}</b><span className="block truncate text-[12px] text-muted">{host(l)}</span></span>
-            <ExternalLink size={14} className="shrink-0 text-muted" />
-          </a>
+        {payLinks.map((l, i) => (
+          <div key={l} className="overflow-hidden rounded-xl border border-card-line">
+            <a href={l} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3.5 py-3 hover:bg-surface-2">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2"><Globe size={16} /></span>
+              <span className="min-w-0 flex-1"><b className="block text-[13.5px]">{qrLinks.includes(l) ? "Online bezahlen (QR-Code im Brief)" : "Online bezahlen / Kundenportal"}</b><span className="block truncate text-[12px] text-muted">{host(l)}</span></span>
+              <ExternalLink size={14} className="shrink-0 text-muted" />
+            </a>
+            {/* was man dort eingeben muss – PIN, Code, Kundennummer, Betrag – zum Kopieren gleich dabei (nur beim ersten Link) */}
+            {i === 0 && (access.length > 0 || total) && (
+              <div className="divide-y divide-line border-t border-line">
+                {total ? <CopyRow label="Betrag" value={total.toFixed(2).replace(".", ",")} shown={fmtMoney(total, payment?.currency ?? "EUR")} /> : null}
+                {access.map((f) => <CopyRow key={f.label + f.value} label={f.label} value={f.value} />)}
+              </div>
+            )}
+          </div>
         ))}
         {!payment && !epc && !last && !payLinks.length && <p className="px-1 text-[12.5px] text-muted">{nothing ? "Keine Bankverbindung bekannt – bei diesem Absender gab es bisher nichts zu überweisen (z. B. Lastschrift)." : "Keine Bankverbindung oder Zahlungslink im Schreiben – vermutlich per Lastschrift oder im Kundenkonto des Absenders."}</p>}
       </div>
