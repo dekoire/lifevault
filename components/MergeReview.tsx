@@ -121,8 +121,8 @@ export function MergeReview({ docs, title, reason, skip: preSkip = [], onDone, o
               <figure key={d.id} className="relative w-full shrink-0 snap-center">
                 {/* antippen: Vollbild zum Zoomen und Vergleichen */}
                 <button type="button" onClick={() => setZoom(list.indexOf(d))} aria-label="Groß ansehen" className={`block h-80 w-full p-3 sm:h-96 ${off ? "opacity-35" : ""}`}><PagePreview d={d} className="rounded-lg" /></button>
-                <span className="pointer-events-none absolute right-3 bottom-14 inline-flex items-center gap-1 rounded-full bg-fg/85 px-2.5 py-1 text-[12px] font-semibold text-canvas"><Maximize2 size={12} /> Groß ansehen</span>
-                <span className={`absolute top-3 left-3 rounded-full px-2.5 py-1 text-[12px] font-semibold shadow-card ${off ? "bg-surface text-muted line-through" : "bg-fg text-canvas"}`}>{role(d)}</span>
+                <span className="pointer-events-none absolute right-3 bottom-14 inline-flex items-center gap-1 rounded-full bg-fg/85 px-3.5 py-1 text-[12px] font-semibold text-canvas"><Maximize2 size={12} /> Groß ansehen</span>
+                <span className={`absolute top-3 left-3 rounded-full px-3.5 py-1 text-[12px] font-semibold shadow-card ${off ? "bg-surface text-muted line-through" : "bg-fg text-canvas"}`}>{role(d)}</span>
                 {odd(d.id) && <span className="absolute bottom-3 left-3 inline-flex max-w-[85%] items-center gap-1 rounded-full bg-negative px-2.5 py-1 text-[12px] font-semibold text-white shadow-card"><AlertTriangle size={12} /> passt wohl nicht dazu</span>}
                 <button type="button" onClick={() => setSkip((s) => (s.includes(d.id) ? s.filter((x) => x !== d.id) : [...s, d.id]))} className={`absolute top-3 right-3 inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold shadow-card ${off ? "bg-surface text-fg" : "bg-surface/95 text-fg"}`}>
                   {off ? <><Check size={13} /> doch übernehmen</> : <><X size={13} /> nicht übernehmen</>}
@@ -145,7 +145,7 @@ export function MergeReview({ docs, title, reason, skip: preSkip = [], onDone, o
       <div className="flex items-center gap-2">
         <span className="flex-1" />
         <span className="flex justify-center gap-1.5">{list.map((d, i) => <button key={d.id} type="button" aria-label={`Teil ${i + 1}`} onClick={() => go(i)} className={`h-1.5 rounded-full transition-all ${i === at ? "w-5 bg-fg" : "w-1.5 bg-line-strong"}`} />)}</span>
-        <span className="flex flex-1 justify-end">{used.length === 2 && <button type="button" onClick={swap} className="inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-semibold text-soft hover:bg-surface-2 hover:text-fg"><ArrowLeftRight size={14} /> {isCard ? "Seiten tauschen" : "Tauschen"}</button>}</span>
+        <span className="flex flex-1 justify-end">{used.length === 2 && <button type="button" onClick={swap} className="inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold text-soft hover:bg-surface-2 hover:text-fg"><ArrowLeftRight size={14} /> {isCard ? "Seiten tauschen" : "Tauschen"}</button>}</span>
       </div>
       {skip.length > 0 && <label className="flex items-center gap-2 text-[13px] text-soft"><input type="checkbox" checked={dropSkipped} onChange={(e) => setDropSkipped(e.target.checked)} className="h-4 w-4 accent-brand-500" /> abgewählte Fotos löschen (doppelt)</label>}
       {error && <p role="alert" className="text-[13px] text-negative-text">{error}</p>}

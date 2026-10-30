@@ -48,7 +48,7 @@ function Users() {
           <tbody className="divide-y divide-line">
             {rows.map((p) => (
               <tr key={p.id}>
-                <td className="px-5 py-3 font-medium">{p.email}{p.id === session?.user.id && <span className="ml-2 rounded-full border border-card-line px-2 py-0.5 text-[11px] text-soft">du</span>}</td>
+                <td className="px-5 py-3 font-medium">{p.email}{p.id === session?.user.id && <span className="ml-2 rounded-full border border-card-line px-3 py-1 text-[12px] text-soft">du</span>}</td>
                 <td className="px-3 py-3 text-muted">{when(p.created_at)}</td>
                 <td className="px-3 py-3 text-muted">{when(p.last_sign_in_at)}</td>
                 <td className="px-5 py-3"><span className="flex justify-end"><Switch on={p.is_admin} onChange={(v) => void setAdmin(p, v)} label={`Admin ${p.email}`} disabled={p.id === session?.user.id} /></span></td>
@@ -158,7 +158,7 @@ function ModelPick({ value, models, standard, onPick }: { value: string; models:
                   {providerOf(x.id) !== providerOf(list[i - 1]?.id ?? "") && <span className="block px-2.5 pt-2.5 pb-1 text-[11px] font-semibold tracking-wide text-muted uppercase">{providerOf(x.id)}</span>}
                   <button type="button" onClick={() => pick(x.id)} className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-surface-2 ${x.id === value ? "bg-surface-2" : ""}`}>
                     <ModelLogo id={x.id} size={24} />
-                    <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{x.id.split("/").slice(1).join("/")}{x.id === standard && <span className="ml-1.5 rounded-full border border-card-line px-1.5 text-[11px] font-semibold text-soft">Standard</span>}</span>
+                    <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{x.id.split("/").slice(1).join("/")}{x.id === standard && <span className="ml-1.5 rounded-full border border-card-line px-3 text-[12px] font-semibold text-soft">Standard</span>}</span>
                     <span className="tnum shrink-0 text-[12px] text-muted">{cost(x)}</span>
                     {x.id === value && <Check size={15} className="shrink-0" />}
                   </button>

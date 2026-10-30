@@ -137,7 +137,7 @@ function PaymentWidget({ body }: { body: string }) {
                 <span className="text-right">
                   {amount !== undefined && <b className="tnum block text-[20px] leading-6">{fmtMoney(amount)}</b>}
                   {partial && <span className="block text-[11px] text-muted">von {fmtMoney(x.total!)} offen</span>}
-                  {x.todo && <span className={`mt-1 inline-block rounded-full border px-2 py-px text-[11px] font-semibold ${x.todo.days < 0 ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>bis {fmtDate(x.todo.date)}</span>}
+                  {x.todo && <span className={`mt-1 inline-block rounded-full border px-3 py-1 text-[12px] font-semibold ${x.todo.days < 0 ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>bis {fmtDate(x.todo.date)}</span>}
                 </span>
               </div>
               <CaseDocs d={x.d} rel={x.rel} />
@@ -359,7 +359,7 @@ function GroupsWidget({ body }: { body: string }) {
     <div className="space-y-3">
       {[...groups.entries()].sort((a, b) => b[1].length - a[1].length).map(([g, ds]) => (
         <section key={g} className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
-          <h4 className="flex items-center gap-2.5 px-4 pt-3.5 pb-2.5 text-[15px] font-bold"><span className="h-4 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />{g}<span className="tnum ml-auto rounded-full border border-card-line px-2 text-[12px] font-semibold text-soft">{ds.length}</span></h4>
+          <h4 className="flex items-center gap-2.5 px-4 pt-3.5 pb-2.5 text-[15px] font-bold"><span className="h-4 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />{g}<span className="tnum ml-auto rounded-full border border-card-line px-3 text-[12px] font-semibold text-soft">{ds.length}</span></h4>
           <ul className="divide-y divide-line border-t border-line">
             {ds.sort((a, b) => dateOf(b).localeCompare(dateOf(a))).map((d) => (
               <li key={d.id}>

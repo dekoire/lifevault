@@ -77,7 +77,7 @@ function HistoryValue({ list, render, copy = true }: { list: Entry[]; render?: (
       </span>
       {older.length > 0 && (
         <>
-          <button type="button" onClick={() => setOpen(!open)} className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-card-line px-2.5 py-0.5 text-[12px] font-semibold text-soft hover:text-fg">
+          <button type="button" onClick={() => setOpen(!open)} className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-card-line px-3.5 py-1 text-[12px] font-semibold text-soft hover:text-fg">
             Früher ({older.length}) <ChevronDown size={12} className={`transition-transform ${open ? "rotate-180" : ""}`} />
           </button>
           {open && (
@@ -134,7 +134,7 @@ export function PartnerFacts({ p }: { p: Partner }) {
                     <b className="block truncate text-[14px]">{b.bank ?? b.recipient ?? "Bankverbindung"}</b>
                     <span className="block truncate text-[12px] text-muted">Stand {fmtDate(b.date)} · aus „{b.title}“</span>
                   </span>
-                  <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[12px] font-semibold ${n === 0 ? "border-fg text-fg" : "border-card-line text-muted"}`}>{n === 0 ? "zuletzt genannt" : "älter"}</span>
+                  <span className={`shrink-0 rounded-full border px-3.5 py-1 text-[12px] font-semibold ${n === 0 ? "border-fg text-fg" : "border-card-line text-muted"}`}>{n === 0 ? "zuletzt genannt" : "älter"}</span>
                 </div>
                 {b.recipient && <DetailRow icon={<UserRound size={16} />} label="Empfänger"><span className="flex items-center gap-1"><span className="min-w-0 flex-1">{b.recipient}</span><CopyBtn value={b.recipient} /></span></DetailRow>}
                 <DetailRow icon={<Landmark size={16} />} label="IBAN"><span className="flex items-center gap-1"><span className="tnum min-w-0 flex-1">{fmtIban(b.iban)}</span><CopyBtn value={b.iban} /></span></DetailRow>
@@ -185,8 +185,8 @@ export function PartnerSheet({ p, onClose: rawClose, extra }: { p: Partner; onCl
             <button type="button" onClick={onClose} aria-label="Schließen" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2 hover:bg-surface-3"><X size={18} /></button>
           </div>
           <div className="flex flex-wrap gap-1.5 px-1">
-            <span className="rounded-full border border-card-line bg-surface px-2.5 py-0.5 text-[12px] font-semibold"><ClusterTag id={p.cluster} /></span>
-            <span className={`rounded-full border px-2.5 py-0.5 text-[12px] font-semibold ${p.active ? "border-positive/40 text-positive-text" : "border-card-line text-muted"}`}>{p.active ? "aktuell" : "früher"}</span>
+            <span className="rounded-full border border-card-line bg-surface px-3.5 py-1 text-[12px] font-semibold"><ClusterTag id={p.cluster} /></span>
+            <span className={`rounded-full border px-3.5 py-1 text-[12px] font-semibold ${p.active ? "border-positive/40 text-positive-text" : "border-card-line text-muted"}`}>{p.active ? "aktuell" : "früher"}</span>
           </div>
           {extra}
           <PartnerFacts p={p} />

@@ -21,8 +21,8 @@ export function DocRow({ d }: { d: Doc }) {
         <span className="flex items-center gap-1.5">
           <span className="truncate text-[15px] font-semibold">{processing ? d.file_name : d.title ?? d.file_name}</span>
           {d.encrypted && <Lock size={13} className="shrink-0 text-brand-500" aria-label="verschlüsselt" />}
-          {d.archived && <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-card-line px-1.5 py-px text-[11px] font-semibold text-soft"><Archive size={11} /> Archiv</span>}
-          {d.partner_role === "grundlage" && !d.archived && <span className="shrink-0 rounded-full border border-brand-500/30 px-1.5 py-px text-[11px] font-semibold text-brand-500" title="Grundlage beim Partner (z. B. Vertrag)">Grundlage</span>}
+          {d.archived && <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold text-soft"><Archive size={11} /> Archiv</span>}
+          {d.partner_role === "grundlage" && !d.archived && <span className="shrink-0 rounded-full border border-brand-500/30 px-3 py-1 text-[12px] font-semibold text-brand-500" title="Grundlage beim Partner (z. B. Vertrag)">Grundlage</span>}
         </span>
         <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted">
           {processing ? <span className="text-shimmer font-medium">Wird ausgelesen</span> : d.status === "error" ? <span className="inline-flex items-center gap-1 text-negative-text"><AlertCircle size={13} /> {d.error ?? "Fehler"}</span> : <><KindTag d={d} /><span className="truncate">{[d.sender, fmtDate(d.doc_date ?? d.received_at)].filter(Boolean).join(" · ")}{d.cluster && <> · {clusterOf(d.cluster).label}</>}</span></>}

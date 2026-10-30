@@ -126,7 +126,7 @@ function Preview({ d, onOpen }: { d: Doc; onOpen: () => void }) {
       <span className="min-w-0 flex-1">
         <b className="line-clamp-2 text-[14px] leading-5">{d.title ?? d.file_name}</b>
         <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[12px] text-muted">
-          <span className="rounded-full px-2 py-px font-semibold border border-card-line text-fg">{c.label}</span>
+          <span className="rounded-full px-3 py-1 font-semibold border border-card-line text-fg">{c.label}</span>
           {fmtDate(d.doc_date ?? d.received_at)}{d.sender ? ` · ${d.sender}` : ""}
         </span>
         {d.summary && <span className="mt-1 line-clamp-2 block text-[12px] leading-4 text-soft">{d.summary}</span>}

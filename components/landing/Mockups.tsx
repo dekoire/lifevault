@@ -16,7 +16,7 @@ export function HomeMock() {
       <div className="grid grid-cols-3 gap-2">
         {CLUSTERS.filter((c) => counts[c.id]).map((c) => (
           <div key={c.id} className={`${card} p-3`}>
-            <span className="flex items-start justify-between"><ClusterIcon id={c.id} size={30} tone="plain" /><span className="rounded-full border border-card-line px-1.5 text-[10px] font-semibold text-soft">{counts[c.id]}</span></span>
+            <span className="flex items-start justify-between"><ClusterIcon id={c.id} size={30} tone="plain" /><span className="rounded-full border border-card-line px-3 text-[10px] font-semibold text-soft">{counts[c.id]}</span></span>
             <b className="mt-2 block text-[12px] font-semibold">{c.label}</b>
           </div>
         ))}
@@ -33,7 +33,7 @@ export function ChatMock() {
         <p className="flex items-center gap-1.5 text-[11px] font-semibold text-selected"><Sparkles size={12} /> Lifevault</p>
         <p><b>30 Urlaubstage pro Jahr</b> bei einer 5-Tage-Woche.</p>
         <p className="text-soft">Dazu kommen tarifliche Zusatztage nach IG-Metall-Tarif. Resturlaub verfällt am 31. März des Folgejahres.</p>
-        <p className="flex flex-wrap gap-1 pt-1"><span className="rounded-full border border-card-line px-2 py-0.5 text-[11px] font-medium text-fg">Arbeitsvertrag Nordwerk</span></p>
+        <p className="flex flex-wrap gap-1 pt-1"><span className="rounded-full border border-card-line px-3 py-1 text-[12px] font-medium text-fg">Arbeitsvertrag Nordwerk</span></p>
       </div>
     </div>
   );

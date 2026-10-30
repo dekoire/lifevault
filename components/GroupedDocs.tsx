@@ -191,7 +191,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
                 <span className="tnum text-[22px] leading-7 font-bold tracking-tight">{s.year}</span>
                 {s.open > 0 && <span className="text-[12px] font-semibold text-negative-text">{s.open} offen</span>}
                 <span className="h-px flex-1 bg-line" />
-                <span className="tnum rounded-full border border-card-line bg-surface px-2.5 py-0.5 text-[12px] font-semibold text-fg">{s.docs.length} {s.docs.length === 1 ? "Dokument" : "Dokumente"}</span>
+                <span className="tnum rounded-full border border-card-line bg-surface px-3.5 py-1 text-[12px] font-semibold text-fg">{s.docs.length} {s.docs.length === 1 ? "Dokument" : "Dokumente"}</span>
                 <ChevronDown size={15} className={`shrink-0 text-muted transition-transform group-hover:text-fg ${isOpen ? "rotate-180" : ""}`} />
               </button>
             </div>
@@ -203,7 +203,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
                       {g.partner && <SenderLogo domain={g.partner.domain} sender={g.partner.name} cluster={g.partner.cluster} size={24} />}
                       <span className="truncate text-[14px] font-semibold text-fg">{g.label}</span>
                       <span className="h-px flex-1 bg-line/70" />
-                      <span className="tnum rounded-full border border-card-line bg-surface px-2 py-px text-[12px] font-semibold text-soft">{g.docs.length}</span>
+                      <span className="tnum rounded-full border border-card-line bg-surface px-3 py-1 text-[12px] font-semibold text-soft">{g.docs.length}</span>
                     </div>
                     {block(g.docs)}
                   </div>

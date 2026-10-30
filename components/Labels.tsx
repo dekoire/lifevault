@@ -33,7 +33,7 @@ export function DocLabels({ doc, onChange, inline = false }: { doc: Doc; onChang
   if (inline && !edit) return (
     <>
       {LABEL_GROUPS.flatMap((g) => g.tags.filter((t) => labels.includes(t))).map((t) => <LabelChip key={t} tag={t} />)}
-      <button type="button" onClick={() => setEdit(true)} title="Tags bearbeiten" aria-label="Tags bearbeiten" className="inline-flex h-7 items-center gap-1 rounded-full px-2 text-[12px] font-semibold text-muted hover:bg-surface-2 hover:text-fg"><Pencil size={12} />{labels.length ? "" : " Tags"}</button>
+      <button type="button" onClick={() => setEdit(true)} title="Tags bearbeiten" aria-label="Tags bearbeiten" className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-[12px] font-semibold text-muted hover:bg-surface-2 hover:text-fg"><Pencil size={12} />{labels.length ? "" : " Tags"}</button>
     </>
   );
   const groups = LABEL_GROUPS.map((g) => ({ g, tags: edit ? g.tags : g.tags.filter((t) => labels.includes(t)) })).filter((x) => x.tags.length);
@@ -41,7 +41,7 @@ export function DocLabels({ doc, onChange, inline = false }: { doc: Doc; onChang
     <div className={`space-y-2 ${inline ? "mt-1 basis-full rounded-xl border border-card-line bg-surface p-3" : ""}`}>
       <div className="flex items-center justify-between gap-2">
         <span className="text-[12px] font-semibold text-muted">Tags</span>
-        <button type="button" onClick={() => setEdit(!edit)} className="inline-flex h-7 items-center gap-1 rounded-full px-2 text-[12px] font-semibold text-soft hover:bg-surface-2 hover:text-fg">{edit ? <><X size={13} /> Fertig</> : <><Pencil size={12} /> Bearbeiten</>}</button>
+        <button type="button" onClick={() => setEdit(!edit)} className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-[12px] font-semibold text-soft hover:bg-surface-2 hover:text-fg">{edit ? <><X size={13} /> Fertig</> : <><Pencil size={12} /> Bearbeiten</>}</button>
       </div>
       {!groups.length && <p className="text-[13px] text-muted">{doc.labels ? "Keine Tags." : "Tags werden gerade vergeben …"}</p>}
       {groups.map(({ g, tags }) => (

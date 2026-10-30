@@ -101,7 +101,7 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
   if (title) return (
     <section className={`${CARD} overflow-hidden`}>
       <div className="space-y-3 px-4 pt-5 pb-3 md:px-6">
-        <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">{title}<span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] font-semibold text-soft">{list.length}</span></h2>
+        <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">{title}<span className="tnum rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold text-soft">{list.length}</span></h2>
         {bar}
         {chip}
       </div>
@@ -128,7 +128,7 @@ function Row({ d, grid, cluster, sender }: { d: Doc; grid: string; cluster: bool
           <span className="flex items-center gap-1.5">
             <span className="truncate text-[15px] font-semibold">{title}</span>
             {d.encrypted && <Lock size={13} className="shrink-0 text-brand-500" aria-label="verschlüsselt" />}
-            {d.archived && <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-card-line px-1.5 py-px text-[11px] font-semibold text-soft"><Archive size={11} /> Archiv</span>}
+            {d.archived && <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold text-soft"><Archive size={11} /> Archiv</span>}
           </span>
           <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted md:hidden">
             {processing ? <span className="text-shimmer font-medium">Wird ausgelesen</span> : d.status === "error" ? <span className="inline-flex items-center gap-1 text-negative-text"><AlertCircle size={13} /> {d.error ?? "Fehler"}</span> : (

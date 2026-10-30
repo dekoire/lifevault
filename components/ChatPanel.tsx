@@ -131,7 +131,7 @@ function ResearchCard({ r, onAnswer }: { r: Research; onAnswer?: (yes: boolean) 
       <div className="flex items-start gap-3">
         <IconTile icon={Globe} size={36} color="#64748b" />
         <div className="min-w-0 flex-1">
-          <span className="flex flex-wrap items-center gap-2"><b className="text-[15px]">Internetrecherche</b><span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2 py-0.5 text-[12px] font-semibold text-soft"><X size={11} strokeWidth={3} /> Von dir abgelehnt</span></span>
+          <span className="flex flex-wrap items-center gap-2"><b className="text-[15px]">Internetrecherche</b><span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-3 py-1 text-[12px] font-semibold text-soft"><X size={11} strokeWidth={3} /> Von dir abgelehnt</span></span>
           {r.reason && <span className="mt-0.5 block text-[13px] text-soft">Fehlt weiterhin: {r.reason}</span>}
           <span className="mt-2 flex items-start gap-1.5 text-[13px] text-muted line-through decoration-line-strong"><Globe size={14} className="mt-0.5 shrink-0" />{r.query}</span>
           <span className="mt-2 block text-[12px] text-muted">Nichts wurde gesendet.</span>
