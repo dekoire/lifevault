@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { AtSign, Check, Copy, Loader2, Plus, RefreshCw, RotateCcw, ShieldCheck, X } from "lucide-react";
 import { CARD, Switch } from "@/components/ui";
+import { DEFAULT_KEEP, KEEP_ROWS, normalizeKeep, type KeepRules } from "@/lib/mailkeep";
 import { useDocs } from "@/lib/docs";
 import { ForwardGuide } from "@/components/settings/ForwardGuide";
 import { importInbox, inboxAddress, MAIL_MODES, useInbox, type InboxResult } from "@/lib/inbox";
@@ -95,6 +96,7 @@ export function InboxCard({ mode, from, to }: { mode: "since" | "range"; from: s
           <p className="mt-2 text-[12.5px] text-muted">{MAIL_MODES.find((m) => m.id === inbox.mode)?.hint} Die KI entscheidet, was relevant ist; Werbung und Versandinfos ohne Preis werden nicht abgelegt.</p>
         </div>
       )}
+      <KeepRulesSection value={normalizeKeep(inbox.keep_rules)} onChange={(r) => void save({ keep_rules: r })} />
       <div className="flex flex-wrap items-center gap-4 border-t border-line p-5">
         <span className="min-w-0 flex-1">
           <b className="block text-[14px]">Automatisch abrufen</b>
@@ -122,5 +124,27 @@ export function InboxCard({ mode, from, to }: { mode: "since" | "range"; from: s
         </div>
       )}
     </section>
+  );
+}
+
+/** Was aus Mails behalten wird (lib/mailkeep.ts) – Standard: alles außer bezahlten Käufen */
+function KeepRulesSection({ value, onChange }: { value: KeepRules; onChange: (r: KeepRules) => void }) {
+  const isDefault = JSON.stringify(value) === JSON.stringify(DEFAULT_KEEP);
+  return (
+    <div className="border-t border-line p-5">
+      <div className="flex items-center justify-between gap-3">
+        <b className="block text-[14px]">Was behalten wird</b>
+        {!isDefault && <button type="button" onClick={() => onChange(DEFAULT_KEEP)} className="text-[13px] font-semibold text-soft hover:text-fg">Standard</button>}
+      </div>
+      <span className="block text-[12.5px] text-muted">Nach dem Auslesen entscheidet Lifevault nach Art. Was du abwählst, wird nicht gespeichert.</span>
+      <ul className="mt-2 divide-y divide-line">
+        {KEEP_ROWS.map((r) => (
+          <li key={r.id} className="flex items-center gap-4 py-2.5">
+            <span className="min-w-0 flex-1"><b className="block text-[13.5px]">{r.label}</b><span className="block text-[12px] text-muted">{r.hint}</span></span>
+            <Switch on={value[r.id]} onChange={(v) => onChange({ ...value, [r.id]: v })} label={r.label} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

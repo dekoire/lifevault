@@ -1,3 +1,4 @@
+import { keepDoc, normalizeKeep } from "@/lib/mailkeep";
 import { generateText, Output } from "ai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -45,6 +46,15 @@ export type ProcessInput = { id?: unknown; data?: unknown; mediaType?: unknown; 
  * Für die Route (Nutzer-Token, RLS) und den Mail-Job (Server, siehe lib/mailjob.ts): jede Abfrage zusätzlich auf
  * `userId` begrenzt, damit auch ein Server-Client nur Dokumente dieses Nutzers sieht und ändert.
  */
+/** Dokument aus einer Mail nicht behalten? Dann Datei und Eintrag löschen (immer nur im Ordner bzw. für den Nutzer). */
+async function dropFromMail(sb: SupabaseClient, userId: string, doc: { id: string; file_path: string }, d: Parameters<typeof keepDoc>[1]) {
+  const { data } = await sb.from("mail_inbox").select("keep_rules").eq("user_id", userId).maybeSingle();
+  if (keepDoc(normalizeKeep(data?.keep_rules), d)) return false;
+  if (doc.file_path.startsWith(`${userId}/`)) await sb.storage.from("documents").remove([doc.file_path]);
+  await sb.from("documents").delete().eq("id", doc.id).eq("user_id", userId);
+  return true;
+}
+
 export async function processDocument(sb: SupabaseClient, userId: string, body: ProcessInput): Promise<Response> {
   const password = typeof body?.password === "string" && body.password.length <= 200 ? body.password : undefined;
   const id = typeof body?.id === "string" ? body.id : "";
@@ -94,7 +104,7 @@ export async function processDocument(sb: SupabaseClient, userId: string, body: 
           const up = await sb.storage.from("documents").upload(path, bytes, { contentType: "application/pdf" });
           if (up.error) throw up.error;
           const name = `${doc.file_name.replace(/\.pdf$/i, "").slice(0, 120)} – Teil ${i + 1} (S. ${p.fromPage}${p.toPage > p.fromPage ? `–${p.toPage}` : ""}).pdf`;
-          const { data: row, error } = await sb.from("documents").insert({ user_id: userId, file_path: path, file_name: name.slice(0, 200), mime_type: "application/pdf", size_bytes: bytes.length, ...(doc.project_id ? { project_id: doc.project_id } : {}), received_at: doc.received_at, split_from: doc.id }).select("id").single();
+          const { data: row, error } = await sb.from("documents").insert({ user_id: userId, file_path: path, file_name: name.slice(0, 200), mime_type: "application/pdf", size_bytes: bytes.length, ...(doc.project_id ? { project_id: doc.project_id } : {}), received_at: doc.received_at, split_from: doc.id, from_mail: !!doc.from_mail }).select("id").single();
           if (error) throw error;
           ids.push(row.id);
         }
@@ -128,6 +138,8 @@ export async function processDocument(sb: SupabaseClient, userId: string, body: 
       return Response.json({ ok: true, meta, content });
     }
     await sb.from("documents").update({ ...meta, ...content, status: "ready", error: null }).eq("id", id).eq("user_id", userId);
+    // aus dem E-Mail-Import: nach den Regeln des Nutzers behalten oder wieder entfernen (z. B. bezahlte Käufe)
+    if (doc.from_mail && (await dropFromMail(sb, userId, doc, { ...meta, ...content }))) return Response.json({ ok: true, dropped: true });
     // aufbereitete Ansicht (Kacheln, Frist, Inhalt, Kosten) – Fehler stören das Auslesen nicht, sie entsteht dann beim Öffnen
     await buildView({ title: meta.title, docType: meta.doc_type, sender: meta.sender, docDate: meta.doc_date, summary: content.summary, keyFacts: content.key_facts, amounts: content.amounts, deadlines: content.deadlines, fullText: content.full_text })
       .then((view) => view && sb.from("documents").update({ view }).eq("id", id).eq("user_id", userId))

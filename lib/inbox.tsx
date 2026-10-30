@@ -18,7 +18,7 @@ export const MAIL_MODES: { id: MailMode; label: string; hint: string }[] = [
   { id: "fallback", label: "Anhang, sonst Mailtext", hint: "Ohne Dokument im Anhang prüft die KI den Mailtext – z. B. Rechnungen von Apple, PayPal oder Uber – und legt ihn als PDF ab, wenn er ein Beleg ist." },
   { id: "both", label: "Anhang und Mailtext", hint: "Immer beides: Anhänge und, wenn er ein Beleg ist, zusätzlich der Mailtext als PDF." },
 ];
-export type Inbox = { token: string; allowed: string[]; auto_sync: boolean; last_sync_at: string | null; mode?: MailMode };
+export type Inbox = { token: string; allowed: string[]; auto_sync: boolean; last_sync_at: string | null; mode?: MailMode; keep_rules?: unknown };
 export const inboxAddress = (token: string) => `lv-${token}@${INBOX_DOMAIN}`;
 // der Mail-Job auf dem Server (lib/mailjob.ts) holt alle 15 Minuten ab; die App springt nur ein, wenn er länger nicht lief
 const EVERY_MIN = 45;
@@ -29,8 +29,9 @@ export function useInbox() {
   const session = useSession();
   const [inbox, setInbox] = useState<Inbox | null>();
   const load = useCallback(async () => {
-    // mode fehlt, solange Migration 0014 nicht eingespielt ist
-    let { data, error } = await supabase.from("mail_inbox").select("token,allowed,auto_sync,last_sync_at,mode").maybeSingle();
+    // mode/keep_rules fehlen, solange Migration 0014/0023 nicht eingespielt sind
+    let { data, error } = await supabase.from("mail_inbox").select("token,allowed,auto_sync,last_sync_at,mode,keep_rules").maybeSingle();
+    if (error) ({ data, error } = await supabase.from("mail_inbox").select("token,allowed,auto_sync,last_sync_at,mode").maybeSingle());
     if (error) ({ data } = await supabase.from("mail_inbox").select("token,allowed,auto_sync,last_sync_at").maybeSingle());
     setInbox((data as Inbox) ?? null);
   }, []);
@@ -110,7 +111,7 @@ async function bodyReceipt(m: Item): Promise<{ file?: File; reason: string }> {
 }
 
 /** Abholen und importieren. Anhänge ohne KI-Vorprüfung: was du selbst schickst, willst du auch haben (nur Logos/Deko fallen raus). Mails ohne Anhang: Beleg im Mailtext → als PDF. */
-export async function importInbox(opts: { since: Date; until?: Date; upload: (files: File[], o?: { silent?: boolean }) => Promise<string[]>; silent?: boolean; advance?: boolean; mode?: MailMode; onStep?: (s: string, done?: number, total?: number) => void }): Promise<InboxResult> {
+export async function importInbox(opts: { since: Date; until?: Date; upload: (files: File[], o?: { silent?: boolean; fromMail?: boolean }) => Promise<string[]>; silent?: boolean; advance?: boolean; mode?: MailMode; onStep?: (s: string, done?: number, total?: number) => void }): Promise<InboxResult> {
   const { since, until, upload, onStep } = opts;
   const mode = opts.mode ?? "fallback";
   onStep?.("Mails abrufen");
@@ -147,7 +148,7 @@ export async function importInbox(opts: { since: Date; until?: Date; upload: (fi
           const b = await bodyReceipt(m).catch(() => undefined);
           if (b?.file) files.push(b.file);
         }
-        docIds = files.length ? await upload(files, { silent: opts.silent }) : [];
+        docIds = files.length ? await upload(files, { silent: opts.silent, fromMail: true }) : [];
         // alles aus einer Mail gehört zusammen → nach dem Auslesen gleicher Partner (im Hintergrund)
         if (docIds.length > 1) void unifyWhenReady(docIds, m.subject, m.from);
         if (docIds.length) { out.imported++; out.files += docIds.length; }
@@ -156,7 +157,7 @@ export async function importInbox(opts: { since: Date; until?: Date; upload: (fi
         // kein Anhang: vielleicht steht die Rechnung im Mailtext (Apple, PayPal …)
         const b = await bodyReceipt(m).catch(() => ({ file: undefined, reason: "Mailtext konnte nicht geprüft werden" }));
         reason = b.reason;
-        if (b.file) docIds = await upload([b.file], { silent: opts.silent });
+        if (b.file) docIds = await upload([b.file], { silent: opts.silent, fromMail: true });
         if (docIds.length) { out.imported++; out.files += docIds.length; } else out.withoutDocs++;
       }
       await supabase.from("mail_seen").upsert({
