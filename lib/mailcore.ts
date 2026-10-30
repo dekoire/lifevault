@@ -41,6 +41,56 @@ export function htmlToPlain(html: string): string {
     .split("\n").map((l) => l.trim()).filter((l, i, a) => l || a[i - 1]).join("\n").trim();
 }
 
+// ---------- Herkunft: wer hat weitergeleitet, von wem, an wen ursprünglich ----------
+const EMAIL_RE = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g;
+const emailsIn = (s: string) => [...new Set((s.match(EMAIL_RE) ?? []).map((e) => e.toLowerCase()))];
+/** Kopfzeilen weitergeleiteter Nachrichten im Text („Von:“/„From:“, „An:“/„To:“ …), auch zitiert mit „>“ */
+const FROM_LINE = /^[>\s]*\**(?:von|from|de|da|van)\**\s*:\**\s*(.+)$/i;
+const TO_LINE = /^[>\s]*\**(?:an|to|à|a|para|aan)\**\s*:\**\s*(.+)$/i;
+
+export type MailOrigin = { forwardedBy: string | null; originalFrom: string | null; originalTo: string[] };
+
+/**
+ * Herkunft einer Mail an die Lifevault-Adresse. Von Hand weitergeleitet: Weiterleiter = Absender, ursprünglicher Absender
+ * und Empfänger stehen im Text – genommen wird die innerste (ursprüngliche) Nachricht. Automatisch weitergeleitet (Filter):
+ * Absender und „An“ sind die ursprünglichen, der Weiterleiter steht im Umschlag (forwarder). Direkt geschickt: nur Absender.
+ */
+export function mailOrigin(m: { from: string; to?: string[] | null; cc?: string[] | null; text?: string | null; html?: string | null }, own: string, forwarder?: string | null): MailOrigin {
+  const bareAddr = (s: string) => (s.match(/<([^>]+)>/)?.[1] ?? s).trim().toLowerCase();
+  const from = bareAddr(m.from);
+  const heads = [...(m.to ?? []), ...(m.cc ?? [])].map(bareAddr);
+  const notOwn = (a: string) => a !== own && !a.endsWith(`@${own.split("@")[1]}`);
+  // Filter-Weiterleitung: Mail war nicht an uns adressiert
+  if (!heads.includes(own)) return { forwardedBy: forwarder && forwarder !== from ? forwarder : null, originalFrom: from, originalTo: heads.filter(notOwn).slice(0, 10) };
+  // Text durchgehen: letzter Block mit „Von:“ = ursprüngliche Nachricht; „An:“ direkt danach gehört dazu
+  const body = (m.html ? htmlToPlain(m.html) : "") || (m.text ?? "");
+  let origFrom: string | null = null;
+  let origTo: string[] = [];
+  const lines = body.replace(/\r/g, "").split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const f = FROM_LINE.exec(lines[i]);
+    if (!f) continue;
+    const fe = emailsIn(f[1]);
+    if (!fe.length) continue;
+    // „An:“ in den nächsten Zeilen des Blocks
+    let to: string[] = [];
+    for (let j = i + 1; j < Math.min(lines.length, i + 6); j++) {
+      const t = TO_LINE.exec(lines[j]);
+      if (t) { to = emailsIn(t[1]); break; }
+    }
+    origFrom = fe[0];
+    origTo = to;
+  }
+  if (!origFrom) return { forwardedBy: null, originalFrom: from, originalTo: [] };
+  return { forwardedBy: from, originalFrom: origFrom, originalTo: origTo.filter(notOwn).slice(0, 10) };
+}
+
+/** E-Mail-Adressen im Dokumenttext, die nicht zum Absender gehören (z. B. die Kundenadresse auf einer Rechnung) */
+export function addressesInDoc(text: string, senderDomain?: string | null): string[] {
+  const generic = /^(no-?reply|noreply|donotreply|do-not-reply|info|service|support|kontakt|contact|hello|hallo|billing|invoice|rechnung|buchhaltung|datenschutz|privacy|help|team|mail|office|post)\b/i;
+  return emailsIn(text).filter((e) => !generic.test(e) && !(senderDomain && e.endsWith(`@${senderDomain.toLowerCase()}`)) && !/\.(png|jpe?g|gif)$/i.test(e)).slice(0, 5);
+}
+
 // ---------- Beleg im Mailtext → PDF ----------
 /** Zeichen, die die Standardschrift nicht kann, ersetzen (sonst bricht pdf-lib ab) */
 function printable(font: PDFFont, s: string, cache: Map<string, string>) {

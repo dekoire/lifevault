@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { loadAiSettings } from "@/lib/ai";
-import { gmailConfirmation, listForInbox, rejectReason, resend, type InboxRow, type Received } from "@/lib/inbox-server";
+import { gmailConfirmation, listForInbox, originOf, rejectReason, resend, type InboxRow, type Received } from "@/lib/inbox-server";
 import { fixMime, htmlToPlain, isCandidate, mailBodyPdf } from "@/lib/mailcore";
 import { processDocument } from "@/lib/processDoc";
 import { extFor, realMime } from "@/lib/sniff";
@@ -74,11 +74,13 @@ async function runInbox(admin: SupabaseClient, inbox: JobInbox, deadline: number
     // Gmail-Bestätigungen zeigt die App an; Abgelehntes bewusst nicht merken (wird der Absender erlaubt, kommt es mit)
     if (gmailConfirmation(full, inbox) || rejectReason(full, inbox)) continue;
     const r = await importMail(admin, uid, inbox.mode ?? "fallback", full);
+    const origin = originOf(full, inbox);
     out.mails++;
     out.docs += r.docIds.length;
     await admin.from("mail_seen").upsert({
       user_id: uid, msg_id: `inbox:${full.id}`, source: "inbox", subject: (full.subject ?? "").slice(0, 500), sender: full.from.slice(0, 300), mail_date: full.created_at,
       relevant: r.docIds.length > 0, reason: r.reason.slice(0, 500), doc_ids: r.docIds,
+      forwarded_by: origin.forwardedBy?.slice(0, 300) ?? null, original_from: origin.originalFrom?.slice(0, 300) ?? null, original_to: origin.originalTo,
     });
   }
   // vollständig durch: letzter Abruf = jetzt (sonst bleibt er stehen, der Rest kommt beim nächsten Lauf)
@@ -105,7 +107,7 @@ async function importMail(admin: SupabaseClient, uid: string, mode: "attachments
   if (mode === "both" || (mode === "fallback" && !picks.length)) {
     const bodyText = ((m.html ? htmlToPlain(m.html) : "") || (m.text ?? "").replace(/\r/g, "").trim()).slice(0, 60_000);
     if (bodyText.replace(/\s/g, "").length >= 80) {
-      const t = await triageMails({ items: [{ id: m.id, from: m.from, subject: m.subject ?? "", date: m.created_at, snippet: bodyText.slice(0, 300), attachments: [], body: bodyText.slice(0, 1500) }] });
+      const t = await triageMails({ items: [{ id: m.id, from: m.from, subject: m.subject ?? "", date: m.created_at, snippet: bodyText.slice(0, 300), attachments: [], body: bodyText.slice(0, 3000) }] });
       const res = ((await t.json().catch(() => ({}))) as { results?: { relevant: boolean; reason: string; bodyDocument?: boolean }[] }).results?.[0];
       if (res?.relevant && res.bodyDocument) {
         const pdf = await mailBodyPdf({ from: m.from, subject: m.subject ?? "", date: m.created_at, bodyText });

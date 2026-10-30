@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { mailOrigin } from "@/lib/mailcore";
 
 /**
  * Eigene Empfangsadresse über Resend (Server). Resend nimmt Mails an lv-<token>@finastry.com an und hält sie bereit;
@@ -59,6 +60,8 @@ const forwarder = (m: Received) => {
   const all = [...new Set(headers(m, "return-path").map((v) => plain(bare(v))))];
   return all.length === 1 && all[0].includes("@") ? all[0] : null;
 };
+/** Herkunft für die Anzeige am Dokument (Weiterleiter nur, wenn SPF ihn bestätigt) */
+export const originOf = (m: Received, inbox: InboxRow) => mailOrigin(m, addressOf(inbox.token), m.authentication?.spf === "pass" ? forwarder(m) : null);
 /** Echt? Mindestens SPF, DKIM oder DMARC bestanden – sonst könnte jeder einen erlaubten Absender vortäuschen */
 const authentic = (m: Received) => !!m.authentication && ["spf", "dkim", "dmarc"].some((k) => m.authentication?.[k as "spf"] === "pass");
 

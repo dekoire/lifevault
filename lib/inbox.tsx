@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useDocs } from "@/lib/docs";
 import { startJob, updateJob } from "@/lib/jobs";
 import { fixMime, isCandidate, mailBodyPdf, mailText } from "@/lib/mail";
+import type { MailOrigin } from "@/lib/mailcore";
 import { authFetch, supabase, useSession } from "@/lib/supabase";
 
 /**
@@ -60,7 +61,7 @@ export function useInbox() {
   return { inbox, create, save, renew, reload: load };
 }
 
-type Item = { id: string; from: string; subject: string; date: string; snippet: string; attachments: { id: string; name: string; mime: string; size: number; inline: boolean }[] };
+type Item = { id: string; from: string; subject: string; date: string; snippet: string; attachments: { id: string; name: string; mime: string; size: number; inline: boolean }[]; origin?: MailOrigin };
 /* Gmail-Weiterleitung bestätigen: erkannte Bestätigungs-Mails merken, bis man sie erledigt hat */
 export type Confirmation = { id: string; date: string; link: string | null; code: string | null; forwarder: string | null };
 const CONF = "lifevault:gmail-confirm", CONF_DONE = "lifevault:gmail-confirm-done";
@@ -102,7 +103,7 @@ async function bodyReceipt(m: Item): Promise<{ file?: File; reason: string }> {
   const { text, html } = (await r.json()) as { text: string; html: string };
   const bodyText = mailText(html ?? "", text ?? "");
   if (bodyText.replace(/\s/g, "").length < 80) return { reason: "Kein Dokument im Anhang" };
-  const t = await authFetch("/api/mail/triage", { method: "POST", body: JSON.stringify({ items: [{ id: m.id, from: m.from, subject: m.subject, date: m.date, snippet: m.snippet, attachments: [], body: bodyText.slice(0, 1500) }] }) });
+  const t = await authFetch("/api/mail/triage", { method: "POST", body: JSON.stringify({ items: [{ id: m.id, from: m.from, subject: m.subject, date: m.date, snippet: m.snippet, attachments: [], body: bodyText.slice(0, 3000) }] }) });
   const res = ((await t.json().catch(() => ({}))) as { results?: { relevant: boolean; reason: string; bodyDocument?: boolean }[] }).results?.[0];
   if (!res?.relevant || !res.bodyDocument) return { reason: res?.reason ? `Kein Beleg: ${res.reason}` : "Kein Dokument im Anhang" };
   return { file: await mailBodyPdf({ from: m.from, subject: m.subject, date: m.date, bodyText }), reason: res.reason || "Beleg im Mailtext" };
@@ -161,6 +162,7 @@ export async function importInbox(opts: { since: Date; until?: Date; upload: (fi
       await supabase.from("mail_seen").upsert({
         msg_id: `inbox:${m.id}`, source: "inbox", subject: m.subject.slice(0, 500), sender: m.from.slice(0, 300), mail_date: m.date,
         relevant: docIds.length > 0, reason: (reason || (docIds.length ? "An deine Lifevault-Adresse geschickt" : picks.length ? "Anhang konnte nicht geladen werden" : "Kein Dokument im Anhang")).slice(0, 500), doc_ids: docIds,
+        ...(m.origin ? { forwarded_by: m.origin.forwardedBy?.slice(0, 300) ?? null, original_from: m.origin.originalFrom?.slice(0, 300) ?? null, original_to: m.origin.originalTo.slice(0, 10) } : {}),
       });
     }
   } catch (e) {
