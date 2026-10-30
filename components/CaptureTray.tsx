@@ -154,17 +154,25 @@ export function useCaptureTray() {
                 ))}
                 {/* nächste Seite */}
                 <li>
-                  <button type="button" onClick={() => cam.current?.click()} className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-brand-500/40 bg-lavender text-[12.5px] font-semibold text-brand-600 active:scale-[.98]">
+                  <button type="button" onClick={() => cam.current?.click()} className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-brand-500/30 bg-gradient-to-br from-brand-500/[.05] to-brand-500/[.16] text-[12.5px] font-semibold text-brand-600 hover:to-brand-500/[.22] active:scale-[.98]">
                     <Camera size={24} /> {pages ? "Nächste Seite" : "Fotografieren"}
                   </button>
                 </li>
               </ol>
 
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <button type="button" onClick={() => files.current?.click()} className="inline-flex h-10 items-center gap-2 rounded-full border border-card-line px-4 text-[13.5px] font-semibold hover:bg-surface-2"><FileUp size={16} /> Fotos oder PDFs auswählen</button>
-                <button type="button" role="switch" aria-checked={scan} onClick={toggleScan} title="Fotos geradeziehen und als Schwarz-Weiß-Scan aufhellen" className={`inline-flex h-10 items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold ${scan ? "bg-brand-500 text-white" : "border border-card-line text-soft hover:bg-surface-2"}`}><ScanLine size={16} /> Scan-Modus {scan ? "an" : "aus"}</button>
+              {/* erst erklären, was der Scan-Modus macht – darunter beide Knöpfe je halb so breit */}
+              <div className={`mt-4 flex items-start gap-3 rounded-2xl px-4 py-3 ${scan ? "bg-gradient-to-br from-brand-500/[.05] to-brand-500/[.12]" : "bg-surface-2"}`}>
+                <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${scan ? "bg-brand-500 text-white" : "bg-surface text-soft"}`}><ScanLine size={17} /></span>
+                <span className="min-w-0 text-[13px] leading-5">
+                  <b className="block text-[14px] text-fg">{scan ? "Fotos werden wie ein Scan" : "Fotos bleiben wie aufgenommen"}</b>
+                  <span className="block text-soft">{scan ? "Geradegezogen und schwarz-weiß aufgehellt – gut lesbar und zum Drucken." : "Ohne Geradeziehen und Aufhellen, in Farbe."}</span>
+                  {scan && <span className="mt-1 block text-[12.5px] text-muted">Tipp: Blatt auf einen dunklen Untergrund legen.</span>}
+                </span>
               </div>
-              {scan && <p className="mt-1.5 text-[12px] text-muted">Fotos werden geradegezogen und wie ein Scan aufgehellt (schwarz-weiß, gut zum Drucken). Tipp: Blatt auf dunklen Untergrund legen.</p>}
+              <div className="mt-2.5 grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => files.current?.click()} className="inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-full border border-card-line px-3 text-[13.5px] font-semibold hover:bg-surface-2"><FileUp size={16} className="shrink-0" /> <span className="truncate">Fotos oder PDFs</span></button>
+                <button type="button" role="switch" aria-checked={scan} onClick={toggleScan} title="Fotos geradeziehen und als Schwarz-Weiß-Scan aufhellen" className={`inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-full px-3 text-[13.5px] font-semibold ${scan ? "bg-brand-500 text-white" : "border border-card-line text-soft hover:bg-surface-2"}`}><ScanLine size={16} className="shrink-0" /> <span className="truncate">Scan-Modus {scan ? "an" : "aus"}</span></button>
+              </div>
 
               {canCombine && (
                 <fieldset className="mt-5">
@@ -184,8 +192,8 @@ export function useCaptureTray() {
             </div>
 
             <div className="flex gap-2.5 border-t border-line px-6 pt-4 pb-6 sm:px-8 sm:pb-7">
-              <button type="button" onClick={() => { if (!pages || confirm("Gesammelte Seiten verwerfen?")) clear(); }} className="h-12 rounded-full px-4 text-[14px] font-semibold text-soft hover:bg-surface-2">Verwerfen</button>
-              <button type="button" onClick={() => void send()} disabled={!pages || busy} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-brand-500 text-[15px] font-semibold text-white disabled:opacity-40">
+              <button type="button" onClick={() => { if (!pages || confirm("Gesammelte Seiten verwerfen?")) clear(); }} className="h-12 rounded-full border border-card-line px-4 text-[14px] font-semibold text-soft hover:bg-surface-2">Verwerfen</button>
+              <button type="button" onClick={() => void send()} disabled={!pages || busy} className="inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-brand-500 text-[15px] font-semibold text-white disabled:opacity-40">
                 {busy ? <><Loader2 size={17} className="animate-spin" /> Wird vorbereitet …</> : <><Send size={17} /> {effectiveMode === "one" && canCombine ? `Als 1 Dokument absenden` : `${pages || ""} absenden`}</>}
               </button>
             </div>
