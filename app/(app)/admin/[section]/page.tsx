@@ -1,5 +1,7 @@
 "use client";
 import { use, useEffect, useState } from "react";
+import { Check, ChevronDown, Search } from "lucide-react";
+import { SenderLogo } from "@/components/SenderLogo";
 import { BackLink, CARD, PageHeader, Switch } from "@/components/ui";
 import { useMe, type DocSections } from "@/lib/me";
 import { authFetch, supabase, useSession } from "@/lib/supabase";
@@ -14,7 +16,7 @@ export default function AdminSection({ params }: { params: Promise<{ section: st
     <>
       <BackLink href="/admin" label="Admin" />
       <PageHeader title={TITLES[section] ?? "Admin"} />
-      <div className="max-w-4xl space-y-4">
+      <div className={`space-y-4 ${section === "ki" ? "w-full" : "max-w-4xl"}`}>
         {section === "benutzer" && <Users />}
         {section === "sicherheit" && <MfaPolicy />}
         {section === "dokumente" && <DocView />}
@@ -117,6 +119,60 @@ const TASKS: { id: string; label: string; text: string }[] = [
   { id: "profile", label: "Lebensprofil", text: "Erstellt das Profil und den Verlauf" },
 ];
 type GwModel = { id: string; name: string; input: number | null; output: number | null };
+// Anbieter → Webadresse fürs Logo (über /api/logo)
+const PROVIDER_DOMAIN: Record<string, string> = {
+  anthropic: "anthropic.com", openai: "openai.com", google: "google.com", xai: "x.ai", mistral: "mistral.ai", meta: "meta.com",
+  deepseek: "deepseek.com", cohere: "cohere.com", amazon: "aws.amazon.com", perplexity: "perplexity.ai", alibaba: "alibabacloud.com",
+  moonshotai: "moonshot.ai", zai: "z.ai", vercel: "vercel.com", inception: "inceptionlabs.ai", morph: "morphllm.com", meituan: "meituan.com", minimax: "minimax.io",
+};
+const providerOf = (id: string) => id.split("/")[0] ?? "";
+const ModelLogo = ({ id, size = 28 }: { id: string; size?: number }) => <SenderLogo domain={PROVIDER_DOMAIN[providerOf(id)]} sender={providerOf(id)} size={size} />;
+
+/** Modell wählen: Knopf mit Logo, Name und Preis; aufgeklappt Suche und Liste nach Anbieter */
+function ModelPick({ value, models, standard, onPick }: { value: string; models: GwModel[]; standard: string; onPick: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const cur = models.find((x) => x.id === value);
+  const term = q.trim().toLowerCase();
+  const list = models.filter((x) => !term || `${x.id} ${x.name}`.toLowerCase().includes(term));
+  const cost = (x?: GwModel) => (x && x.input !== null ? `$${x.input} / $${x.output}` : "Preis unbekannt");
+  const pick = (id: string) => { onPick(id); setOpen(false); setQ(""); };
+  return (
+    <span className="relative block">
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex h-12 w-full items-center gap-2.5 rounded-2xl border border-card-line bg-surface pr-3 pl-2.5 text-left hover:bg-surface-2">
+        <ModelLogo id={value} />
+        <span className="min-w-0 flex-1"><b className="block truncate text-[13.5px] leading-5">{value.split("/").slice(1).join("/") || value}</b><span className="block truncate text-[11.5px] text-muted">{providerOf(value)} · {cost(cur)}{value === standard ? " · Standard" : ""}</span></span>
+        <ChevronDown size={16} className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <>
+          <button type="button" aria-label="Schließen" onClick={() => setOpen(false)} className="fixed inset-0 z-10 cursor-default" />
+          <span className="absolute right-0 left-0 z-20 mt-1.5 block overflow-hidden rounded-2xl border border-card-line bg-surface shadow-[0_16px_40px_rgba(16,24,40,.16)]">
+            <label className="m-2 flex h-10 items-center gap-2 rounded-full bg-surface-2 px-3.5">
+              <Search size={15} className="text-muted" />
+              <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Modell oder Anbieter suchen, z. B. sonnet, gpt, gemini" className="min-w-0 flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-muted" />
+            </label>
+            <span className="block max-h-80 overflow-y-auto px-1.5 pb-1.5">
+              {list.map((x, i) => (
+                <span key={x.id} className="block">
+                  {providerOf(x.id) !== providerOf(list[i - 1]?.id ?? "") && <span className="block px-2.5 pt-2.5 pb-1 text-[11px] font-semibold tracking-wide text-muted uppercase">{providerOf(x.id)}</span>}
+                  <button type="button" onClick={() => pick(x.id)} className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-surface-2 ${x.id === value ? "bg-surface-2" : ""}`}>
+                    <ModelLogo id={x.id} size={24} />
+                    <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">{x.id.split("/").slice(1).join("/")}{x.id === standard && <span className="ml-1.5 rounded-full border border-card-line px-1.5 text-[10.5px] font-semibold text-soft">Standard</span>}</span>
+                    <span className="tnum shrink-0 text-[12px] text-muted">{cost(x)}</span>
+                    {x.id === value && <Check size={15} className="shrink-0" />}
+                  </button>
+                </span>
+              ))}
+              {!list.length && <span className="block px-3 py-3 text-[13px] text-muted">Kein Modell gefunden.</span>}
+            </span>
+          </span>
+        </>
+      )}
+    </span>
+  );
+}
+
 const price = (m?: GwModel) => (m && m.input !== null ? `$${m.input} / $${m.output} pro 1 Mio. Tokens (Ein/Aus)` : "Preis unbekannt");
 
 function AiModels() {
@@ -148,11 +204,8 @@ function AiModels() {
           return (
             <li key={t.id} className="flex flex-col gap-2 px-5 py-4 md:flex-row md:items-center md:gap-4">
               <span className="min-w-0 flex-1"><b className="text-[14px]">{t.label}</b>{saved === t.id && <span className="ml-2 text-[12px] font-semibold text-positive-text">gespeichert</span>}<span className="block text-[12px] text-muted">{t.text}</span></span>
-              <span className="flex w-full flex-col gap-1 md:w-[22rem]">
-                <select value={current} onChange={(e) => void save(t.id, e.target.value)} className="h-10 w-full rounded-full border border-card-line bg-surface px-3 text-[13px] font-semibold">
-                  {!m && <option value={current}>{current}</option>}
-                  {byProvider.map((x) => <option key={x.id} value={x.id}>{x.id}{x.id === data.defaults[t.id] ? " (Standard)" : ""}{x.input !== null ? ` · $${x.input}/$${x.output}` : ""}</option>)}
-                </select>
+              <span className="flex w-full flex-col gap-1 md:w-[28rem]">
+                <ModelPick value={current} models={byProvider} standard={data.defaults[t.id]} onPick={(id) => void save(t.id, id)} />
                 <span className="px-3 text-[11.5px] text-muted">{price(m)}{chosen[t.id] && <> · <button type="button" onClick={() => void save(t.id, "")} className="font-semibold text-selected">Standard ({data.defaults[t.id]})</button></>}</span>
               </span>
             </li>
