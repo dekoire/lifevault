@@ -49,16 +49,41 @@ export function ProjectSwitcher({ compact = false }: { compact?: boolean }) {
   );
 }
 
-/** Auswahl, in welches Projekt hochgeladen wird */
+/** Auswahl, in welches Projekt hochgeladen wird – sieht aus wie die Projektauswahl im Menü (weiß, Schatten, Punkt) */
 export function UploadTarget() {
   const { projects, current, setCurrent, defaultProject } = useProjects();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
   if (projects.length < 2) return null;
+  const id = current === "all" ? defaultProject?.id ?? projects[0]?.id : current;
+  const sel = projects.find((p) => p.id === id);
   return (
-    <label className="mb-3 flex items-center gap-2 rounded-full bg-surface-2 py-1.5 pr-2 pl-4 text-[13px] text-soft">
-      Ablegen in
-      <select value={current === "all" ? defaultProject?.id ?? "" : current} onChange={(e) => setCurrent(e.target.value)} className="h-8 min-w-0 flex-1 rounded-full border border-card-line bg-surface px-3 text-[14px] font-semibold text-fg">
-        {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-      </select>
-    </label>
+    <div ref={ref} className="relative mb-3">
+      <span className="mb-1.5 block text-[12px] font-semibold text-muted">Ablegen in</span>
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="listbox" aria-label="Ablegen in"
+        className="flex h-11 w-full items-center gap-2 rounded-xl border border-card-line bg-surface px-3 text-left shadow-[0_8px_30px_rgba(15,23,42,.07)] transition-colors hover:bg-surface-2">
+        {sel ? <Dot color={sel.color} size={8} /> : <Layers size={14} className="text-muted" />}
+        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{sel?.name ?? "Projekt wählen"}</span>
+        <ChevronsUpDown size={14} className="shrink-0 text-muted" />
+      </button>
+      {open && (
+        <div role="listbox" className="pop-in absolute left-0 z-50 mt-1.5 w-full rounded-2xl border border-card-line bg-surface p-1.5 shadow-[0_12px_32px_rgba(16,24,40,.14)]">
+          {projects.map((p) => (
+            <button key={p.id} type="button" role="option" aria-selected={id === p.id} onClick={() => { setCurrent(p.id); setOpen(false); }}
+              className="flex h-9 w-full items-center gap-2.5 rounded-xl px-2.5 text-left text-[14px] hover:bg-surface-2">
+              <Dot color={p.color} />
+              <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
+              {id === p.id && <Check size={15} className="text-selected" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
