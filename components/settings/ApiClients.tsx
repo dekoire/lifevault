@@ -259,7 +259,9 @@ function ApiDocs() {
 GET  ${base}/api/v1/projects
 GET  ${base}/api/v1/documents?q=Telekom&cluster=rechnungen&since=2026-01-01
 GET  ${base}/api/v1/documents/<id>
-POST ${base}/api/v1/documents          # multipart: file, project_id`}</code>
+POST ${base}/api/v1/documents          # multipart: file, project_id
+GET  ${base}/api/v1/documents/changes?cursor=…   # nur Änderungen seit der Lesemarke
+PUT  ${base}/api/v1/webhook            # { url, secret }: Stups bei Änderungen`}</code>
         <p><b>3. MCP</b> für KI-Agenten (z. B. Claude): Server-Adresse <code>{base}/api/mcp</code>, Header <code>Authorization: Bearer &lt;client_id&gt;:&lt;client_secret&gt;</code>. Werkzeuge: whoami, list_projects, search_documents, get_document, upload_document.</p>
         <p>Grenzen: 120 Anfragen pro Minute, 60 Uploads pro Stunde, Dateien bis 4 MB. Original-Dateien aus der API übernimmt Lifevault beim nächsten Öffnen der App in deinen Speicher.</p>
       </div>
