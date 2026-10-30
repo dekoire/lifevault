@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, ArrowDownAZ, Building2, CalendarDays, CalendarRange, Check, ChevronDown, CircleAlert, CircleCheck, Clock, Download, Hash, History, Info, Rows3, Search, Shapes, Star, Tag, Users, X, type LucideIcon } from "lucide-react";
 import { DocCarousel } from "@/components/DocCarousel";
 import { DocRow } from "@/components/DocRow";
@@ -133,7 +134,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
 
   if (!docs.length) return <p className={`${CARD} p-6 text-center text-[14px] text-muted`}>Noch keine Dokumente in diesem Bereich.</p>;
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${picking ? "pb-40" : ""}`}>
       {/* Steuerung schlicht: Suche + „Filter“; alles Weitere als Auswahlfelder im Seitenpanel rechts */}
       <FilterBar q={q} onQ={setQ} placeholder="In diesem Bereich suchen" actions={<button type="button" onClick={() => (picking ? stopPicking() : setPicking(true))} aria-pressed={picking} className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-[14px] font-semibold ${picking ? "border-brand-500 bg-brand-500 text-white" : "border-card-line bg-surface text-fg hover:bg-surface-2"}`}><Download size={16} /> Export</button>} activeCount={active} onReset={() => setF(NONE)} count={`${list.length} von ${docs.length} Dokumenten`}>
         <FilterSelect label="Sortieren" icon={Clock} value={sortBy === "new" ? "" : sortBy} onChange={(v) => setSortBy((v || "new") as SortBy)} options={SORTS} empty="Neueste zuerst" />
@@ -173,7 +174,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
           <button type="button" onClick={() => pickMany(list.map((d) => d.id), stateOf(list.map((d) => d.id), picked) !== "on")} className="inline-flex items-center gap-2.5 font-semibold">
             <Box state={stateOf(list.map((d) => d.id), picked)} /> {stateOf(list.map((d) => d.id), picked) === "on" ? "Alle abwählen" : `Alle ${list.length} auswählen`}
           </button>
-          <span className="ml-auto text-[13px] text-soft">Antippen zum Aus- oder Abwählen</span>
+          <span className="ml-auto text-[13px] text-soft max-sm:hidden">Antippen zum Aus- oder Abwählen</span>
         </div>
       )}
 
@@ -211,15 +212,25 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
           </section>
         );
       })}
-      {picking && (
-        <div className="sheet-up fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-xl items-center gap-3 rounded-full bg-fg py-2 pr-2 pl-5 text-canvas shadow-[0_12px_32px_rgba(16,24,40,.3)] lg:bottom-6 lg:left-[calc(var(--side,15rem)+1.5rem)]">
-          <span className="min-w-0 flex-1 text-[14px]"><b className="tnum">{picked.size}</b> ausgewählt{lockedN > 0 && <span className="text-canvas/60"> · {lockedN} verschlüsselt (Tresor entsperren)</span>}</span>
-          <select value={pickFormat} onChange={(e) => setPickFormat(e.target.value as ExportFormat)} aria-label="Format" className="h-9 max-w-[9.5rem] rounded-full border border-canvas/25 bg-transparent px-3 text-[12.5px] font-semibold text-canvas [&>option]:text-fg">
-            {EXPORT_FORMATS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
-          </select>
-          <button type="button" onClick={stopPicking} className="h-10 rounded-full px-3 text-[13.5px] font-semibold text-canvas/75 hover:text-canvas">Abbrechen</button>
-          <button type="button" disabled={picked.size - lockedN <= 0} onClick={() => { const list = docs.filter((d) => picked.has(d.id) && (!d.encrypted || unlocked)); startExport(list, { password: list.some((d) => d.encrypted) ? newPassword() : undefined, format: pickFormat }); stopPicking(); }} className="inline-flex h-10 items-center gap-2 rounded-full bg-brand-500 px-4 text-[13.5px] font-semibold text-white disabled:opacity-40"><Download size={15} /> Erstellen</button>
-        </div>
+      {/* Export-Leiste: per Portal am Bildschirmrand (sonst verschiebt sie die Animation der Seite);
+          oben Anzahl und Format, unten Abbrechen und Erstellen gleich breit */}
+      {picking && createPortal(
+        <div className="sheet-up fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 mx-auto max-w-md rounded-3xl bg-fg p-3 text-canvas shadow-[0_16px_40px_rgba(16,24,40,.35)] lg:bottom-6">
+          <div className="flex items-center gap-3 px-1.5 pb-3">
+            <span className="min-w-0 flex-1 text-[14px] leading-5"><b className="tnum text-[17px]">{picked.size}</b> ausgewählt{lockedN > 0 && <span className="block text-[12px] text-canvas/60">{lockedN} verschlüsselt – Tresor entsperren</span>}</span>
+            <span className="relative shrink-0">
+              <select value={pickFormat} onChange={(e) => setPickFormat(e.target.value as ExportFormat)} aria-label="Format" className="h-10 appearance-none rounded-full bg-canvas/15 pr-9 pl-4 text-[13.5px] font-semibold text-canvas [&>option]:text-fg">
+                {EXPORT_FORMATS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
+              </select>
+              <ChevronDown size={15} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-canvas/70" />
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={stopPicking} className="h-11 rounded-full bg-canvas/10 text-[14px] font-semibold text-canvas hover:bg-canvas/20">Abbrechen</button>
+            <button type="button" disabled={picked.size - lockedN <= 0} onClick={() => { const list = docs.filter((d) => picked.has(d.id) && (!d.encrypted || unlocked)); startExport(list, { password: list.some((d) => d.encrypted) ? newPassword() : undefined, format: pickFormat }); stopPicking(); }} className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-brand-500 text-[14px] font-semibold text-white disabled:opacity-40"><Download size={16} /> Exportieren</button>
+          </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
