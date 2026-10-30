@@ -4,6 +4,8 @@ import { zipSync } from "fflate";
 import { clusterOf } from "@/lib/clusters";
 import { downloadFile } from "@/lib/protect";
 import { openBytes } from "@/lib/vault";
+import { openDevice, sealDevice } from "@/lib/devicekey";
+import { supabase } from "@/lib/supabase";
 import type { Doc } from "@/lib/types";
 
 /**
@@ -31,24 +33,46 @@ export function updateJob(id: string, patch: Partial<Job>) {
 export function dismissJob(id: string) { jobs = jobs.filter((j) => j.id !== id); emit(); }
 
 /* ---------- gespeicherte Downloads ---------- */
-export type SavedDownload = { id: string; name: string; created: string; count: number; size: number; blob: Blob; password?: string };
-const DB = "lifevault-downloads", STORE = "zips", KEEP = 20;
+/*
+ * Fertige Exporte bleiben 7 Tage in diesem Browser, verschlüsselt mit dem Geräteschlüssel (lib/devicekey.ts)
+ * und dem Konto zugeordnet: Wer sich im selben Browser anders anmeldet, sieht sie nicht. Ein Export-Passwort
+ * wird nie gespeichert – es steht nur einmal in der Meldung nach dem Export. Abmelden löscht alles.
+ */
+export type SavedDownload = { id: string; name: string; created: string; count: number; size: number; locked: boolean; load: () => Promise<Blob> };
+type Stored = { id: string; user: string; name: string; created: string; count: number; size: number; locked?: boolean; type: string; data: Uint8Array };
+export const DOWNLOADS_DB = "lifevault-downloads";
+const DB = DOWNLOADS_DB, STORE = "zips", KEEP = 20, DAYS = 7;
 const db = () => new Promise<IDBDatabase>((ok, no) => {
-  const r = indexedDB.open(DB, 1);
-  r.onupgradeneeded = () => r.result.createObjectStore(STORE, { keyPath: "id" });
+  const r = indexedDB.open(DB, 2);
+  r.onupgradeneeded = () => {
+    // Version 1 lag unverschlüsselt und ohne Konto: verwerfen
+    if (r.result.objectStoreNames.contains(STORE)) r.result.deleteObjectStore(STORE);
+    r.result.createObjectStore(STORE, { keyPath: "id" });
+  };
   r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error);
 });
 const tx = async <T,>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>) => {
   const d = await db();
   return new Promise<T>((ok, no) => { const q = fn(d.transaction(STORE, mode).objectStore(STORE)); q.onsuccess = () => ok(q.result); q.onerror = () => no(q.error); });
 };
+const currentUser = async () => (await supabase.auth.getSession()).data.session?.user.id;
 export async function listDownloads(): Promise<SavedDownload[]> {
-  try { return ((await tx("readonly", (s) => s.getAll())) as SavedDownload[]).sort((a, b) => b.created.localeCompare(a.created)); } catch { return []; }
+  try {
+    const user = await currentUser();
+    const all = (await tx("readonly", (s) => s.getAll())) as Stored[];
+    const old = all.filter((d) => Date.now() - Date.parse(d.created) > DAYS * 86_400_000);
+    for (const d of old) await tx("readwrite", (s) => s.delete(d.id));
+    return all.filter((d) => user && d.user === user && !old.includes(d)).sort((a, b) => b.created.localeCompare(a.created))
+      .map(({ data, type, user: _u, ...m }) => ({ ...m, locked: !!m.locked, load: async () => new Blob([await openDevice(data) as BlobPart], { type }) }));
+  } catch { return []; }
 }
 export async function deleteDownload(id: string) { try { await tx("readwrite", (s) => s.delete(id)); } catch { /* egal */ } window.dispatchEvent(new Event("lifevault:downloads")); }
-async function saveDownload(d: SavedDownload) {
+async function saveDownload(d: { id: string; name: string; created: string; count: number; size: number; locked: boolean; blob: Blob }) {
   try {
-    await tx("readwrite", (s) => s.put(d));
+    const user = await currentUser();
+    if (!user) return;
+    const data = await sealDevice(new Uint8Array(await d.blob.arrayBuffer()));
+    await tx("readwrite", (s) => s.put({ id: d.id, user, name: d.name, created: d.created, count: d.count, size: d.size, locked: d.locked, type: d.blob.type, data } satisfies Stored));
     for (const old of (await listDownloads()).slice(KEEP)) await tx("readwrite", (s) => s.delete(old.id));
   } catch { /* privater Modus o. Ä.: Download klappt trotzdem */ }
   window.dispatchEvent(new Event("lifevault:downloads"));
@@ -127,7 +151,7 @@ export function startExport(list: Doc[], opts: { password?: string; format?: Exp
         }
       }
       blob ??= opts.password ? await encryptedZip(files, opts.password) : new Blob([zipSync(files) as BlobPart], { type: "application/zip" });
-      const saved: SavedDownload = { id: crypto.randomUUID(), name, created: new Date().toISOString(), count: index.length, size: blob.size, blob, password: opts.password };
+      const saved = { id: crypto.randomUUID(), name, created: new Date().toISOString(), count: index.length, size: blob.size, locked: !!opts.password, blob };
       await saveDownload(saved);
       saveFile(blob, name);
       updateJob(id, {

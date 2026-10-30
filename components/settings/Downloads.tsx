@@ -40,11 +40,11 @@ function Row({ d, compact = false }: { d: SavedDownload; compact?: boolean }) {
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg text-canvas"><FileArchive size={17} /></span>
       <span className="min-w-0 flex-1">
         <b className="block truncate text-[14px]">{d.name}</b>
-        <span className="block truncate text-[12px] text-muted">{when(d.created)} · {d.count} {d.count === 1 ? "Dokument" : "Dokumente"} · {mb(d.size)}{d.password && " · mit Passwort"}</span>
+        <span className="block truncate text-[12px] text-muted">{when(d.created)} · {d.count} {d.count === 1 ? "Dokument" : "Dokumente"} · {mb(d.size)}{d.locked && " · mit Passwort"}</span>
       </span>
-      {d.password && <button type="button" onClick={() => void navigator.clipboard?.writeText(d.password!)} aria-label="Passwort kopieren" title={`Passwort kopieren (${d.password})`} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-soft hover:bg-surface-2"><KeyRound size={15} /></button>}
-      {!compact && <button type="button" onClick={() => void shareExport(d)} aria-label="Per Mail senden" title="Per Mail senden" className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-soft hover:bg-surface-2"><Mail size={15} /></button>}
-      <button type="button" onClick={() => saveFile(d.blob, d.name)} aria-label="Herunterladen" title="Herunterladen" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-3 hover:bg-line"><Download size={16} /></button>
+      {d.locked && <span title="Mit Passwort geschützt – das Passwort wird nicht gespeichert, es stand nur in der Meldung nach dem Export" className="grid h-9 w-9 shrink-0 place-items-center text-muted"><KeyRound size={15} /></span>}
+      {!compact && <button type="button" onClick={() => void d.load().then((blob) => shareExport({ blob, name: d.name }))} aria-label="Per Mail senden" title="Per Mail senden" className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-soft hover:bg-surface-2"><Mail size={15} /></button>}
+      <button type="button" onClick={() => void d.load().then((blob) => saveFile(blob, d.name))} aria-label="Herunterladen" title="Herunterladen" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-3 hover:bg-line"><Download size={16} /></button>
       {!compact && <button type="button" onClick={() => void deleteDownload(d.id)} aria-label="Löschen" title="Löschen" className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-negative-text"><Trash2 size={16} /></button>}
     </div>
   );

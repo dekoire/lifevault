@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Combine, X } from "lucide-react";
 import { Thumb } from "@/components/ChatWidgets";
+import { secureGet, secureSet } from "@/lib/devicekey";
 export { toPdf } from "@/lib/pdfmerge";
 import { MergeSheet } from "@/components/MergeReview";
 import { cardOrder, walletCards } from "@/lib/cards";
@@ -16,8 +17,8 @@ import type { Doc } from "@/lib/types";
 type Group = { ids: string[]; title: string; reason: string; skip?: string[] };
 const GAP = 10 * 60_000;
 const KEY = "lifevault:merge";
-const load = <T,>(k: string, fb: T): T => { try { return JSON.parse(localStorage.getItem(k) ?? "") as T; } catch { return fb; } };
-const save = (k: string, v: unknown) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* egal */ } };
+// verschlüsselt im Browser (Titel und Gründe nennen Dokumente), beim Abmelden gelöscht
+const save = (k: string, v: unknown) => void secureSet(k, v);
 const num = (n: string) => Number(n.match(/\((\d+)\)/)?.[1] ?? 0);
 
 /** Upload-Stapel: Dokumente mit weniger als 10 Minuten Abstand, mindestens 2, aus den letzten 30 Tagen */
@@ -36,12 +37,17 @@ function batches(docs: Doc[]) {
 export function MergeSuggestions({ intro, empty }: { intro?: React.ReactNode; empty?: React.ReactNode } = {}) {
   const { allDocs } = useDocs();
   const stacks = useMemo(() => batches(allDocs), [allDocs]);
-  const [found, setFound] = useState<Record<string, Group[]>>(() => load(`${KEY}:found`, {}));
-  const [gone, setGone] = useState<string[]>(() => load(`${KEY}:dismissed`, []));
+  const [found, setFound] = useState<Record<string, Group[]>>();
+  const [gone, setGone] = useState<string[]>([]);
+  useEffect(() => {
+    void secureGet<Record<string, Group[]>>(`${KEY}:found`).then((v) => setFound((f) => ({ ...(v ?? {}), ...(f ?? {}) })));
+    void secureGet<string[]>(`${KEY}:dismissed`).then((v) => v && setGone((g) => [...new Set([...v, ...g])]));
+  }, []);
   const [open, setOpen] = useState<Group>();
 
   // je Stapel einmal fragen (Ergebnis merken)
   useEffect(() => {
+    if (!found) return; // erst den gemerkten Stand lesen, sonst fragt die KI doppelt
     for (const b of stacks) {
       const key = b.map((d) => d.id).sort().join(",");
       if (found[key]) continue;
@@ -56,7 +62,7 @@ export function MergeSuggestions({ intro, empty }: { intro?: React.ReactNode; em
   const cardGroups: Group[] = walletCards(allDocs).filter((c) => c.docs.length >= 2).map((c) => ({ ...cardOrder(c), title: `${c.label}${c.issuer && c.kind !== "id" ? ` ${c.issuer}` : ""}`, reason: c.docs.length === 2 ? "Vorder- und Rückseite derselben Karte" : `${c.docs.length} Fotos derselben Karte` }));
   // Karten zuerst; KI-Vorschläge mit denselben Fotos weglassen
   const cardIds = new Set(cardGroups.flatMap((g) => g.ids));
-  const groups = [...cardGroups, ...Object.values(found).flat().filter((g) => !g.ids.some((id) => cardIds.has(id)))]
+  const groups = [...cardGroups, ...Object.values(found ?? {}).flat().filter((g) => !g.ids.some((id) => cardIds.has(id)))]
     .map((g) => ({ ...g, docs: g.ids.map((id) => byId.get(id)).filter((d): d is Doc => !!d) }))
     .filter((g) => g.docs.length >= 2 && !gone.includes(g.ids.join(",")));
   if (!groups.length) return <>{empty ?? null}</>;

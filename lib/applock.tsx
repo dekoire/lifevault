@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, LockKeyhole } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { signOutClean } from "@/lib/leave";
 
 /**
  * App-Sperre mit PIN (wie bei Finastry): nach X Minuten ohne Bedienung bleibt man angemeldet, die App ist aber gesperrt,
@@ -62,7 +63,7 @@ function LockScreen() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string>();
   const [wrong, setWrong] = useState(0);
-  const signOut = async () => { set(LOCKED, null); await supabase.auth.signOut(); location.href = "/login"; };
+  const signOut = async () => { set(LOCKED, null); await signOutClean(); };
   return (
     <PinFrame title="Lifevault gesperrt" text="Gib deine PIN ein, um weiterzumachen.">
       <PinInput key={wrong} disabled={busy} error={wrong > 0 && !!msg} onDone={async (pin) => {
