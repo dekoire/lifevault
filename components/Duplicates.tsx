@@ -41,13 +41,13 @@ export function DuplicateHint({ docs }: { docs: Doc[] }) {
   // gleicher Aufbau wie „Zu erledigen“ und „Gehören zusammen?“: schwarzes Symbol, Zahl, Zeilen mit Vorschau und Knopf
   return (
     <section className={`${CARD} overflow-hidden`}>
-      <div className="px-4 pt-4 pb-3">
-        <h2 className="flex items-center gap-2 text-[16px] font-semibold"><Copy size={18} className="shrink-0" /> Doppeltes aufräumen <span className="tnum text-[13px] font-semibold text-fg">{n}</span></h2>
+      <div className="px-4 pt-5 pb-3 md:px-6">
+        <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold"><Copy size={18} className="shrink-0" /> Doppeltes aufräumen <span className="tnum text-[13px] font-semibold text-fg">{n}</span></h2>
         <p className="mt-0.5 text-[13px] text-muted">Gleiches mehrfach abgelegt – eines behalten, den Rest löschen</p>
       </div>
       <ul className="divide-y divide-line border-t border-line">
         {partnerGroups.slice(0, 2).map((g) => (
-          <li key={g.key} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap">
+          <li key={g.key} className="flex flex-wrap items-center gap-3 px-4 py-3.5 md:px-6 sm:flex-nowrap">
             <span className="flex shrink-0 -space-x-2">{g.partners.slice(0, 3).map((p) => <span key={p.name} className="rounded-full ring-2 ring-surface"><SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={32} /></span>)}</span>
             <span className="min-w-0 flex-1">
               <b className="block truncate text-[14px]">{g.partners.map((p) => p.name).slice(0, 3).join(" · ")}{g.partners.length > 3 ? ` +${g.partners.length - 3}` : ""}</b>
@@ -57,7 +57,7 @@ export function DuplicateHint({ docs }: { docs: Doc[] }) {
           </li>
         ))}
         {groups.slice(0, 3).map((g) => (
-          <li key={g.key} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap">
+          <li key={g.key} className="flex flex-wrap items-center gap-3 px-4 py-3.5 md:px-6 sm:flex-nowrap">
             <span className="flex shrink-0 -space-x-4">{g.docs.slice(0, 3).map((d, i) => <span key={d.id} className="h-14 w-11 overflow-hidden rounded-lg border-2 border-surface bg-surface-2 shadow-card" style={{ transform: `rotate(${(i - 1) * 4}deg)` }}><Thumb d={d} /></span>)}</span>
             <span className="min-w-0 flex-1">
               <b className="block truncate text-[14px]">{g.docs[0].title ?? g.docs[0].file_name}</b>

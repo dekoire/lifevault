@@ -65,10 +65,10 @@ export default function PartnersPage() {
         {all.length > 0 && (
           <div className={`${CARD} overflow-hidden`} role="table">
             <SortHeader cols={COLS} sort={sort} onSort={setSort} grid={GRID} />
-            {list.length === 0 ? <p className="px-4 py-6 text-center text-[14px] text-muted">Nichts gefunden – Filter zurücksetzen?</p> : (
+            {list.length === 0 ? <p className="px-4 py-6 text-center md:px-6 text-[14px] text-muted">Nichts gefunden – Filter zurücksetzen?</p> : (
               <div className="divide-y divide-line" role="rowgroup">
                 {list.map((p) => (
-                  <Link key={p.key} href={`/partner/${p.key}`} role="row" className={`flex items-center gap-3 px-4 py-3 hover:bg-surface-2/70 md:grid ${GRID} ${p.active ? "" : "opacity-60"}`}>
+                  <Link key={p.key} href={`/partner/${p.key}`} role="row" className={`flex items-center gap-3 px-4 py-3.5 md:px-6 hover:bg-canvas md:grid ${GRID} ${p.active ? "" : "opacity-60"}`}>
                     <span className="flex min-w-0 flex-1 items-center gap-3">
                       <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={38} />
                       <span className="min-w-0 flex-1">

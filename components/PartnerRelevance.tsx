@@ -77,8 +77,8 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
       {afterMain}
       {/* Überblick: was es hier gibt, auf einen Blick – darunter alle Dokumente kompakt */}
       <section className={`${CARD} overflow-hidden`}>
-        <div className="px-4 pt-3.5 pb-3">
-          <span className="flex items-center gap-2.5 text-[15px] font-semibold"><Badge icon={Files} color="#111827" /> Überblick</span>
+        <div className="px-4 pt-5 pb-3 md:px-6">
+          <span className="flex items-center gap-2.5 text-[18px] leading-[26px] font-semibold"><Badge icon={Files} color="#111827" /> Überblick</span>
           <p className="mt-1 text-[13px] leading-5 text-soft">{docs.length} {docs.length === 1 ? "Dokument" : "Dokumente"}{first ? ` von ${fmtDate(iso(first))} bis ${fmtDate(iso(last))}` : ""}{last ? <>, zuletzt <b className="font-semibold text-fg">{last.title ?? last.file_name}</b></> : null}.</p>
         </div>
         <div className="grid grid-cols-4 divide-x divide-line border-t border-line text-center">
@@ -93,7 +93,7 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
             return (
               <li key={d.id}>
                 {/* wie die übrigen Dokumentzeilen: Vorschau des Blatts, Titel, Art und Datum, darunter worum es geht */}
-                <Link href={`/d/${d.id}`} className={`flex items-start gap-3 px-4 py-3 hover:bg-surface-2/70 ${gone ? "opacity-70" : ""}`}>
+                <Link href={`/d/${d.id}`} className={`flex items-start gap-3 px-4 py-3.5 md:px-6 hover:bg-canvas ${gone ? "opacity-70" : ""}`}>
                   <span className="relative h-[52px] w-10 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2">
                     <Thumb d={d} />
                     {gone && <span className="absolute -right-1 -bottom-1 grid h-5 w-5 place-items-center rounded-full bg-surface text-positive-text"><CircleCheck size={15} /></span>}
@@ -115,10 +115,10 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
         if (!list.length) return null;
         return (
           <section key={b.id} className={`${CARD} overflow-hidden`}>
-            <button type="button" onClick={() => setOpen({ ...open, [b.id]: !open[b.id] })} aria-expanded={open[b.id]} className="flex w-full items-start gap-3 px-4 py-3.5 text-left hover:bg-surface-2/60">
+            <button type="button" onClick={() => setOpen({ ...open, [b.id]: !open[b.id] })} aria-expanded={open[b.id]} className="flex w-full items-start gap-3 px-4 py-4 text-left md:px-6 hover:bg-surface-2/60">
               <Badge icon={b.icon} color={b.color} />
               <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-2 text-[15px] font-semibold">{b.title}<span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] text-soft">{list.length}</span></span>
+                <span className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">{b.title}<span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] text-soft">{list.length}</span></span>
                 <span className="block text-[13px] text-muted">{b.hint}</span>
               </span>
               <ChevronDown size={16} className={`mt-1 shrink-0 text-muted transition-transform ${open[b.id] ? "rotate-180" : ""}`} />
@@ -127,7 +127,7 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
               <ul className="divide-y divide-line border-t border-line">
                 {list.map((d) => (
                   <li key={d.id}>
-                    <Link href={`/d/${d.id}`} className={`flex items-start gap-3 px-4 py-3 hover:bg-surface-2/70 ${b.id === "erledigt" || b.id === "doppelt" ? "opacity-75" : ""}`}>
+                    <Link href={`/d/${d.id}`} className={`flex items-start gap-3 px-4 py-3.5 md:px-6 hover:bg-canvas ${b.id === "erledigt" || b.id === "doppelt" ? "opacity-75" : ""}`}>
                       {/* wie im Überblick: Vorschaubild, Titel, Art und Datum, darunter warum es hier steht */}
                       <span className="relative h-[52px] w-10 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2">
                         <Thumb d={d} />

@@ -104,7 +104,7 @@ export default function Home() {
                 </section>
               )}
               <section>
-                <h2 className="mb-3 text-[17px] font-semibold">Bereiche</h2>
+                <h2 className="mb-3 text-[18px] leading-[26px] font-semibold">Bereiche</h2>
                 {counts.size === 0 && !loading && <p className="mb-3 text-[14px] text-muted">Noch nichts abgelegt. Fotografiere ein Dokument oder lade ein PDF hoch – Lifevault sortiert es automatisch in einen dieser Bereiche.</p>}
                 {/* alle Bereiche: belegte zuerst, leere blass mit Beschreibung, was hineingehört */}
                 <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
@@ -129,7 +129,7 @@ export default function Home() {
               <AdviceList />
               {recent.length > 0 && (
                 <section className={`${CARD} overflow-hidden`}>
-                  <h2 className="px-4 pt-4 pb-3 text-[16px] font-semibold">Zuletzt hinzugefügt</h2>
+                  <h2 className="px-4 pt-5 pb-3 md:px-6 text-[18px] leading-[26px] font-semibold">Zuletzt hinzugefügt</h2>
                   <RecentTable docs={recent} />
                 </section>
               )}

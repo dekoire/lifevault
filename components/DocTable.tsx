@@ -90,7 +90,7 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
   const table = (
     <>
       <SortHeader cols={cols} sort={sort} onSort={setSort} grid={grid} />
-      {list.length === 0 ? <p className="px-4 py-6 text-center text-[14px] text-muted">{filtered ? "Nichts gefunden – Filter zurücksetzen?" : empty}</p> : (
+      {list.length === 0 ? <p className="px-4 py-6 text-center md:px-6 text-[14px] text-muted">{filtered ? "Nichts gefunden – Filter zurücksetzen?" : empty}</p> : (
         <div className="divide-y divide-line" role="rowgroup">
           {shown.map((d) => <Row key={d.id} d={d} grid={grid} cluster={cluster} sender={sender} />)}
         </div>
@@ -100,8 +100,8 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
   );
   if (title) return (
     <section className={`${CARD} overflow-hidden`}>
-      <div className="space-y-3 px-4 pt-4 pb-3">
-        <h2 className="flex items-center gap-2 text-[16px] font-semibold">{title}<span className="tnum rounded-full bg-surface-2 px-2 py-px text-[12px] font-bold">{list.length}</span></h2>
+      <div className="space-y-3 px-4 pt-5 pb-3 md:px-6">
+        <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">{title}<span className="tnum rounded-full bg-surface-2 px-2 py-px text-[12px] font-bold">{list.length}</span></h2>
         {bar}
         {chip}
       </div>
@@ -121,7 +121,7 @@ function Row({ d, grid, cluster, sender }: { d: Doc; grid: string; cluster: bool
   const processing = d.status === "processing";
   const title = processing ? d.file_name : d.title ?? d.file_name;
   return (
-    <Link href={`/d/${d.id}`} role="row" className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2/70 md:grid md:items-center ${grid} ${d.archived ? "opacity-60" : ""}`}>
+    <Link href={`/d/${d.id}`} role="row" className={`flex items-center gap-3 px-4 py-3.5 md:px-6 transition-colors hover:bg-canvas md:grid md:items-center ${grid} ${d.archived ? "opacity-60" : ""}`}>
       <span className="flex min-w-0 flex-1 items-center gap-3">
         <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} urgent={isUrgent(d)} size={36} />
         <span className="min-w-0 flex-1">
