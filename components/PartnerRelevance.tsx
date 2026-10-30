@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronDown, CircleCheck, Copy, FileText, Files, Info, Receipt, Star } from "lucide-react";
 import { ImportanceDots } from "@/components/Importance";
 import { KindTag } from "@/components/KindTag";
+import { Thumb } from "@/components/ChatWidgets";
 import { CARD } from "@/components/ui";
 import { fmtDate } from "@/lib/docs";
 import { findDuplicates } from "@/lib/dupes";
@@ -85,11 +86,17 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
             const gone = b === "erledigt" || b === "doppelt";
             return (
               <li key={d.id}>
-                <Link href={`/d/${d.id}`} className={`flex items-center gap-2.5 px-4 py-2 text-[13.5px] hover:bg-surface-2/70 ${gone ? "text-muted" : ""}`}>
-                  {gone ? <CircleCheck size={14} className="shrink-0 text-positive-text" /> : <span className="w-[14px] shrink-0" />}
-                  <span className={`min-w-0 flex-1 truncate ${gone ? "" : "font-medium"}`}>{d.title ?? d.file_name}</span>
-                  <span className="hidden shrink-0 sm:inline"><KindTag d={d} /></span>
-                  <span className="tnum w-[4.6rem] shrink-0 text-right text-[12px] text-muted">{d.doc_date ? fmtDate(d.doc_date) : "ohne Datum"}</span>
+                {/* wie die übrigen Dokumentzeilen: Vorschau des Blatts, Titel, Art und Datum, darunter worum es geht */}
+                <Link href={`/d/${d.id}`} className={`flex items-start gap-3 px-4 py-3 hover:bg-surface-2/70 ${gone ? "opacity-70" : ""}`}>
+                  <span className="relative h-[52px] w-10 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2">
+                    <Thumb d={d} />
+                    {gone && <span className="absolute -right-1 -bottom-1 grid h-5 w-5 place-items-center rounded-full bg-surface text-positive-text"><CircleCheck size={15} /></span>}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <b className="block truncate text-[14.5px] leading-5 font-semibold">{d.title ?? d.file_name}</b>
+                    <span className="mt-0.5 flex min-w-0 items-center gap-2 text-[12.5px] text-muted"><KindTag d={d} /><span className="tnum truncate">{d.doc_date ? fmtDate(d.doc_date) : "ohne Datum"}</span></span>
+                    {d.summary && <span className="mt-0.5 line-clamp-1 block text-[12.5px] leading-[18px] text-soft">{d.summary}</span>}
+                  </span>
                 </Link>
               </li>
             );
