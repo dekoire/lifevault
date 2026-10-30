@@ -25,7 +25,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { PressFeedback } from "@/components/PressFeedback";
 import { KeyboardWatch } from "@/components/KeyboardWatch";
-import { Avatar, AvatarMenu, nameFromEmail } from "@/components/AvatarMenu";
+import { AvatarMenu } from "@/components/AvatarMenu";
 import { supabase, useSession } from "@/lib/supabase";
 import { takeNext } from "@/lib/next";
 
@@ -136,12 +136,8 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
             return <Link key={href} href={href} aria-current={on ? "page" : undefined} title={mini ? label : undefined} className={`relative flex h-11 min-w-0 items-center gap-2.5 rounded-xl text-[13px] font-medium transition-colors duration-[120ms] ${mini ? "mx-auto w-11 justify-center px-0" : "px-3"} ${on ? "bg-fg text-canvas shadow-xs" : "text-soft hover:bg-surface-2 hover:text-fg"}`}><Icon size={18} strokeWidth={1.75} className="shrink-0" />{!mini && label}</Link>;
           })}
         </nav>
-        <Link href="/einstellungen" className={`mt-auto flex items-center gap-2.5 rounded-xl p-2 hover:bg-surface-2 ${mini ? "justify-center" : ""}`} title={`${nameFromEmail(email)} · Einstellungen`}>
-          <Avatar email={email} />
-          {!mini && <><span className="min-w-0 flex-1"><b className="block truncate text-[13px]">{nameFromEmail(email)}</b><span className="block truncate text-[12px] text-muted">{email}</span></span><Settings size={16} className="shrink-0 text-muted" /></>}
-        </Link>
         {/* Einklappen unten, wie in Finastry */}
-        <div className={`-mb-2 mt-2 border-t border-line pt-2 ${mini ? "-mx-2.5 px-2.5" : "-mx-3 px-3"}`}>
+        <div className={`-mb-2 mt-auto border-t border-line pt-2 ${mini ? "-mx-2.5 px-2.5" : "-mx-3 px-3"}`}>
           <button type="button" onClick={toggleMini} aria-label={mini ? "Seitenleiste ausklappen" : "Seitenleiste einklappen"} title={mini ? "Ausklappen" : "Einklappen"}
             className={`flex h-10 w-full items-center gap-3 rounded-lg text-[13px] font-medium text-muted hover:bg-surface-2 hover:text-fg ${mini ? "justify-center" : "px-3"}`}>
             {mini ? <ChevronsRight size={20} strokeWidth={1.75} /> : <ChevronsLeft size={20} strokeWidth={1.75} />}
