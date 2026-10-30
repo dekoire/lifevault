@@ -3,10 +3,11 @@ import { IconAvatar } from "@/components/ListControls";
 import { KINDS, kindOf } from "@/lib/kinds";
 import type { Doc } from "@/lib/types";
 
-/** Kleine Pill mit der Dokumentart (Vertrag, Rechnung, Mahnung …) */
+/** Dokumentart (Vertrag, Rechnung, Mahnung …) schlicht: schwarzes Symbol + Wort, ohne Fläche und Rahmen */
 export function KindTag({ d }: { d: Pick<Doc, "doc_type" | "title"> }) {
   const k = kindOf(d);
-  return <span className="inline-flex shrink-0 items-center rounded-full px-1.5 py-px text-[11px] leading-4 font-semibold" style={{ background: `${k.color}14`, color: k.color }} title={d.doc_type ?? k.label}>{k.short}</span>;
+  const Icon = KIND_ICONS[k.id] ?? Mail;
+  return <span className="inline-flex shrink-0 items-center gap-1 text-[12px] leading-4 font-semibold text-fg" title={d.doc_type ?? k.label}><Icon size={13} strokeWidth={2.2} className="shrink-0" />{k.short}</span>;
 }
 
 const KIND_ICONS: Record<string, LucideIcon> = {
