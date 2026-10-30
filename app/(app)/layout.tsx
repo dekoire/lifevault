@@ -134,7 +134,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
         <nav className="grid gap-1">
           {NAV.filter((n) => n.href !== "/einstellungen").map(({ href, label, icon: Icon, match }) => {
             const on = match(path);
-            return <Link key={href} href={href} aria-current={on ? "page" : undefined} title={mini ? label : undefined} className={`relative flex h-11 min-w-0 items-center gap-2.5 rounded-xl text-[13px] font-medium transition-colors duration-[120ms] ${mini ? "mx-auto w-11 justify-center px-0" : "px-3"} ${on ? "bg-fg text-canvas shadow-xs" : "text-soft hover:bg-surface-2 hover:text-fg"}`}><Icon size={18} strokeWidth={1.75} className="shrink-0" />{!mini && label}</Link>;
+            return <Link key={href} href={href} aria-current={on ? "page" : undefined} title={mini ? label : undefined} className={`relative flex h-11 min-w-0 items-center gap-2.5 rounded-xl text-[13px] font-medium transition-colors duration-[120ms] ${mini ? "mx-auto w-11 justify-center px-0" : "px-3"} ${on ? "bg-brand-500 text-white shadow-[0_6px_16px_-4px_rgb(109_74_255/.45),0_2px_4px_-1px_rgb(109_74_255/.25)]" : "text-soft hover:bg-surface-2 hover:text-fg"}`}><Icon size={18} strokeWidth={1.75} className="shrink-0" />{!mini && label}</Link>;
           })}
         </nav>
         {/* Einklappen unten, wie in Finastry */}

@@ -1,6 +1,7 @@
 "use client";
+import { Panel } from "@/components/Panel";
 import Link from "next/link";
-import { ChevronDown, Link2 } from "lucide-react";
+import { ChevronDown, Crown, Link2 } from "lucide-react";
 import { IMPORTANCE, importanceLabel, importanceOf, roleLabel } from "@/lib/importance";
 import { useDocs } from "@/lib/docs";
 import { supabase } from "@/lib/supabase";
@@ -100,34 +101,32 @@ export function ImportanceCard({ doc, onChange }: { doc: Doc; onChange: (d: Doc)
     children.length > 0 && { k: "Grundlage für", v: <>{children.slice(0, 3).map(docLink)}{children.length > 3 && <span className="text-muted">+ {children.length - 3} weitere</span>}</> },
   ].filter((r): r is { k: string; v: React.JSX.Element } => !!r);
   return (
-    <section className="rounded-2xl border border-card-line bg-surface shadow-card">
-      <div className="px-5 pt-5 pb-4">
-        <div className="flex items-start gap-3">
-          <span className="min-w-0 flex-1">
-            <span className="block text-[13px] font-medium text-muted">Wichtigkeit</span>
-            <b className="block text-[19px] leading-7">{importanceLabel(value)}</b>
-          </span>
-          <label className={`${CHIP} relative mt-1 shrink-0 cursor-pointer text-soft hover:bg-surface-2`} title="Wichtigkeit ändern">
+    <Panel title="Wichtigkeit" icon={Crown} color="#6d4aff" sub={importanceLabel(value)} defaultOpen={false}
+      aside={<ImportanceDots value={value} />}>
+      <div className="px-5 py-4">
+        <div className="flex items-center gap-3">
+          <b className="min-w-0 flex-1 text-[16px]">{importanceLabel(value)}</b>
+          <label className={`${CHIP} relative shrink-0 cursor-pointer text-soft hover:bg-surface-2`} title="Wichtigkeit ändern">
             Ändern
             <ChevronDown size={12} className="text-muted" />
-          <select aria-label="Wichtigkeit" value={value} onChange={(e) => void save(Number(e.target.value))} className="absolute inset-0 cursor-pointer opacity-0">
-            {IMPORTANCE.map((x) => <option key={x.value} value={x.value}>{x.value} – {x.label}</option>)}
+            <select aria-label="Wichtigkeit" value={value} onChange={(e) => void save(Number(e.target.value))} className="absolute inset-0 cursor-pointer opacity-0">
+              {IMPORTANCE.map((x) => <option key={x.value} value={x.value}>{x.value} – {x.label}</option>)}
             </select>
           </label>
         </div>
         {/* Stufe als Balken: 1 Unwichtig … 5 Unverzichtbar */}
-        <div className="mt-2 grid grid-cols-5 gap-1" aria-hidden>
+        <div className="mt-3 grid grid-cols-5 gap-1" aria-hidden>
           {[1, 2, 3, 4, 5].map((i) => <span key={i} className="h-1.5 rounded-full" style={{ background: i <= value ? `color-mix(in srgb, var(--color-brand-500) ${40 + i * 12}%, transparent)` : "var(--color-line)" }} />)}
         </div>
         <div className="mt-1 flex justify-between text-[11px] text-muted"><span>unwichtig</span><span>unverzichtbar</span></div>
-        {reason && <p className="mt-2 text-[13px] leading-5 text-soft"><b className="font-semibold text-fg">Warum: </b>{reason}</p>}
+        {reason && <p className="mt-3 text-[13px] leading-5 text-soft"><b className="font-semibold text-fg">Warum: </b>{reason}</p>}
         {doc.importance_manual && <p className="mt-1 text-[12px] text-muted">Von dir festgelegt – bleibt beim Neubewerten.</p>}
       </div>
       {rows.length > 0 && (
-        <dl className="divide-y divide-line border-t border-line text-[13px]">
-          {rows.map((r) => <div key={r.k} className="grid grid-cols-[7rem_minmax(0,1fr)] gap-2 px-5 py-3"><dt className="text-muted">{r.k}</dt><dd className="min-w-0 space-y-0.5">{r.v}</dd></div>)}
+        <dl className="border-t border-line px-2 py-2 text-[13px]">
+          {rows.map((r) => <div key={r.k} className="grid grid-cols-[7rem_minmax(0,1fr)] gap-2 rounded-xl px-3 py-2.5"><dt className="text-muted">{r.k}</dt><dd className="min-w-0 space-y-0.5">{r.v}</dd></div>)}
         </dl>
       )}
-    </section>
+    </Panel>
   );
 }

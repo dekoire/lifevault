@@ -1,7 +1,9 @@
 "use client";
+import { Panel } from "@/components/Panel";
+import { IconTile } from "@/components/ClusterIcon";
 import Link from "next/link";
 import { useMemo } from "react";
-import { AlertCircle, Check, BookOpen, FileQuestion, FileSignature, Info, PenLine, Crown, Receipt, Scale, Wallet } from "lucide-react";
+import { AlertCircle, Check, Network, BookOpen, FileQuestion, FileSignature, Info, PenLine, Crown, Receipt, Scale, Wallet } from "lucide-react";
 import { KindTag } from "@/components/KindTag";
 import { SenderLogo } from "@/components/SenderLogo";
 import { ImportanceDots } from "@/components/Importance";
@@ -114,103 +116,79 @@ export function RelationGraph({ doc }: { doc: Doc }) {
     const here = d.id === doc.id;
     return (
       <li>
-        <Link href={`/d/${d.id}`} className={`flex items-start gap-2.5 rounded-xl bg-surface px-2.5 py-2 text-[13px] text-fg shadow-[0_1px_2px_rgba(16,24,40,.08)] transition hover:-translate-y-px hover:shadow-card ${here ? "ring-2 ring-fg" : ""}`}>
-          {/* links der Absender als Avatar – man sieht sofort, von wem */}
-          <span className="mt-0.5 shrink-0"><SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={30} /></span>
+        <Link href={`/d/${d.id}`} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-canvas ${here ? "bg-brand-500/[.06]" : ""}`}>
+          <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={30} />
           <span className="min-w-0 flex-1">
-            <span className="line-clamp-2 leading-[18px]">{w >= 4 && <Crown size={12} strokeWidth={2.2} className="mr-1 inline -translate-y-px text-fg" aria-label="wichtig" />}{short(d.title ?? d.file_name)}</span>
-            <span className="tnum block text-[12px] text-muted">{when(d)}{here ? " · du bist hier" : ""}</span>
-            {(due || finished(d)) && <DueChip d={d} />}
+            <span className="block truncate text-[14px] font-semibold">{w >= 4 && <Crown size={12} strokeWidth={2.2} className="mr-1 inline -translate-y-px" aria-label="wichtig" />}{short(d.title ?? d.file_name)}</span>
+            <span className="tnum flex items-center gap-2 text-[12px] text-muted">{when(d)}{here ? " · du bist hier" : ""}{(due || finished(d)) && <DueChip d={d} />}</span>
           </span>
-          <span className="mt-[6px] shrink-0"><ImportanceDots value={w} size={4} /></span>
+          <ImportanceDots value={w} size={4} />
         </Link>
       </li>
     );
   };
 
+
   const [current, ...older] = data.versions;
   return (
-    <section className={`${CARD} mt-4 p-5 md:p-6`}>
-      <h2 className="text-[18px] leading-[26px] font-semibold">{data.health ? `Verlauf bei ${data.name}` : "So hängt alles zusammen"}</h2>
-      <p className="mt-0.5 text-[13px] text-muted">{data.health ? "Alles in zeitlicher Reihenfolge, das Neueste oben. Krone = wichtig, rot = da musst du etwas tun." : "Oben der Vertrag, darunter alles, was dazugehört – nach Bedeutung sortiert. Krone = wichtig, rot = da musst du etwas tun."}</p>
-
-      {/* Vertrag: aktuelle Fassung oben, frühere darunter (beim Arzt meist keiner – dann nur der Verlauf) */}
-      {(current || !data.health) && <div className="mt-4 flex flex-col items-center">
+    <div className="mt-4">
+    <Panel title={data.health ? `Verlauf bei ${data.name}` : "So hängt alles zusammen"} icon={Network} color="#475569"
+      sub={data.health ? "Das Neueste oben · Krone = wichtig" : "Vertrag oben, darunter was dazugehört"} defaultOpen={false}>
+      <div className="px-5 py-4">
+      {/* Vertrag: aktuelle Fassung oben, frühere darunter */}
+      {(current || !data.health) && <div className="space-y-2">
         {current ? (
-          <Link href={`/d/${current.id}`} className={`w-full max-w-sm rounded-2xl bg-brand-500 px-4 py-3 text-center text-white shadow-card hover:brightness-105 ${current.id === doc.id ? "ring-4 ring-brand-500/25" : ""}`}>
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-white/80 uppercase"><FileSignature size={12} /> Vertrag · aktuelle Fassung{current.id === doc.id ? " · du bist hier" : ""}</span>
-            <b className="block truncate text-[15px] leading-6">{short(current.title ?? current.file_name)}</b>
-            <span className="block text-[12px] text-white/80">{data.name} · {current.doc_type ?? "Vertrag"} vom {fmtDate(dateOf(current))}</span>
+          <Link href={`/d/${current.id}`} className={`flex items-center gap-3 rounded-2xl bg-brand-500 px-4 py-3.5 text-white hover:brightness-105 ${current.id === doc.id ? "ring-4 ring-brand-500/25" : ""}`}>
+            <FileSignature size={20} className="shrink-0" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[12px] text-white/80">Vertrag · aktuelle Fassung{current.id === doc.id ? " · du bist hier" : ""}</span>
+              <b className="block truncate text-[15px] leading-6">{short(current.title ?? current.file_name)}</b>
+            </span>
+            <span className="tnum shrink-0 text-[12px] text-white/80">{fmtDate(dateOf(current))}</span>
           </Link>
         ) : (
-          <div className="w-full max-w-sm rounded-2xl border border-card-line bg-surface-2 px-5 py-4 text-center">
-            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-muted"><FileQuestion size={13} /> Kein Vertrag hinterlegt</span>
-            <b className="block text-[15px] leading-6">{data.name}</b>
-            <span className="block text-[12px] text-muted">Lade den Vertrag hoch – dann siehst du hier, was gilt und was dazugehört.</span>
+          <div className="flex items-center gap-3 rounded-2xl border border-card-line bg-canvas px-4 py-3.5">
+            <IconTile icon={FileQuestion} color="#64748b" size={32} />
+            <span className="min-w-0"><b className="block text-[14px]">Kein Vertrag hinterlegt</b><span className="block text-[12px] text-muted">Lade den Vertrag hoch – dann siehst du hier, was gilt.</span></span>
           </div>
         )}
         {older.map((v) => (
-          <div key={v.id} className="flex w-full max-w-xs flex-col items-center">
-            <span className="h-3 w-px bg-line-strong" aria-hidden />
-            <Link href={`/d/${v.id}`} className={`w-full rounded-xl border border-card-line bg-surface-2 px-3 py-2 text-center opacity-80 hover:opacity-100 ${v.id === doc.id ? "ring-2 ring-brand-500/40" : ""}`}>
-              <span className="block text-[11px] font-semibold tracking-wide text-muted uppercase">Frühere Fassung{v.id === doc.id ? " · du bist hier" : ""}</span>
-              <span className="block truncate text-[13px] font-semibold">{short(v.title ?? v.file_name)}</span>
-              <span className="block text-[12px] text-muted">{fmtDate(dateOf(v))}{v.archived ? " · nicht mehr gültig" : ""}</span>
-            </Link>
-          </div>
+          <Link key={v.id} href={`/d/${v.id}`} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-soft hover:bg-canvas ${v.id === doc.id ? "bg-brand-500/[.06]" : ""}`}>
+            <FileSignature size={16} className="shrink-0" />
+            <span className="min-w-0 flex-1 truncate text-[13px]"><b className="font-semibold text-fg">Frühere Fassung</b> · {short(v.title ?? v.file_name)}</span>
+            <span className="tnum shrink-0 text-[12px] text-muted">{fmtDate(dateOf(v))}</span>
+          </Link>
         ))}
       </div>}
 
-      {/* Gesundheit: zeitlicher Verlauf mit Jahren statt Gruppen */}
+      {/* Gesundheit: zeitlicher Verlauf */}
       {data.health && data.timeline.length > 0 && (
-        <ol className="mt-4">
-          {data.timeline.slice(0, 14).map((d, i, list) => {
-            const y = dateOf(d).slice(0, 4);
-            const due = open(d);
-            const here = d.id === doc.id;
-            return (
-              <li key={d.id}>
-                {y !== (i ? dateOf(list[i - 1]).slice(0, 4) : "") && <p className="tnum mt-1 mb-1 text-[12px] font-bold text-soft">{y}</p>}
-                <Link href={`/d/${d.id}`} className={`relative ml-1 flex gap-3 border-l-2 border-line py-1.5 pl-4 hover:bg-surface-2/60 ${here ? "bg-brand-500/[.06]" : ""}`}>
-                  <span className={`absolute top-3 -left-[6px] h-2.5 w-2.5 rounded-full ring-2 ring-surface ${here ? "bg-brand-500" : due ? "bg-negative" : finished(d) ? "bg-positive" : "bg-line-strong"}`} aria-hidden />
-                  {(() => { const k = knownDate(d, docs); return <span className="tnum w-12 shrink-0 pt-px text-[12px] text-muted" title={k.how === "dokument" ? "Datum auf dem Dokument" : k.how === "mappe" ? "Datum der Mappe, aus der das Blatt stammt" : "kein Datum auf dem Dokument – Eingang"}>{fmtDate(k.iso).slice(0, 6)}{k.how !== "dokument" && <span className="block text-[10px] leading-3">{k.how === "mappe" ? "Mappe" : "Eingang"}</span>}</span>; })()}
-                  <span className="min-w-0 flex-1">
-                    <span className="line-clamp-2 text-[14px] leading-[18px] font-semibold">{weight(d) >= 4 && <Crown size={12} strokeWidth={2.2} className="mr-1 inline text-fg" aria-label="wichtig" />}{short(d.title ?? d.file_name)}</span>
-                    <span className="mt-0.5 flex items-center gap-2 text-[12px] text-muted"><KindTag d={d} />{here && "du bist hier"}<DueChip d={d} /></span>
-                  </span>
-                  <span className="mt-1.5 shrink-0"><ImportanceDots value={weight(d)} size={4} /></span>
-                </Link>
-              </li>
-            );
-          })}
-          {data.timeline.length > 14 && <li><Link href={`/partner/${data.partner}`} className="mt-1 block pl-5 text-[12px] font-semibold text-selected hover:underline">+ {data.timeline.length - 14} frühere</Link></li>}
-        </ol>
+        <ul className="-mx-3">
+          {data.timeline.slice(0, 14).map((d) => <Leaf key={d.id} d={d} />)}
+          {data.timeline.length > 14 && <li><Link href={`/partner/${data.partner}`} className="block px-3 py-2 text-[13px] font-semibold text-selected hover:underline">+ {data.timeline.length - 14} frühere</Link></li>}
+        </ul>
       )}
 
-      {/* darunter: was dazugehört – zentriert, Linie nur so breit wie die Gruppen */}
-      {shown.length > 0 && (
-        <div className="mt-1 flex flex-col items-center">
-          <span className="h-4 w-px bg-line-strong" aria-hidden />
-          <div className={`flex w-full flex-wrap justify-center gap-3 pt-4 sm:w-fit sm:max-w-full ${shown.length > 1 ? "border-t border-line-strong" : ""}`}>
-            {shown.map((g) => {
-              // Gehalt: neueste zuerst; sonst Offenes, dann Wichtiges
-              const list = [...(data.groups.get(g.id) ?? [])].sort((a, b) => Number(!!open(b)) - Number(!!open(a)) || (data.mode === "arbeit" && g.id === "zahlung" ? 0 : weight(b) - weight(a)) || dateOf(b).localeCompare(dateOf(a)));
-              const due = list.filter(open).length;
-              return (
-                <div key={g.id} className="relative w-full rounded-2xl p-2.5 text-white shadow-card sm:w-[270px]" style={{ background: `linear-gradient(160deg, ${GROUP_COLOR[g.id]}, color-mix(in srgb, ${GROUP_COLOR[g.id]} 82%, black))` }}>
-                  <span className="absolute -top-4 left-1/2 h-4 w-px bg-line-strong" aria-hidden />
-                  <div className="px-1.5 pt-0.5 pb-1">
-                    <span className="flex items-center gap-1.5 text-[14px] font-semibold"><span className="opacity-90">{g.icon}</span>{g.title}<span className="tnum ml-auto rounded-full bg-white/20 px-3 text-[12px] font-bold">{list.length}</span></span>
-                    <span className="mt-0.5 block text-[12px] leading-[17px] text-white/80">{due ? <b className="font-semibold text-white">{due} offen · </b> : null}{g.means}</span>
-                  </div>
-                  <ul className="mt-1.5 space-y-1.5">{list.slice(0, 4).map((d) => <Leaf key={d.id} d={d} />)}</ul>
-                  {list.length > 4 && <Link href={`/partner/${data.partner}`} className="mt-2 block px-1.5 text-[12px] font-semibold text-white/90 hover:underline">+ {list.length - 4} weitere</Link>}
-                </div>
-              );
-            })}
+      {/* was dazugehört: Gruppen untereinander, durch Linien getrennt */}
+      {shown.map((g) => {
+        const list = [...(data.groups.get(g.id) ?? [])].sort((a, b) => Number(!!open(b)) - Number(!!open(a)) || (data.mode === "arbeit" && g.id === "zahlung" ? 0 : weight(b) - weight(a)) || dateOf(b).localeCompare(dateOf(a)));
+        const due = list.filter(open).length;
+        return (
+          <div key={g.id} className="mt-4 border-t border-line pt-4">
+            <div className="flex items-center gap-3">
+              <IconTile color={GROUP_COLOR[g.id]} size={32}>{g.icon}</IconTile>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2 text-[15px] font-semibold">{g.title}<span className="tnum rounded-full border border-card-line px-3 py-1 text-[12px] leading-4 text-soft">{list.length}</span></span>
+                <span className="block truncate text-[12px] text-muted">{due ? <b className="font-semibold text-negative-text">{due} offen · </b> : null}{g.means}</span>
+              </span>
+            </div>
+            <ul className="-mx-3 mt-2">{list.slice(0, 4).map((d) => <Leaf key={d.id} d={d} />)}</ul>
+            {list.length > 4 && <Link href={`/partner/${data.partner}`} className="mt-1 inline-block text-[13px] font-semibold text-selected hover:underline">+ {list.length - 4} weitere</Link>}
           </div>
-        </div>
-      )}
-    </section>
+        );
+      })}
+      </div>
+    </Panel>
+    </div>
   );
 }
