@@ -20,6 +20,10 @@ const ERRORS: Record<string, [number, string]> = {
   not_found: [404, "Dokument nicht gefunden oder nicht freigegeben."],
   unsupported_type: [415, "Dateityp nicht unterstützt (PDF, JPEG, PNG, WebP, Text)."],
   too_large: [413, "Datei zu groß."],
+  // OAuth (RFC 6749): Fehlercodes so, wie Apps sie erwarten
+  invalid_client: [401, "App unbekannt, gesperrt oder Geheimnis falsch."],
+  invalid_grant: [400, "Code bzw. Token ungültig, abgelaufen oder schon benutzt."],
+  invalid_request: [400, "Anfrage unvollständig oder ungültig."],
 };
 
 export async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
@@ -76,13 +80,16 @@ export async function uploadDocument(cred: string, input: { fileName: string; mi
   });
 }
 
-export type SearchArgs = { query?: string; project_id?: string; cluster?: string; since?: string; until?: string; include_archived?: boolean; limit?: number; offset?: number };
+export type SearchArgs = { query?: string; project_id?: string; cluster?: string; kinds?: string[]; since?: string; until?: string; include_archived?: boolean; limit?: number; offset?: number };
+/** Dokumentarten wie lib/kinds.ts (Filter „kinds=rechnung,mahnung“) */
+export const KIND_IDS = ["mahnung", "gehalt", "medizin", "ausweis", "angebot", "bescheid", "formular", "bedingungen", "rechnung", "bestaetigung", "vertrag", "schreiben"];
+const kindsOrNull = (v?: string[]) => { const k = (v ?? []).filter((x) => KIND_IDS.includes(x)); return k.length ? k : null; };
 const uuidOrNull = (v?: string) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v : null);
 const dateOrNull = (v?: string) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
 
 export function search(cred: string, a: SearchArgs) {
-  return rpc("api_search", {
-    p_cred: cred, p_query: a.query?.slice(0, 200) ?? null, p_project: uuidOrNull(a.project_id), p_cluster: a.cluster?.slice(0, 30) ?? null,
+  return rpc("api_search_v2", {
+    p_cred: cred, p_query: a.query?.slice(0, 200) ?? null, p_project: uuidOrNull(a.project_id), p_cluster: a.cluster?.slice(0, 30) ?? null, p_kinds: kindsOrNull(a.kinds),
     p_since: dateOrNull(a.since), p_until: dateOrNull(a.until), p_archived: !!a.include_archived,
     p_limit: Number.isFinite(a.limit) ? a.limit : 20, p_offset: Number.isFinite(a.offset) ? a.offset : 0,
   });
@@ -91,4 +98,21 @@ export function search(cred: string, a: SearchArgs) {
 export function getDocument(cred: string, id: string) {
   if (!uuidOrNull(id)) throw new ApiError(404, "not_found", ERRORS.not_found[1]);
   return rpc("api_get_document", { p_cred: cred, p_id: id });
+}
+
+/**
+ * Original-Datei eines Dokuments. Die Datenbank prüft Zugang und Rechte (api_file). Liegt die Datei schon im Speicher,
+ * liest der Server genau diesen einen Pfad im Ordner des Nutzers – mit dem Service-Role-Key, aber erst nach dieser Prüfung
+ * (zweite Ausnahme neben dem Mail-Job, siehe CLAUDE.md).
+ */
+export async function getFile(cred: string, id: string): Promise<{ name: string; mime: string; data: Uint8Array }> {
+  if (!uuidOrNull(id)) throw new ApiError(404, "not_found", ERRORS.not_found[1]);
+  const f = await rpc<{ name: string; mime: string; data?: string; path?: string }>("api_file", { p_cred: cred, p_id: id });
+  if (f.data) return { name: f.name, mime: f.mime, data: Uint8Array.from(Buffer.from(f.data, "base64")) };
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!f.path || !key) throw new ApiError(404, "not_found", ERRORS.not_found[1]);
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data, error } = await admin.storage.from("documents").download(f.path);
+  if (error || !data) throw new ApiError(404, "not_found", ERRORS.not_found[1]);
+  return { name: f.name, mime: f.mime, data: new Uint8Array(await data.arrayBuffer()) };
 }

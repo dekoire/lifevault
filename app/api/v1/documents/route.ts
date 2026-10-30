@@ -2,12 +2,12 @@ import { ApiError, credential, fail, MAX_UPLOAD, ok, search, uploadDocument } fr
 
 export const maxDuration = 300;
 
-/** Dokumente suchen/auflisten: ?q=&project_id=&cluster=&since=&until=&include_archived=&limit=&offset= */
+/** Dokumente suchen/auflisten: ?q=&project_id=&cluster=&kinds=rechnung,mahnung&since=&until=&include_archived=&limit=&offset= */
 export async function GET(req: Request) {
   try {
     const u = new URL(req.url).searchParams;
     return ok(await search(credential(req), {
-      query: u.get("q") ?? undefined, project_id: u.get("project_id") ?? undefined, cluster: u.get("cluster") ?? undefined,
+      query: u.get("q") ?? undefined, project_id: u.get("project_id") ?? undefined, cluster: u.get("cluster") ?? undefined, kinds: u.get("kinds")?.split(",").map((k) => k.trim()),
       since: u.get("since") ?? undefined, until: u.get("until") ?? undefined, include_archived: u.get("include_archived") === "true",
       limit: Number(u.get("limit") ?? 20), offset: Number(u.get("offset") ?? 0),
     }));
