@@ -1,5 +1,6 @@
 "use client";
-import { AlertCircle, CalendarClock, CheckCircle2, ChevronRight, CircleHelp, FileText, ShieldCheck, ShieldX, XCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, CalendarClock, CheckCircle2, ChevronRight, CircleHelp, FileText, Info, ShieldCheck, ShieldX, XCircle } from "lucide-react";
+import { Cite, citeOf } from "@/components/Cite";
 import { useDetail } from "@/components/DetailPanel";
 import { SenderLogo } from "@/components/SenderLogo";
 import { fmtDate, useDocs } from "@/lib/docs";
@@ -9,7 +10,9 @@ import type { Doc } from "@/lib/types";
  * Karten aus dem Chat für Verträge und Versicherungen – die KI liest die Dokumente und füllt die Felder, die App zeigt
  * sie einheitlich mit Logo und Link zum Dokument:
  * - ```konditionen  je Zeile ein JSON: {"id","art","beitrag","laufzeit","kuendigung","kuendbarBis","selbstbeteiligung","leistungen":[],"ausschluesse":[]}
- * - ```deckung      ein JSON: {"frage","urteil":"ja|teilweise|nein|unklar","id","gruende":[],"bedingungen":[],"quelle","naechster"}
+ * - ```deckung      ein JSON: {"frage","urteil":"ja|teilweise|nein|unklar","id","gruende":[],"bedingungen":[],"quelle","naechster","seite","zitat"}
+ * - ```regelungen   ein JSON: {"titel","id","fazit","punkte":[{"thema","regelung","details","ton":"gut|achtung|neutral","id","seite","zitat"}]}
+ * seite/zitat ergeben den lila Verweis [S. 3] – Antippen öffnet das Dokument an der Stelle, markiert.
  */
 const str = (v: unknown, n = 200) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const list = (v: unknown, n = 8) => (Array.isArray(v) ? v.map((x) => str(x, 200)).filter(Boolean).slice(0, n) : []);
@@ -45,6 +48,7 @@ export function ConditionsWidget({ body }: { body: string }) {
         return (
           <article key={i} className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
             <DocHead d={d} title={str(x.art, 80) || d?.title || "Vertrag"} sub={[d?.sender, d && fmtDate(d.doc_date ?? d.received_at)].filter(Boolean).join(" · ")} />
+            {d && (x.zitat || x.seite) ? <p className="-mt-1.5 px-4 pb-2 text-[12px] text-muted">Steht so im Vertrag <Cite {...citeOf(x, d.id)} /></p> : null}
             {facts.length > 0 && (
               <div className="grid grid-cols-2 gap-px border-t border-line bg-line">
                 {facts.map(([l, v]) => <div key={l} className="min-w-0 bg-surface px-4 py-2.5"><span className="block text-[11.5px] text-muted">{l}</span><b className="tnum block text-[14px] leading-5 break-words">{v}</b></div>)}
@@ -107,10 +111,52 @@ export function CoverageWidget({ body }: { body: string }) {
       )}
       {(str(x.quelle) || str(x.naechster)) && (
         <div className="space-y-1 border-t border-line px-4 py-3 text-[12.5px]">
-          {str(x.quelle) && <p className="flex items-center gap-1.5 text-muted"><FileText size={13} className="shrink-0" /> {str(x.quelle)}</p>}
+          {(str(x.quelle) || x.zitat || x.seite) ? <p className="flex items-center gap-1.5 text-muted"><FileText size={13} className="shrink-0" /> {str(x.quelle)}{d && (x.zitat || x.seite) ? <Cite {...citeOf(x, d.id)} /> : null}</p> : null}
           {str(x.naechster) && <p className="font-semibold">→ {str(x.naechster)}</p>}
         </div>
       )}
+    </article>
+  );
+}
+
+const TON = {
+  gut: { icon: CheckCircle2, cls: "text-positive-text", bar: "bg-positive" },
+  achtung: { icon: AlertTriangle, cls: "text-amber", bar: "bg-amber" },
+  neutral: { icon: Info, cls: "text-brand-500", bar: "bg-brand-500" },
+} as const;
+
+/**
+ * „Wie ist der Kündigungsschutz?“, „was steht in meinem Vertrag zu …“ → je Regelung eine Kachel:
+ * Thema, die Regelung in einem Satz, Details klein, Farbe nach Einordnung, lila [S. 3] führt zur Stelle im Dokument.
+ */
+export function RulesWidget({ body }: { body: string }) {
+  const { allDocs } = useDocs();
+  const open = useDetail();
+  const x = objects(body)[0];
+  if (!x) return null;
+  const d = allDocs.find((y) => y.id === str(x.id, 40));
+  const punkte = (Array.isArray(x.punkte) ? x.punkte : []).filter((p): p is Record<string, unknown> => !!p && typeof p === "object" && !!str(p.thema)).slice(0, 12);
+  if (!punkte.length) return null;
+  return (
+    <article className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
+      {d ? <DocHead d={d} title={str(x.titel, 100) || d.title || "Dein Vertrag"} sub={[d.sender, fmtDate(d.doc_date ?? d.received_at)].filter(Boolean).join(" · ")} /> : str(x.titel) && <p className="px-4 pt-3.5 pb-3 text-[15px] font-semibold">{str(x.titel, 100)}</p>}
+      {str(x.fazit) && <p className="border-t border-line bg-surface-2/60 px-4 py-2.5 text-[13.5px] leading-5"><b>Kurz:</b> {str(x.fazit, 300)}</p>}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-px border-t border-line bg-line sm:grid-cols-2">
+        {punkte.map((p, i) => {
+          const t = TON[(str(p.ton, 10).toLowerCase() as keyof typeof TON)] ?? TON.neutral;
+          const c = citeOf(p, d?.id ?? str(x.id, 40));
+          const Icon = t.icon;
+          const go = () => c.id && open?.({ kind: "doc", ...c });
+          return (
+            <div key={i} role={c.id ? "button" : undefined} tabIndex={c.id ? 0 : undefined} onClick={go} onKeyDown={(e) => e.key === "Enter" && go()} className={`relative min-w-0 bg-surface px-4 py-3 ${c.id ? "cursor-pointer hover:bg-surface-2/60" : ""} ${punkte.length % 2 && i === punkte.length - 1 ? "sm:col-span-2" : ""}`}>
+              <span className={`absolute inset-y-3 left-0 w-[3px] rounded-r ${t.bar}`} aria-hidden />
+              <span className="flex items-center gap-1.5 text-[11.5px] font-semibold tracking-wide text-muted uppercase"><Icon size={13} className={`shrink-0 ${t.cls}`} />{str(p.thema, 60)}</span>
+              <p className="mt-1 text-[14px] leading-5 font-semibold">{str(p.regelung, 220)}{c.id && (c.page || c.quote) ? <Cite {...c} /> : null}</p>
+              {str(p.details) && <p className="mt-0.5 text-[12.5px] leading-[18px] text-soft">{str(p.details, 260)}</p>}
+            </div>
+          );
+        })}
+      </div>
     </article>
   );
 }

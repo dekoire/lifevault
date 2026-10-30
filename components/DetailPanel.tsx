@@ -6,7 +6,7 @@ import { openDraft } from "@/components/DraftSheet";
 import { DRAFT_PURPOSES, suggestedPurposes } from "@/lib/drafts";
 import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarClock, Download, ExternalLink, Lock, Maximize2, PenLine, X } from "lucide-react";
+import { ArrowLeft, CalendarClock, Download, ExternalLink, Lock, Maximize2, PenLine, Quote, X } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
 import { Clamp } from "@/components/Clamp";
 import { caseIds } from "@/lib/dupes";
@@ -29,7 +29,8 @@ import type { Doc } from "@/lib/types";
  * Detail von der Seite (wie bei Finastry): Klick auf ein Dokument oder einen Partner im Chat
  * öffnet rechts eine Vorschau – „Groß öffnen“ führt zur vollen Seite.
  */
-export type Detail = { kind: "doc"; id: string } | { kind: "partner"; key: string };
+/** page/quote: von einem Quellenverweis – Panel springt auf die Seite und markiert die Stelle */
+export type Detail = { kind: "doc"; id: string; page?: number; quote?: string } | { kind: "partner"; key: string };
 const Ctx = createContext<((d: Detail) => void) | undefined>(undefined);
 /** Öffnet das Panel; außerhalb eines Hosts undefined (dann sind es normale Links) */
 export const useDetail = () => useContext(Ctx);
@@ -56,7 +57,7 @@ export function DetailHost({ children }: { children: React.ReactNode }) {
                 {stack.length > 1 ? <button type="button" onClick={() => setStack((s) => s.slice(0, -1))} className="inline-flex h-9 items-center gap-1 rounded-full bg-surface-3 pr-3 pl-2 text-[14px] font-semibold hover:bg-line"><ArrowLeft size={16} /> Zurück</button> : <span />}
                 <button type="button" onClick={() => setStack([])} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3 hover:bg-line"><X size={17} /></button>
               </div>
-              {top.kind === "doc" ? <DocDetail id={top.id} open={open} close={() => setStack([])} back={stack.length > 1} /> : <PartnerDetail pkey={top.key} open={open} close={() => setStack([])} back={stack.length > 1} />}
+              {top.kind === "doc" ? <DocDetail key={`${top.id}|${top.page ?? ""}|${top.quote ?? ""}`} id={top.id} page={top.page} quote={top.quote} open={open} close={() => setStack([])} back={stack.length > 1} /> : <PartnerDetail pkey={top.key} open={open} close={() => setStack([])} back={stack.length > 1} />}
             </div>
           </aside>
         </div>
@@ -67,7 +68,7 @@ export function DetailHost({ children }: { children: React.ReactNode }) {
 
 const BTN = "inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-[14px] font-semibold";
 
-function DocDetail({ id, open, close, back = false }: { id: string; open: (d: Detail) => void; close: () => void; back?: boolean }) {
+function DocDetail({ id, page, quote, open, close, back = false }: { id: string; page?: number; quote?: string; open: (d: Detail) => void; close: () => void; back?: boolean }) {
   const { allDocs } = useDocs();
   const [doc, setDoc] = useState<Doc | undefined>(allDocs.find((d) => d.id === id));
   const [url, setUrl] = useState<string>();
@@ -117,10 +118,16 @@ function DocDetail({ id, open, close, back = false }: { id: string; open: (d: De
         <p className="flex items-center gap-2 rounded-xl border border-card-line p-3 text-[13px] text-soft"><Lock size={15} /> Verschlüsselt – Inhalt siehst du in der großen Ansicht nach dem Entsperren.</p>
       ) : (
         <>
-          {doc.summary && <Clamp lines={3} className="text-[14px] leading-6 text-soft">{doc.summary}</Clamp>}
+          {(quote || page) && (
+            <figure className="rounded-xl border-l-[3px] border-brand-500 bg-brand-500/[.06] px-3 py-2.5">
+              <figcaption className="flex items-center gap-1.5 text-[11.5px] font-semibold tracking-wide text-brand-600 uppercase"><Quote size={12} /> Fundstelle{page ? ` · Seite ${page}` : ""}</figcaption>
+              {quote && <blockquote className="mt-1 text-[13.5px] leading-5">„{quote}“</blockquote>}
+            </figure>
+          )}
+          {doc.summary && !(quote || page) && <Clamp lines={3} className="text-[14px] leading-6 text-soft">{doc.summary}</Clamp>}
           {url && (
             <div className="overflow-hidden rounded-xl bg-surface-2">
-              {image ? <a href={`/d/${doc.id}`} onClick={close} className="block bg-surface-2 p-3"><img src={url} alt={doc.title ?? ""} className="mx-auto block h-64 w-full object-contain sm:h-72" /></a> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={url} mime={doc.mime_type} name={doc.file_name} compact /> : doc.mime_type === "application/pdf" ? <PdfPages url={url} card={isCardDoc(doc)} compact bare /> : <iframe src={`${url}#toolbar=0&view=FitH`} title="Vorschau" className="h-80 w-full" />}
+              {image ? <a href={`/d/${doc.id}`} onClick={close} className="block bg-surface-2 p-3"><img src={url} alt={doc.title ?? ""} className="mx-auto block h-64 w-full object-contain sm:h-72" /></a> : officeKind(doc.mime_type, doc.file_name) ? <OfficePreview url={url} mime={doc.mime_type} name={doc.file_name} compact /> : doc.mime_type === "application/pdf" ? <PdfPages url={url} card={isCardDoc(doc)} compact bare focus={quote || page ? { page, quote } : undefined} /> : <iframe src={`${url}#toolbar=0&view=FitH`} title="Vorschau" className="h-80 w-full" />}
             </div>
           )}
           {doc.deadlines?.length > 0 && (

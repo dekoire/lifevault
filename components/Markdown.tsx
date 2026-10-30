@@ -1,5 +1,6 @@
 "use client";
 import { Fragment } from "react";
+import { Cite, parseCite } from "@/components/Cite";
 import { EntityLink } from "@/components/EntityLink";
 
 /** Eurobeträge („711,69 €“, „75 €“, „EUR 12,50“) hervorheben – man sieht sofort, worum es geht */
@@ -16,17 +17,18 @@ function money(text: string, key: string): React.ReactNode[] {
   return out;
 }
 
-/** Kleines Markdown für Chat-Antworten: Absätze, Listen, Überschriften, **fett** und [Links](/d/…); Beträge hervorgehoben */
+/** Kleines Markdown für Chat-Antworten: Absätze, Listen, Überschriften, **fett**, [Links](/d/…) und Quellen [[q:ID|Seite|Zitat]]; Beträge hervorgehoben */
 function inline(text: string, key: string) {
   const parts: React.ReactNode[] = [];
-  const re = /(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g;
+  const re = /(\[\[q:[^\]]+\]\]|\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g;
   let last = 0;
   let m: RegExpExecArray | null;
   let i = 0;
   while ((m = re.exec(text))) {
     if (m.index > last) parts.push(...money(text.slice(last, m.index), `${key}-t${i}`));
     const t = m[0];
-    if (t.startsWith("**")) parts.push(<strong key={`${key}-${i++}`} className="font-semibold">{money(t.slice(2, -2), `${key}-b${i}`)}</strong>);
+    if (t.startsWith("[[q:")) parts.push(<Cite key={`${key}-${i++}`} {...parseCite(t.slice(4, -2))} />);
+    else if (t.startsWith("**")) parts.push(<strong key={`${key}-${i++}`} className="font-semibold">{money(t.slice(2, -2), `${key}-b${i}`)}</strong>);
     else {
       const [, label, href] = /\[([^\]]+)\]\(([^)]+)\)/.exec(t)!;
       parts.push(href.startsWith("/")
@@ -84,7 +86,7 @@ function Chart({ body }: { body: string }) {
 export function Markdown({ text, widget }: { text: string; widget?: (kind: string, body: string) => React.ReactNode }) {
   // Infografik-Blöcke herauslösen, Rest normal darstellen
   // Infografiken (kpi, chart) und Bausteine aus dem Chat (zahlung, partner, dokumente, aufgaben, uebersicht, gehalt, aktion)
-  const parts = text.replace(/\r/g, "").split(/```(kpi|chart|zahlung|partner|dokumente|aufgaben|uebersicht|gehalt|aktion|verlauf|partnerliste|gruppen|konditionen|deckung)\n?([\s\S]*?)(?:```|$)/);
+  const parts = text.replace(/\r/g, "").split(/```(kpi|chart|zahlung|partner|dokumente|aufgaben|uebersicht|gehalt|aktion|verlauf|partnerliste|gruppen|konditionen|deckung|regelungen)\n?([\s\S]*?)(?:```|$)/);
   if (parts.length > 1) {
     const out: React.ReactNode[] = [];
     for (let i = 0; i < parts.length; i += 3) {
