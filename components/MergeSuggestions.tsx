@@ -76,7 +76,6 @@ export function MergeSuggestions({ intro, empty }: { intro?: React.ReactNode; em
     <section className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
       <div className="px-4 pt-5 pb-3 md:px-6">
         <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">Gehören zusammen? <span className="tnum rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold text-soft">{groups.length}</span></h2>
-        <p className="mt-0.5 text-[13px] text-muted">Kurz nacheinander hochgeladen – sieht nach einem Dokument aus</p>
       </div>
       {/* Kopfzeile wie eine Tabelle; Zeile antippen öffnet die Prüfung – dort „Zusammenführen“, „Nicht zusammen“ oder „Später“ */}
       <div className="hidden border-y border-line px-6 py-[18px] text-[12px] font-semibold text-muted sm:flex sm:items-center sm:gap-3">
