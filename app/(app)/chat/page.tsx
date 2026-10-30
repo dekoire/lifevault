@@ -129,7 +129,7 @@ function Chat() {
           )}
         </div>
 
-        <div className={`kb-dock fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-page via-page to-page/0 px-3 pt-6 pb-3 lg:bottom-0 lg:pb-6 ${side ? "lg:left-[calc(var(--side,15rem)+18rem)]" : "lg:left-[var(--side,15rem)]"}`}>
+        <div className={`kb-dock fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-page via-page to-page/0 px-3 pt-6 pb-3 lg:bottom-0 lg:pb-6 ${side ? "lg:left-[calc(var(--side,15.75rem)+18rem)]" : "lg:left-[var(--side,15.75rem)]"}`}>
           {chat.gate && (
             <div className="mx-auto max-w-md">
               <VaultUnlock compact title="Tresor entsperren" onClose={chat.cancelGate}
