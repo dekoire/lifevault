@@ -65,11 +65,12 @@ export function PullToRefresh({ color, onRefresh = () => window.location.reload(
   const r = 9, len = 2 * Math.PI * r;
   return (
     <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-[60] flex justify-center" style={{ transform: `translateY(calc(env(safe-area-inset-top) + ${pull - 44}px))`, transition: start.current === null ? "transform .25s ease" : undefined }}>
-      <span className="grid h-10 w-10 place-items-center rounded-full bg-white shadow-[0_6px_20px_rgba(16,24,40,.18)]" style={{ opacity: Math.max(0.2, p), transform: `scale(${0.7 + 0.3 * p})` }}>
+      {/* umgekehrt: Kreis in der App-Farbe, was sich dreht weiß */}
+      <span className="grid h-10 w-10 place-items-center rounded-full shadow-[0_6px_20px_rgba(16,24,40,.22)]" style={{ background: color, opacity: Math.max(0.2, p), transform: `scale(${0.7 + 0.3 * p})` }}>
         <svg width="24" height="24" viewBox="0 0 24 24" className={busy ? "animate-spin" : ""} style={busy ? undefined : { transform: `rotate(${p * 270}deg)` }}>
-          <circle cx="12" cy="12" r={r} fill="none" stroke={color} strokeOpacity=".18" strokeWidth="2.5" />
-          <circle cx="12" cy="12" r={r} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeDasharray={len} strokeDashoffset={busy ? len * 0.7 : len * (1 - p * 0.85)} transform="rotate(-90 12 12)" />
-          {!busy && <path d="M12 8v7m0 0-3-3m3 3 3-3" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity={p >= 1 ? 1 : 0.6} style={{ transformOrigin: "12px 12px", transform: `rotate(${p >= 1 ? 180 : 0}deg)`, transition: "transform .2s" }} />}
+          <circle cx="12" cy="12" r={r} fill="none" stroke="#fff" strokeOpacity=".3" strokeWidth="2.5" />
+          <circle cx="12" cy="12" r={r} fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeDasharray={len} strokeDashoffset={busy ? len * 0.7 : len * (1 - p * 0.85)} transform="rotate(-90 12 12)" />
+          {!busy && <path d="M12 8v7m0 0-3-3m3 3 3-3" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity={p >= 1 ? 1 : 0.6} style={{ transformOrigin: "12px 12px", transform: `rotate(${p >= 1 ? 180 : 0}deg)`, transition: "transform .2s" }} />}
         </svg>
       </span>
     </div>
