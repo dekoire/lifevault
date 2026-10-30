@@ -10,6 +10,7 @@ import { isBack } from "@/lib/cards";
 import { removeThumbs } from "@/lib/thumbs";
 import { LIST_COLS, type Doc } from "@/lib/types";
 import { extFor, realMime } from "@/lib/sniff";
+import { fileProblem } from "@/lib/filecheck";
 
 export type BatchItem = { key: string; name: string; id?: string; state: "uploading" | "saved" | "failed"; error?: string };
 type Ctx = { batch: BatchItem[]; clearBatch: () => void; docs: Doc[]; allDocs: Doc[]; partsOf: (id: string) => Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null; silent?: boolean; noSplit?: boolean; fromMail?: boolean }) => Promise<string[]>; pendingProtect: number; reprocess: (id: string, password?: string) => Promise<void>; splitDoc: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
@@ -122,6 +123,9 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
         const plain = new Uint8Array(await file.arrayBuffer());
         // ohne Endung (z. B. „Vertragsänderung_23.09.2025“) meldet der Browser keinen Typ – dann am Inhalt erkennen
         const mime = realMime(file.type, plain);
+        // gefährliche Dateien (Skripte im PDF, Makros, Programme) gar nicht erst hochladen
+        const unsafe = fileProblem(plain, mime);
+        if (unsafe) throw new Error(unsafe);
         const ext = extFor(mime) ?? ((/\.([a-z0-9]{1,5})$/i.exec(file.name)?.[1] ?? "bin").toLowerCase());
         const path = `${userId}/${crypto.randomUUID()}.${ext}`;
         // direkt verschlüsselt: nur verschlüsselte Bytes landen im Speicher

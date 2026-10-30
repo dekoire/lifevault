@@ -6,8 +6,9 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont } from "pdf-lib";
  */
 
 // ---------- Anhänge vorsortieren (ohne KI) ----------
-const DOC_MIME = /^(application\/pdf|image\/(jpeg|png|heic|heif|webp)|application\/(msword|vnd\.openxmlformats-officedocument\.[a-z.]+|vnd\.ms-excel|vnd\.ms-powerpoint))$/i;
-const DOC_EXT = /\.(pdf|jpe?g|png|heic|heif|webp|docx?|xlsx?|pptx?)$/i;
+// nur Formate ohne Makros: alte Office-Dateien (.doc/.xls/.ppt) kommen nicht in den Tresor (lib/filecheck.ts)
+const DOC_MIME = /^(application\/pdf|image\/(jpeg|png|heic|heif|webp)|application\/vnd\.openxmlformats-officedocument\.[a-z.]+)$/i;
+const DOC_EXT = /\.(pdf|jpe?g|png|heic|heif|webp|docx|xlsx|pptx)$/i;
 const JUNK = /^(image\d*|logo|banner|signature|unnamed|icon|spacer|facebook|twitter|instagram|linkedin|outlook)[\w-]*\.(png|jpe?g|gif)$/i;
 const MIME_BY_EXT: Record<string, string> = { pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", heic: "image/heic", heif: "image/heif", webp: "image/webp", doc: "application/msword", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", xls: "application/vnd.ms-excel", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ppt: "application/vnd.ms-powerpoint", pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation" };
 
@@ -28,7 +29,11 @@ export function htmlToPlain(html: string): string {
     .replace(/<!--[\s\S]*?-->/g, " ")
     .replace(/<(style|script|head|title|noscript)\b[\s\S]*?<\/\1>/gi, " ")
     // versteckter Vorschautext (display:none, Größe 0)
-    .replace(/<(\w+)\b[^>]*style="[^"]*(?:display\s*:\s*none|max-height\s*:\s*0|font-size\s*:\s*0|opacity\s*:\s*0)[^"]*"[^>]*>[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<(\w+)\b[^>]*style="[^"]*(?:display\s*:\s*none|visibility\s*:\s*hidden|mso-hide\s*:\s*all|max-height\s*:\s*0(?![.\d]*[1-9])|font-size\s*:\s*(?:0|[01](?:\.\d+)?px)(?![.\d])|opacity\s*:\s*0(?:\.0+)?\s*(?:;|"|$))[^"]*"[^>]*>[\s\S]*?<\/\1>/gi, " ")
+    // weiße Schrift auf weißem Grund im selben Element (versteckte Hinweise, z. B. an eine KI)
+    .replace(/<(\w+)\b[^>]*style="(?=[^"]*(?<![-\w])color\s*:\s*(?:#fff(?:fff)?|white|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\))\s*(?:;|"|!))(?=[^"]*background(?:-color)?\s*:\s*(?:#fff(?:fff)?|white|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\)))[^"]*"[^>]*>[\s\S]*?<\/\1>/gi, " ")
+    // HTML-Attribut hidden (nicht type="hidden" o. ä.)
+    .replace(/<(\w+)\b[^>]*\shidden(?=[\s>=/])[^>]*>[\s\S]*?<\/\1>/gi, " ")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(td|th)>/gi, "   ")
     .replace(/<\/?(p|div|tr|li|h[1-6]|table|section|article|header|footer|blockquote)\b[^>]*>/gi, "\n")
