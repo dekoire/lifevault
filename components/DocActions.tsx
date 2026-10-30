@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CalendarClock, Check, ChevronDown, Copy, Euro, ExternalLink, FileText, Globe, Landmark, Mail, MapPin, Phone, QrCode } from "lucide-react";
@@ -161,7 +162,7 @@ function PaymentSection({ doc, codes, links, related, always = false }: { doc: D
         {payLinks.map((l, i) => (
           <div key={l} className="overflow-hidden rounded-xl border border-card-line">
             <a href={l} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3.5 py-3 hover:bg-surface-2">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2"><Globe size={16} /></span>
+              <IconTile icon={Globe} color="#2563eb" size={36} />
               <span className="min-w-0 flex-1"><b className="block text-[14px]">{qrLinks.includes(l) ? "Online bezahlen (QR-Code im Brief)" : "Online bezahlen / Kundenportal"}</b><span className="block truncate text-[12px] text-muted">{host(l)}</span></span>
               <ExternalLink size={14} className="shrink-0 text-muted" />
             </a>

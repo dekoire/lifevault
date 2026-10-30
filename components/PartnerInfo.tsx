@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { Check, ChevronDown, Copy, ExternalLink, Globe, Hash, Landmark, Mail, MapPin, Phone, UserRound, X } from "lucide-react";
 import { SenderLogo } from "@/components/SenderLogo";
 import { contactOf, fmtIban, paymentOf, type Payment } from "@/lib/actions";
-import { ClusterTag } from "@/components/ClusterIcon";
+import { ClusterTag, IconTile } from "@/components/ClusterIcon";
 import { fmtDate } from "@/lib/docs";
 import type { Partner } from "@/lib/partners";
 import type { Doc } from "@/lib/types";
@@ -129,7 +129,7 @@ export function PartnerFacts({ p }: { p: Partner }) {
             {shownBanks.map((b, n) => (
               <div key={b.iban} className={CARD_ROWS}>
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2"><Landmark size={16} /></span>
+                  <IconTile icon={Landmark} color="#0f766e" size={36} />
                   <span className="min-w-0 flex-1">
                     <b className="block truncate text-[14px]">{b.bank ?? b.recipient ?? "Bankverbindung"}</b>
                     <span className="block truncate text-[12px] text-muted">Stand {fmtDate(b.date)} · aus „{b.title}“</span>

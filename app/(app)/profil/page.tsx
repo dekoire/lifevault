@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import { useDetail } from "@/components/DetailPanel";
 import { CardWallet } from "@/components/CardWallet";
 import Link from "next/link";
@@ -127,7 +128,7 @@ export default function ProfilPage() {
       {steck.length > 0 && (
         <section className={`${CARD} mb-4 overflow-hidden`}>
           <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-1">
-            <h2 className="flex items-center gap-2.5 text-[16px] font-semibold"><span className="grid h-8 w-8 place-items-center rounded-full bg-surface-2"><IdCard size={16} /></span>Steckbrief</h2>
+            <h2 className="flex items-center gap-2.5 text-[16px] font-semibold"><IconTile icon={IdCard} size={36} />Steckbrief</h2>
             {person.some((f) => f.earlier.length) && <button type="button" onClick={() => { setShowEarlier(!showEarlier); setAllFields(true); }} className="rounded-full border border-card-line px-3 py-1 text-[13px] font-semibold text-soft hover:text-fg">{showEarlier ? "Nur aktuell" : "Frühere Werte"}</button>}
           </div>
           <p className="px-5 pb-3 text-[12px] text-muted">Jeweils der neueste Stand aus deinen Dokumenten, mit Quelle.</p>

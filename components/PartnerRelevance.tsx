@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BookOpen, ChevronDown, CircleCheck, Copy, Crown, FileText, Files, RefreshCw, type LucideIcon } from "lucide-react";
@@ -14,13 +15,13 @@ import type { Doc } from "@/lib/types";
 type Bucket = "wichtig" | "laufend" | "info" | "erledigt" | "doppelt";
 // Symbole gut sichtbar: weiß auf einer vollen Farbfläche, je Gruppe eine eigene Farbe
 const BUCKETS: { id: Bucket; title: string; hint: string; icon: LucideIcon; color: string; open: boolean }[] = [
-  { id: "wichtig", title: "Das Wichtige", hint: "Hier steht, was gilt – das schaust du nach, wenn etwas ist.", icon: Crown, color: "#111827", open: true },
+  { id: "wichtig", title: "Das Wichtige", hint: "Hier steht, was gilt – das schaust du nach, wenn etwas ist.", icon: Crown, color: "#6d4aff", open: true },
   { id: "laufend", title: "Laufend", hint: "Rechnungen, Abrechnungen und Schreiben aus dem laufenden Vertrag.", icon: RefreshCw, color: "#2563eb", open: true },
   { id: "info", title: "Zur Info", hint: "Bedingungen, Infoblätter, Werbung – gut zu haben, selten gebraucht.", icon: BookOpen, color: "#64748b", open: false },
   { id: "erledigt", title: "Erledigt & veraltet", hint: "Bezahlt, überholt oder gekündigt – bleibt zum Nachweis im Archiv.", icon: CircleCheck, color: "#16a34a", open: false },
   { id: "doppelt", title: "Doppelt", hint: "Gleicher Inhalt wie ein anderes Dokument – kann weg.", icon: Copy, color: "#d97706", open: false },
 ];
-const Badge = ({ icon: Icon, color }: { icon: LucideIcon; color: string }) => <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white" style={{ background: color }}><Icon size={17} strokeWidth={2.2} /></span>;
+const Badge = ({ icon, color }: { icon: LucideIcon; color: string }) => <IconTile icon={icon} color={color} size={40} />;
 const dateOf = (d: Doc) => d.doc_date ?? d.received_at.slice(0, 10);
 /** Datum mit Herkunft (nie „ohne Datum“) – Teile einer Mappe bekommen deren Datum */
 const shown = (d: Doc, all: Doc[]) => knownDateLabel(knownDate(d, all));
@@ -78,7 +79,7 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
       {/* Überblick: was es hier gibt, auf einen Blick – darunter alle Dokumente kompakt */}
       <section className={`${CARD} overflow-hidden`}>
         <div className="px-4 pt-5 pb-3 md:px-6">
-          <span className="flex items-center gap-2.5 text-[18px] leading-[26px] font-semibold"><Badge icon={Files} color="#111827" /> Überblick</span>
+          <span className="flex items-center gap-2.5 text-[18px] leading-[26px] font-semibold"><Badge icon={Files} color="#6d4aff" /> Überblick</span>
           <p className="mt-1 text-[13px] leading-5 text-soft">{docs.length} {docs.length === 1 ? "Dokument" : "Dokumente"}{first ? ` von ${fmtDate(iso(first))} bis ${fmtDate(iso(last))}` : ""}{last ? <>, zuletzt <b className="font-semibold text-fg">{last.title ?? last.file_name}</b></> : null}.</p>
         </div>
         <div className="grid grid-cols-4 divide-x divide-line border-t border-line text-center">

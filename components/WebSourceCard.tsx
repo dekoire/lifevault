@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import { useState } from "react";
 import { CalendarClock, Check, ExternalLink, Globe, Loader2, RefreshCw } from "lucide-react";
 import { Markdown } from "@/components/Markdown";
@@ -78,7 +79,7 @@ export function WebSourceCard({ doc, onChanged }: { doc: Doc; onChanged?: () => 
   return (
     <section className="overflow-hidden rounded-2xl border border-card-line bg-surface">
       <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2"><Globe size={17} /></span>
+        <IconTile icon={Globe} color="#2563eb" size={36} />
         <span className="min-w-0 flex-1 text-[13px]">
           <b className="block text-[14px]">Aus dem Internet · zuletzt geprüft {fmtDate(ws.checked_at)}</b>
           {next && <span className={`flex items-center gap-1 ${due ? "font-semibold text-negative-text" : "text-muted"}`}><CalendarClock size={12} /> {due ? "Prüfung fällig" : "Nächste Prüfung"}: {fmtDate(next.date)} · {next.reason}</span>}
