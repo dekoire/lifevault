@@ -108,6 +108,8 @@ html, body { overflow-x: clip; }
 /* Seitenpanel von rechts */
 @keyframes panel-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 .panel-in { animation: panel-in 0.2s ease-out; }
+@keyframes panel-in-left { from { transform: translateX(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.panel-in-left { animation: panel-in-left 0.2s ease-out; }
 @keyframes search-open { from { clip-path: inset(0 100% 0 0 round 999px); } to { clip-path: inset(0 0 0 0 round 999px); } }
 @media (max-width: 639px) { .search-open { animation: search-open 0.2s ease-out; } }
 
