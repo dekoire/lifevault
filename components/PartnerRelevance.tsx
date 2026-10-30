@@ -1,5 +1,5 @@
 "use client";
-import { IconTile } from "@/components/ClusterIcon";
+import { IconTile, tintGradient } from "@/components/ClusterIcon";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BookOpen, ChevronDown, ChevronRight, CircleCheck, Copy, Crown, FileText, Files, RefreshCw, type LucideIcon } from "lucide-react";
@@ -70,7 +70,7 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
   const GRID = "md:grid md:grid-cols-[minmax(0,1fr)_8.5rem_6.5rem_3.5rem_1rem] md:items-center md:gap-4";
   const HEAD = "text-[12px] font-semibold text-muted";
   const Head = () => (
-    <div className={`hidden px-6 py-[18px] ${GRID}`} role="row">
+    <div className={`hidden border-b border-line px-6 py-[18px] ${GRID}`} role="row">
       <span className={HEAD}>Dokument</span><span className={HEAD}>Art</span><span className={HEAD}>Datum</span><span className={HEAD}>Wichtig</span><span />
     </div>
   );
@@ -109,9 +109,13 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
             <p className="truncate text-[13px] text-muted">{docs.length} {docs.length === 1 ? "Dokument" : "Dokumente"}{years ? ` · ${years}` : ""}</p>
           </span>
         </div>
-        <div className="grid grid-cols-4 divide-x divide-line border-t border-line text-center">
-          {([["Wichtig", count("wichtig"), ""], ["Laufend", count("laufend"), ""], ["Offen", due, due ? "text-negative-text" : ""], ["Erledigt", count("erledigt"), "text-positive-text"]] as const).map(([l, n, c]) => (
-            <div key={l} className="px-2 py-4"><b className={`tnum block text-[20px] leading-7 ${n ? c : "text-muted"}`}>{n}</b><span className="text-[12px] text-muted">{l}</span></div>
+        {/* Zahlen als leicht farbige Kacheln */}
+        <div className="grid grid-cols-2 gap-2.5 px-4 pb-5 sm:grid-cols-4 md:px-6">
+          {([["Wichtig", count("wichtig"), "#6d4aff"], ["Laufend", count("laufend"), "#2563eb"], ["Offen", due, "#b42318"], ["Erledigt", count("erledigt"), "#16a34a"]] as const).map(([l, n, c]) => (
+            <div key={l} className="rounded-xl px-4 py-3.5" style={{ background: tintGradient(n ? c : "#94a3b8") }}>
+              <b className="tnum block text-[22px] leading-7" style={{ color: n ? c : "var(--color-muted)" }}>{n}</b>
+              <span className="text-[13px] font-medium text-soft">{l}</span>
+            </div>
           ))}
         </div>
         <Head />

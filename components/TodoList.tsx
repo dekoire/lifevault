@@ -80,7 +80,7 @@ export function TodoList({ docs }: { docs: Doc[] }) {
       </div>
       {current.length === 0 && <p className="border-t border-line px-4 py-4 text-[14px] md:px-6 text-muted">{status.length === 1 && status[0] === "done" ? "Noch nichts abgehakt." : openList.length === 0 ? "Alles erledigt. 🎉" : "Nichts in dieser Auswahl."}</p>}
       {current.length > 0 && (
-        <div className={`hidden px-4 py-[18px] md:px-6 ${GRID}`} role="row">
+        <div className={`hidden border-b border-line px-4 py-[18px] md:px-6 ${GRID}`} role="row">
           <span />
           <span className={HEAD}>Aufgabe</span>
           <span className={HEAD}>Art</span>
