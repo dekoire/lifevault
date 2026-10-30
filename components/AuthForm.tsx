@@ -2,8 +2,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Link2, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { peekNext, rememberNext, safeNext, takeNext } from "@/lib/next";
 
 const field = "h-12 w-full rounded-xl border border-card-line bg-surface px-4 text-[15px] outline-none transition placeholder:text-muted focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10";
 
@@ -18,6 +19,13 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const [error, setError] = useState<string>();
   const [info, setInfo] = useState<string>();
   const login = mode === "login";
+  // ?next=/connect?… (z. B. „Mit Lifevault verbinden“): merken, damit es nach Anmelden oder Registrieren weitergeht
+  const [next, setNext] = useState<string>();
+  useEffect(() => {
+    const n = safeNext(new URLSearchParams(location.search).get("next"));
+    if (n) rememberNext(n);
+    setNext(n ?? peekNext());
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,13 +36,13 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       if (login) {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw new Error(error.message === "Invalid login credentials" ? "E-Mail oder Passwort stimmt nicht." : error.message);
-        router.replace("/");
+        router.replace(takeNext() ?? "/");
       } else {
         if (password.length < 8) throw new Error("Das Passwort braucht mindestens 8 Zeichen.");
         if (password !== repeat) throw new Error("Die beiden Passwörter stimmen nicht überein.");
-        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: `${location.origin}/` } });
+        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: `${location.origin}${next ?? "/"}` } });
         if (error) throw new Error(error.message);
-        if (data.session) router.replace("/");
+        if (data.session) router.replace(takeNext() ?? "/");
         else setInfo("Fast geschafft: Bestätige deine E-Mail-Adresse über den Link, den wir dir geschickt haben.");
       }
     } catch (err) {
@@ -46,6 +54,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   return (
     <div className="sheet-up">
+      {next?.startsWith("/connect") && (
+        <p className="mb-5 flex items-start gap-2 rounded-xl bg-brand-500/10 px-3.5 py-2.5 text-[13px] leading-5 text-selected"><Link2 size={16} className="mt-0.5 shrink-0" /> Eine App möchte sich mit deinem Lifevault verbinden. {login ? "Melde dich an" : "Erstelle ein Konto"} – danach siehst du genau, worauf sie zugreifen will, und entscheidest selbst.</p>
+      )}
       <h1 className="text-[28px] leading-9 font-[650] tracking-tight">{login ? "Willkommen zurück" : "Konto erstellen"}</h1>
       <p className="mt-1.5 text-[15px] text-muted">{login ? "Melde dich an, um deine Unterlagen zu sehen." : "Dein Tresor für alle Unterlagen – in einer Minute eingerichtet."}</p>
       <div className="mt-8"><SocialLogin register={!login} /></div>
@@ -75,7 +86,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-muted">
-        {login ? <>Neu hier? <Link href="/register" className="font-semibold text-selected hover:underline">Konto erstellen</Link></> : <>Schon ein Konto? <Link href="/login" className="font-semibold text-selected hover:underline">Anmelden</Link></>}
+        {login ? <>Neu hier? <Link href={next ? `/register?next=${encodeURIComponent(next)}` : "/register"} className="font-semibold text-selected hover:underline">Konto erstellen</Link></> : <>Schon ein Konto? <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} className="font-semibold text-selected hover:underline">Anmelden</Link></>}
       </p>
     </div>
   );

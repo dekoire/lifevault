@@ -4,6 +4,8 @@
 - UI-Sprache Deutsch, Design wie Finastry, Hauptfarbe Lila (#6d4aff), mobil zuerst.
 - Datenzugriff nur im Namen des Nutzers (sein Token) – RLS auf `documents` und Storage-Bucket `documents` (Ordner = User-ID). Kein Service-Role-Key im Code.
   - Einzige Ausnahme: der Mail-Job ohne offene App (`lib/mailjob.ts`, `/api/mail/cron` mit `CRON_SECRET`). Nur dort `SUPABASE_SERVICE_ROLE_KEY`; jede Abfrage ausdrücklich auf `user_id` des Adress-Besitzers begrenzt. Funktionen, die er mitbenutzt (`lib/processDoc.ts`, `lib/rank.ts`, `lib/unify.ts`), filtern deshalb immer zusätzlich nach `user_id`.
+  - Zweite Ausnahme: Original-Datei für verbundene Apps (`getFile` in `lib/api.ts`, `/api/v1/documents/[id]/file`). Erst prüft die Datenbank (`api_file`) Zugang und Rechte und gibt nur einen Pfad im Ordner des Nutzers zurück; nur dieser eine Pfad wird mit dem Service-Role-Key gelesen.
+- Verbundene Apps: „Mit Lifevault verbinden“ = OAuth 2.1 mit PKCE (`/connect`, `/api/v1/oauth/token`, `/api/v1/oauth/revoke`, Migration `0019_oauth_connect.sql`). Alle Prüfungen in Datenbankfunktionen, gespeichert werden nur Hashes; Tresor-Dokumente sind für Apps nie sichtbar.
 - Geheimnisse nie ins Repo oder in den Chat.
 - Vor jedem Push: `npx tsc --noEmit` und `npm run build`.
 - Manuelle Schritte für den Nutzer immer fertig zum Kopieren mit Direktlinks.

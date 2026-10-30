@@ -4,12 +4,14 @@ import { Ban, Check, Copy, History, KeyRound, Loader2, Plus, RotateCw, ShieldAle
 import { Dot } from "@/components/ProjectSwitcher";
 import { CARD, ICON_BTN, Switch } from "@/components/ui";
 import { CLUSTERS } from "@/lib/clusters";
+import { KINDS } from "@/lib/kinds";
 import { useProjects } from "@/lib/projects";
 import { supabase } from "@/lib/supabase";
 
 type Client = {
   id: string; name: string; client_id: string; can_read: boolean; can_write: boolean; all_projects: boolean; project_ids: string[]; clusters: string[] | null;
   allow_personal: boolean; allow_health: boolean; allow_full_text: boolean; expires_at: string | null; revoked_at: string | null; last_used_at: string | null; created_at: string;
+  /** über „Mit Lifevault verbinden“ (OAuth) entstanden */ app_id: string | null; own_project: string | null; kinds: string[] | null;
 };
 type Audit = { at: string; action: string; detail: string | null };
 
@@ -38,7 +40,7 @@ export function ApiSettings() {
     setShown({ name: c.name, clientId: c.client_id, secret });
   };
   const revoke = async (c: Client) => {
-    if (!confirm(`Zugang für „${c.name}“ sofort sperren?`)) return;
+    if (!confirm(c.app_id ? `Verbindung mit „${c.name}“ trennen? Die App kommt sofort nicht mehr an deine Daten.` : `Zugang für „${c.name}“ sofort sperren?`)) return;
     await supabase.from("api_clients").update({ revoked_at: new Date().toISOString() }).eq("id", c.id);
     void load();
   };
@@ -60,6 +62,7 @@ export function ApiSettings() {
           {clients.map((c) => <ClientRow key={c.id} c={c} onRotate={() => void rotate(c)} onRevoke={() => void revoke(c)} onRemove={() => void remove(c)} />)}
         </section>
       )}
+      <OwnApps />
       <ApiDocs />
     </>
   );
@@ -69,7 +72,9 @@ function ClientRow({ c, onRotate, onRevoke, onRemove }: { c: Client; onRotate: (
   const { projects } = useProjects();
   const [log, setLog] = useState<Audit[]>();
   const dead = !!c.revoked_at || (!!c.expires_at && c.expires_at < new Date().toISOString());
-  const scope = c.all_projects ? "Alle Projekte" : [...projects.filter((p) => p.all_apps).map((p) => p.name), ...projects.filter((p) => c.project_ids.includes(p.id) && !p.all_apps).map((p) => p.name)].join(", ") || "keine Projekte";
+  const own = c.own_project ? projects.find((p) => p.id === c.own_project) : undefined;
+  const scope = c.all_projects ? "Alle Projekte" : [...projects.filter((p) => p.all_apps).map((p) => p.name), ...projects.filter((p) => c.project_ids.includes(p.id) && !p.all_apps && p.id !== c.own_project).map((p) => p.name)].join(", ") || "keine weiteren Projekte";
+  const kinds = c.kinds ? c.kinds.map((k) => KINDS.find((x) => x.id === k)?.short ?? k).join(", ") : "alle Arten";
   const pill = "rounded-full border border-card-line px-2 py-0.5 text-[11px] font-semibold text-soft";
   const showLog = async () => {
     if (log) return setLog(undefined);
@@ -81,11 +86,13 @@ function ClientRow({ c, onRotate, onRevoke, onRemove }: { c: Client; onRotate: (
       <div className="flex items-start gap-3">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg text-canvas"><KeyRound size={18} /></span>
         <span className="min-w-0 flex-1">
-          <b className="flex flex-wrap items-center gap-2 text-[15px]">{c.name}{c.revoked_at && <span className="rounded-full bg-negative/10 px-2 py-0.5 text-[11px] text-negative-text">gesperrt</span>}</b>
-          <code className="block truncate text-[12px] text-muted">{c.client_id}</code>
+          <b className="flex flex-wrap items-center gap-2 text-[15px]">{c.name}{c.revoked_at && <span className="rounded-full bg-negative/10 px-2 py-0.5 text-[11px] text-negative-text">getrennt</span>}{c.app_id && !c.revoked_at && <span className="rounded-full bg-positive/10 px-2 py-0.5 text-[11px] text-positive-text">per Anmeldung verbunden</span>}</b>
+          {!c.app_id && <code className="block truncate text-[12px] text-muted">{c.client_id}</code>}
           <span className="mt-2 flex flex-wrap gap-1.5">
             {c.can_read && <span className={pill}>Lesen</span>}{c.can_write && <span className={pill}>Hochladen</span>}
+            {own && <span className={pill}>Eigenes Projekt: {own.name}</span>}
             <span className={pill}>{scope}</span>
+            <span className={pill}>{kinds}</span>
             <span className={pill}>{c.clusters ? `${c.clusters.length} Bereiche` : "Alle Bereiche"}</span>
             <span className={pill}>{c.allow_personal ? "mit persönlichen Daten" : "ohne persönliche Daten"}</span>
             <span className={pill}>{c.allow_health ? "mit Gesundheit" : "ohne Gesundheit"}</span>
@@ -95,8 +102,8 @@ function ClientRow({ c, onRotate, onRevoke, onRemove }: { c: Client; onRotate: (
         </span>
         <span className="flex shrink-0 gap-1.5">
           <button type="button" onClick={() => void showLog()} aria-label="Protokoll" title="Protokoll" className={ICON_BTN}><History size={16} /></button>
-          {!c.revoked_at && <button type="button" onClick={onRotate} aria-label="Neues Geheimnis" title="Neues Geheimnis" className={ICON_BTN}><RotateCw size={16} /></button>}
-          {!c.revoked_at && <button type="button" onClick={onRevoke} aria-label="Sperren" title="Sperren" className={ICON_BTN}><Ban size={16} /></button>}
+          {!c.revoked_at && !c.app_id && <button type="button" onClick={onRotate} aria-label="Neues Geheimnis" title="Neues Geheimnis" className={ICON_BTN}><RotateCw size={16} /></button>}
+          {!c.revoked_at && <button type="button" onClick={onRevoke} aria-label={c.app_id ? "Trennen" : "Sperren"} title={c.app_id ? "Verbindung trennen" : "Sperren"} className={ICON_BTN}><Ban size={16} /></button>}
           <button type="button" onClick={onRemove} aria-label="Löschen" title="Löschen" className={`${ICON_BTN} hover:text-negative-text`}><Trash2 size={16} /></button>
         </span>
       </div>
@@ -251,5 +258,111 @@ POST ${base}/api/v1/documents          # multipart: file, project_id`}</code>
         <p>Grenzen: 120 Anfragen pro Minute, 60 Uploads pro Stunde, Dateien bis 4 MB. Original-Dateien aus der API übernimmt Lifevault beim nächsten Öffnen der App in deinen Speicher.</p>
       </div>
     </details>
+  );
+}
+
+/* ---------- Eigene App registrieren (für „Mit Lifevault verbinden“) ---------- */
+type OAuthApp = { id: string; name: string; description: string | null; homepage: string | null; client_id: string; redirect_uris: string[]; revoked_at: string | null; created_at: string };
+const newAppId = () => `lva_${rand(24, "abcdefghijklmnopqrstuvwxyz0123456789")}`;
+
+/**
+ * Wer eine App baut (z. B. Finastry), registriert sie hier einmal: Name, Rückleitungs-Adresse(n) → Client-ID und Geheimnis.
+ * Danach können sich beliebige Lifevault-Nutzer über die Freigabe-Seite (/connect) mit dieser App verbinden – jeder
+ * entscheidet selbst, was sie sehen darf. Das Geheimnis gehört nur auf den Server der App.
+ */
+function OwnApps() {
+  const [apps, setApps] = useState<OAuthApp[]>();
+  const [open, setOpen] = useState(false);
+  const [shown, setShown] = useState<{ name: string; clientId: string; secret: string; redirect: string }>();
+  const [name, setName] = useState("");
+  const [homepage, setHomepage] = useState("");
+  const [description, setDescription] = useState("");
+  const [redirects, setRedirects] = useState("");
+  const [busy, setBusy] = useState(false);
+  const load = async () => { const { data } = await supabase.from("oauth_apps").select("id,name,description,homepage,client_id,redirect_uris,revoked_at,created_at").order("created_at", { ascending: false }); setApps((data as OAuthApp[]) ?? []); };
+  useEffect(() => { void load(); }, []);
+
+  const create = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const uris = redirects.split(/[\s,]+/).map((u) => u.trim()).filter(Boolean);
+    if (!uris.length) return alert("Mindestens eine Rückleitungs-Adresse (https://…) angeben.");
+    setBusy(true);
+    const clientId = newAppId(), secret = newSecret();
+    const { error } = await supabase.from("oauth_apps").insert({ name: name.trim(), description: description.trim() || null, homepage: homepage.trim() || null, client_id: clientId, secret_hash: await sha256(secret), redirect_uris: uris });
+    setBusy(false);
+    if (error) return alert(error.message.includes("Rückleitungs") ? error.message : `Speichern hat nicht geklappt: ${error.message}`);
+    setOpen(false); setName(""); setHomepage(""); setDescription(""); setRedirects("");
+    setShown({ name: name.trim(), clientId, secret, redirect: uris[0] });
+    void load();
+  };
+  const rotate = async (a: OAuthApp) => {
+    if (!confirm(`Neues Geheimnis für „${a.name}“? Das alte funktioniert dann sofort nicht mehr – die App muss das neue bekommen.`)) return;
+    const secret = newSecret();
+    const { error } = await supabase.from("oauth_apps").update({ secret_hash: await sha256(secret) }).eq("id", a.id);
+    if (error) return alert(error.message);
+    setShown({ name: a.name, clientId: a.client_id, secret, redirect: a.redirect_uris[0] });
+  };
+  const toggleRevoke = async (a: OAuthApp) => {
+    if (!a.revoked_at && !confirm(`„${a.name}“ sperren? Alle Nutzer dieser App verlieren sofort den Zugriff.`)) return;
+    await supabase.from("oauth_apps").update({ revoked_at: a.revoked_at ? null : new Date().toISOString() }).eq("id", a.id);
+    void load();
+  };
+  const remove = async (a: OAuthApp) => {
+    if (!confirm(`„${a.name}“ endgültig löschen? Alle Verbindungen zu dieser App werden mit gelöscht.`)) return;
+    await supabase.from("oauth_apps").delete().eq("id", a.id);
+    void load();
+  };
+
+  return (
+    <section className={`${CARD} space-y-4 p-5`}>
+      <div>
+        <h2 className="text-[16px] font-semibold">Eigene App anbinden</h2>
+        <p className="mt-1 text-[13px] leading-5 text-muted">Für Entwickler: Registriere deine App einmal. Danach erscheint bei Nutzern „Mit Lifevault verbinden“ – sie melden sich bei Lifevault an und geben selbst frei, was deine App sehen darf.</p>
+      </div>
+      {shown && (
+        <div className="space-y-3 rounded-2xl border border-brand-500/50 p-4">
+          <h3 className="text-[15px] font-semibold">Zugangsdaten für „{shown.name}“</h3>
+          <p className="flex items-start gap-2 rounded-xl bg-[#fff7e6] px-3 py-2.5 text-[13px] text-[#8a5a00]"><ShieldAlert size={16} className="mt-0.5 shrink-0" /> Das Geheimnis wird nur jetzt angezeigt. Trage es nur auf dem Server der App ein (geheime Umgebungsvariable), nie im Browser oder im Code.</p>
+          <CopyField label="Client-ID" value={shown.clientId} />
+          <CopyField label="Client-Secret" value={shown.secret} />
+          <CopyField label="Freigabe-Seite (authorization_endpoint)" value={`${location.origin}/connect`} />
+          <CopyField label="Token (token_endpoint)" value={`${location.origin}/api/v1/oauth/token`} />
+          <button type="button" onClick={() => setShown(undefined)} className="h-10 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas">Fertig, gespeichert</button>
+        </div>
+      )}
+      {apps?.length ? (
+        <div className="divide-y divide-line rounded-2xl border border-card-line">
+          {apps.map((a) => (
+            <div key={a.id} className={`flex items-start gap-3 px-4 py-3 ${a.revoked_at ? "opacity-60" : ""}`}>
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-fg text-[15px] font-bold text-canvas">{a.name.slice(0, 1).toUpperCase()}</span>
+              <span className="min-w-0 flex-1">
+                <b className="flex items-center gap-2 text-[14px]">{a.name}{a.revoked_at && <span className="rounded-full bg-negative/10 px-2 py-0.5 text-[11px] text-negative-text">gesperrt</span>}</b>
+                <code className="block truncate text-[12px] text-muted">{a.client_id}</code>
+                <span className="block truncate text-[12px] text-muted">→ {a.redirect_uris.join(", ")}</span>
+              </span>
+              <span className="flex shrink-0 gap-1.5">
+                <button type="button" onClick={() => void rotate(a)} aria-label="Neues Geheimnis" title="Neues Geheimnis" className={ICON_BTN}><RotateCw size={16} /></button>
+                <button type="button" onClick={() => void toggleRevoke(a)} aria-label={a.revoked_at ? "Entsperren" : "Sperren"} title={a.revoked_at ? "Entsperren" : "Sperren"} className={ICON_BTN}><Ban size={16} /></button>
+                <button type="button" onClick={() => void remove(a)} aria-label="Löschen" title="Löschen" className={`${ICON_BTN} hover:text-negative-text`}><Trash2 size={16} /></button>
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {open ? (
+        <form onSubmit={create} className="space-y-3">
+          <label className="block"><span className="mb-1.5 block text-[13px] font-semibold text-soft">Name der App</span><input required maxLength={60} value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. Finastry" className={field} /></label>
+          <label className="block"><span className="mb-1.5 block text-[13px] font-semibold text-soft">Kurzbeschreibung (sieht der Nutzer beim Verbinden)</span><input maxLength={300} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="z. B. Finanz-App: liest Rechnungen und Verträge, legt Belege ab" className={field} /></label>
+          <label className="block"><span className="mb-1.5 block text-[13px] font-semibold text-soft">Webseite (https://…)</span><input type="url" value={homepage} onChange={(e) => setHomepage(e.target.value)} placeholder="https://finastry.com" className={field} /></label>
+          <label className="block"><span className="mb-1.5 block text-[13px] font-semibold text-soft">Rückleitungs-Adresse(n), je Zeile eine</span><textarea required rows={2} value={redirects} onChange={(e) => setRedirects(e.target.value)} placeholder="https://finastry.com/api/lifevault/callback" className={`${field} h-auto py-2.5`} /></label>
+          <div className="flex gap-2">
+            <button type="submit" disabled={busy || !name.trim()} className="inline-flex h-11 items-center gap-2 rounded-full bg-fg px-5 text-[14px] font-semibold text-canvas disabled:opacity-50">{busy && <Loader2 size={16} className="animate-spin" />} App registrieren</button>
+            <button type="button" onClick={() => setOpen(false)} className="h-11 rounded-full px-4 text-[14px] font-semibold text-soft hover:bg-surface-2">Abbrechen</button>
+          </div>
+        </form>
+      ) : (
+        <button type="button" onClick={() => setOpen(true)} className="inline-flex h-10 items-center gap-2 rounded-full border border-card-line bg-surface px-4 text-[13px] font-semibold hover:bg-surface-2"><Plus size={15} /> App registrieren</button>
+      )}
+    </section>
   );
 }

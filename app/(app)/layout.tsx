@@ -26,6 +26,7 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 import { KeyboardWatch } from "@/components/KeyboardWatch";
 import { Avatar, AvatarMenu, nameFromEmail } from "@/components/AvatarMenu";
 import { supabase, useSession } from "@/lib/supabase";
+import { takeNext } from "@/lib/next";
 
 const Splash = () => <div className="grid min-h-dvh place-items-center bg-page"><span className="animate-pulse"><LogoMark size={56} /></span></div>;
 
@@ -35,7 +36,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [gate, setGate] = useState<"check" | "challenge" | "enroll" | "ok">("check");
   useEffect(() => {
-    if (session === null) router.replace("/willkommen");
+    // nicht angemeldet: zur Startseite – kommt man über „Mit Lifevault verbinden“, direkt zur Anmeldung mit Rückweg
+    if (session === null) router.replace(location.pathname.startsWith("/connect") ? `/login?next=${encodeURIComponent(location.pathname + location.search)}` : "/willkommen");
   }, [session, router]);
   const check = useCallback(async () => {
     const [{ data: aal }, { data: s }, { data: f }] = await Promise.all([
@@ -49,6 +51,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     else setGate("ok");
   }, []);
   useEffect(() => { if (session) void check(); }, [session, check]);
+  // nach Bestätigungslink oder Google/Apple-Anmeldung: gemerktes Ziel (z. B. /connect?…) aufrufen
+  useEffect(() => {
+    if (gate !== "ok") return;
+    const n = takeNext();
+    if (n && n !== location.pathname + location.search) router.replace(n);
+  }, [gate, router]);
   if (!session || gate === "check") return <Splash />;
   if (gate === "challenge") return <MfaChallenge onDone={() => void supabase.auth.refreshSession().then(check)} />;
   if (gate === "enroll") return <MfaEnroll forced onDone={() => void supabase.auth.refreshSession().then(check)} />;
