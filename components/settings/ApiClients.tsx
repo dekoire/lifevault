@@ -95,7 +95,7 @@ function ClientRow({ c, homepage, onRotate, onRevoke, onRemove }: { c: Client; h
       <div className="flex items-start gap-3">
         {c.app_id ? <AppIcon name={c.name} homepage={homepage} size={40} /> : <IconTile icon={KeyRound} size={40} />}
         <span className="min-w-0 flex-1">
-          <b className="flex flex-wrap items-center gap-2 text-[15px]">{c.name}{c.revoked_at && <span className="rounded-full bg-negative/10 px-3 py-1 text-[12px] text-negative-text">getrennt</span>}{c.app_id && !c.revoked_at && <span className="rounded-full bg-positive/10 px-3 py-1 text-[12px] text-positive-text">per Anmeldung verbunden</span>}</b>
+          <b className="flex flex-wrap items-center gap-2 text-[15px]">{c.name}{c.revoked_at && <span className="rounded-full bg-negative/10 px-3 py-2 text-[12px] leading-4 text-negative-text">getrennt</span>}{c.app_id && !c.revoked_at && <span className="rounded-full bg-positive/10 px-3 py-2 text-[12px] leading-4 text-positive-text">per Anmeldung verbunden</span>}</b>
           {!c.app_id && <code className="block truncate text-[12px] text-muted">{c.client_id}</code>}
           <span className="mt-2 flex flex-wrap gap-1.5">
             {c.can_read && <span className={pill}>Lesen</span>}{c.can_write && <span className={pill}>Hochladen</span>}
@@ -347,7 +347,7 @@ function OwnApps() {
             <div key={a.id} className={`flex items-start gap-3 px-4 py-3 ${a.revoked_at ? "opacity-60" : ""}`}>
               <AppIcon name={a.name} homepage={a.homepage} size={36} />
               <span className="min-w-0 flex-1">
-                <b className="flex items-center gap-2 text-[14px]">{a.name}{a.revoked_at && <span className="rounded-full bg-negative/10 px-3 py-1 text-[12px] text-negative-text">gesperrt</span>}</b>
+                <b className="flex items-center gap-2 text-[14px]">{a.name}{a.revoked_at && <span className="rounded-full bg-negative/10 px-3 py-2 text-[12px] leading-4 text-negative-text">gesperrt</span>}</b>
                 <code className="block truncate text-[12px] text-muted">{a.client_id}</code>
                 <span className="block truncate text-[12px] text-muted">→ {a.redirect_uris.join(", ")}</span>
               </span>

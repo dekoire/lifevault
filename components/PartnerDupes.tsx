@@ -74,7 +74,7 @@ export function DistinctList({ kind, title }: { kind: "distinct" | "distinct_doc
         {mine.map((d) => (
           <li key={d.id} className="flex items-center gap-3 px-4 py-3">
             <span className="min-w-0 flex-1 text-[13px]"><b className="block truncate font-semibold">{d.target_name}</b><span className="block text-[12px] text-muted">{fmtDate(d.created_at)} entschieden · wird nicht mehr gefragt</span></span>
-            <button type="button" onClick={() => void undoDecision(d.id)} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold hover:bg-surface-2"><Undo2 size={13} /> Doch prüfen</button>
+            <button type="button" onClick={() => void undoDecision(d.id)} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold hover:bg-surface-2"><Undo2 size={13} /> Doch prüfen</button>
           </li>
         ))}
       </ul>
@@ -111,7 +111,7 @@ function Group({ g, onDismiss }: { g: PartnerGroup; onDismiss: () => void }) {
       <div className="px-4 pt-4">
         <p className="text-[15px] font-semibold">Ist das derselbe Partner?</p>
         <p className="mt-0.5 text-[13px] text-muted">
-          <span className={`mr-1.5 rounded-full px-3 py-1 text-[12px] font-semibold ${g.score >= 0.7 ? "bg-fg text-canvas" : "border border-card-line text-soft"}`}>{Math.round(g.score * 100)} % wahrscheinlich</span>
+          <span className={`mr-1.5 rounded-full px-3 py-2 text-[12px] leading-4 font-semibold ${g.score >= 0.7 ? "bg-fg text-canvas" : "border border-card-line text-soft"}`}>{Math.round(g.score * 100)} % wahrscheinlich</span>
           {g.reasons.join(" · ")}
         </p>
       </div>

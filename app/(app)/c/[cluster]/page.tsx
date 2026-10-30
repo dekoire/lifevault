@@ -3,7 +3,8 @@ import { use, useState } from "react";
 import { Archive, GalleryHorizontal, List } from "lucide-react";
 import { GroupedDocs } from "@/components/GroupedDocs";
 import { ClusterIcon } from "@/components/ClusterIcon";
-import { CARD, DocRow } from "@/components/DocRow";
+import { DocRow, DocRowHead } from "@/components/DocRow";
+import { Panel } from "@/components/Panel";
 import { BackLink, PageHeader, Segmented } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
 import { useDocs } from "@/lib/docs";
@@ -25,10 +26,10 @@ export default function ClusterPage({ params }: { params: Promise<{ cluster: str
       <PageHeader icon={<ClusterIcon id={c.id} size={52} />} title={c.label} subtitle={`${list.length} ${list.length === 1 ? "Dokument" : "Dokumente"} · ${c.hint}`} />
       <GroupedDocs cluster={c.id} view={view} />
       {archived.length > 0 && (
-        <section className={CARD}>
-          <button type="button" onClick={() => setShowArchive(!showArchive)} aria-expanded={showArchive} className="flex w-full items-center gap-2 px-4 py-3.5 text-left text-[14px] font-semibold text-soft"><Archive size={16} /> Archiv · {archived.length} nicht mehr aktuell <span className="ml-auto text-[13px] text-selected">{showArchive ? "ausblenden" : "anzeigen"}</span></button>
-          {showArchive && <div className="divide-y divide-line border-t border-line">{archived.map((d) => <DocRow key={d.id} d={d} />)}</div>}
-        </section>
+        <Panel title="Archiv" icon={Archive} color="#64748b" count={archived.length} sub="Nicht mehr aktuell" open={showArchive} onToggle={() => setShowArchive(!showArchive)} noLine>
+          <DocRowHead />
+          <div className="divide-y divide-line">{archived.map((d) => <DocRow key={d.id} d={d} />)}</div>
+        </Panel>
       )}
     </div>
   );

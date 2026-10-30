@@ -45,7 +45,7 @@ export function ProjectsSettings() {
           <div key={p.id} className="flex items-center gap-3 px-5 py-4">
             <Dot color={p.color} size={14} />
             <span className="min-w-0 flex-1">
-              <b className="flex items-center gap-2 text-[15px]">{p.name}<span className="rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold text-soft">{p.kind === "app" ? "App" : "Persönlich"}</span>{p.is_default && <span className="rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold text-soft">Standard</span>}</b>
+              <b className="flex items-center gap-2 text-[15px]">{p.name}<span className="rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">{p.kind === "app" ? "App" : "Persönlich"}</span>{p.is_default && <span className="rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">Standard</span>}</b>
               <span className="block truncate text-[13px] text-muted">{count(p.id)} Dokumente{p.description ? ` · ${p.description}` : ""}</span>
             </span>
             <span className="hidden items-center gap-2 text-[12px] text-soft sm:flex">Für alle Apps <Switch on={p.all_apps} onChange={(v) => void save({ all_apps: v }, p.id)} label={`${p.name} für alle Apps`} /></span>

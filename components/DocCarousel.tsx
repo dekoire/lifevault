@@ -88,7 +88,7 @@ function EncryptedPreview({ d }: { d: Doc }) {
       <span className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-500 text-white"><LockKeyhole size={20} /></span>
       <b className="mt-3 text-[14px]">Verschlüsselt</b>
       <span className="mt-0.5 text-[13px] text-soft">{d.doc_type ?? "Dokument"} · Inhalt sichtbar nach dem Entsperren des Tresors</span>
-      <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-surface px-3 py-1 text-[12px] font-semibold text-brand-600"><ShieldCheck size={13} /> Ende-zu-Ende geschützt</span>
+      <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-surface px-3 py-2 text-[12px] leading-4 font-semibold text-brand-600"><ShieldCheck size={13} /> Ende-zu-Ende geschützt</span>
     </div>
   );
 }

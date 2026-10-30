@@ -8,7 +8,8 @@ import { CARD } from "@/components/ui";
  * Einheitliche Kachel für Detailseiten: Symbol-Kachel, Überschrift (18 px), optional Anzahl und Unterzeile,
  * aufklappbar. Gesteuert (open/onToggle) oder selbst gemerkt (defaultOpen).
  */
-export function Panel({ title, icon, color, count, sub, aside, open: given, onToggle, defaultOpen = true, headClass = "", children }: {
+export function Panel({ title, icon, color, count, sub, aside, open: given, onToggle, defaultOpen = true, headClass = "", noLine = false, children }: {
+  /** keine Linie unter dem Kopf – wenn der Inhalt mit einer Tabellen-Kopfzeile beginnt */ noLine?: boolean;
   /** z. B. feste Höhe des Kopfs, damit er neben anderen Kacheln gleich hoch ist */ headClass?: string;
   title: React.ReactNode; icon: LucideIcon; color?: string; count?: number; sub?: React.ReactNode; aside?: React.ReactNode;
   open?: boolean; onToggle?: () => void; defaultOpen?: boolean; children: React.ReactNode;
@@ -24,7 +25,7 @@ export function Panel({ title, icon, color, count, sub, aside, open: given, onTo
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">
               <span className="truncate">{title}</span>
-              {count !== undefined && <span className="tnum shrink-0 rounded-full border border-card-line px-3 py-1 text-[12px] leading-4 font-semibold text-soft">{count}</span>}
+              {count !== undefined && <span className="tnum shrink-0 rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft">{count}</span>}
             </span>
             {sub && <span className="block truncate text-[13px] text-muted">{sub}</span>}
           </span>
@@ -34,7 +35,7 @@ export function Panel({ title, icon, color, count, sub, aside, open: given, onTo
           <ChevronDown size={18} className={`transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
       </div>
-      {open && <div className="border-t border-line">{children}</div>}
+      {open && <div className={noLine ? "" : "border-t border-line"}>{children}</div>}
     </section>
   );
 }

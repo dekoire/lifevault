@@ -21,7 +21,7 @@ export function CardWallet({ title = "Karten & Ausweise", compact = false }: { t
 
   return (
     <section>
-      <h2 className="mb-3 flex items-center gap-2 text-[17px] font-semibold">{title} <span className="tnum rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold text-muted">{cards.length}</span></h2>
+      <h2 className="mb-3 flex items-center gap-2 text-[17px] font-semibold">{title} <span className="tnum rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-muted">{cards.length}</span></h2>
       <div ref={row} className="fade-x -mx-1 -mt-2 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pt-2 pb-3 [scrollbar-width:none]">
         {cards.map((c) => {
           const soon = c.validDate && c.validDate.getTime() - Date.now() < 90 * 86_400_000;
@@ -39,7 +39,7 @@ export function CardWallet({ title = "Karten & Ausweise", compact = false }: { t
                   <span className="min-w-0"><span className="block text-white/65">Inhaber</span><b className="block truncate text-[13px] uppercase">{c.holder ?? "–"}</b></span>
                   {c.validDate && <span className="shrink-0 text-right"><span className="block text-white/65">gültig bis</span><b className={`tnum block text-[13px] ${soon ? "rounded bg-white px-1 text-[#d4143c]" : ""}`}>{fmtValid(c.validDate)}</b></span>}
                 </span>
-                {c.check && <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-3 py-1 text-[12px] font-semibold text-[#9a5800]"><AlertTriangle size={10} /> prüfen</span>}
+                {c.check && <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-3 py-2 text-[12px] leading-4 font-semibold text-[#9a5800]"><AlertTriangle size={10} /> prüfen</span>}
               </button>
               {c.check && (
                 <div className="mt-1.5 flex items-center gap-2 px-1 text-[12px] text-soft">

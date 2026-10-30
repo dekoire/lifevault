@@ -29,7 +29,7 @@ export function RecentTable({ docs }: { docs: Doc[] }) {
                   <span className="flex items-center gap-1.5">
                     <span className="truncate text-[14px] font-semibold">{processing ? d.file_name : d.title ?? d.file_name}</span>
                     {d.encrypted && <Lock size={13} className="shrink-0 text-brand-500" aria-label="verschlüsselt" />}
-                    {d.archived && <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold text-soft"><Archive size={11} /> Archiv</span>}
+                    {d.archived && <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-card-line px-3 py-2 text-[12px] leading-4 font-semibold text-soft"><Archive size={11} /> Archiv</span>}
                   </span>
                   <span className="block truncate text-[12px] text-muted">
                     {processing ? <span className="text-shimmer font-medium">Wird ausgelesen</span> : d.status === "error" ? <span className="inline-flex items-center gap-1 text-negative-text"><AlertCircle size={12} /> {d.error ?? "Fehler"}</span> : <>{d.doc_type ?? "Dokument"}<span className="md:hidden">{d.sender ? ` · ${d.sender}` : ""} · {fmtDate(d.doc_date ?? d.received_at)}</span></>}
