@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 /**
  * Ganz oben nach unten ziehen lädt alles neu: ein Kreis mit Pfeil füllt sich beim Ziehen, ab der Schwelle dreht er sich und die Seite lädt neu.
- * Gleiche Animation wie in Finastry, nur andere Farbe. Nur am Handy (Touch), nicht in Fenstern oder scrollbaren Listen.
+ * Gleiche Animation wie in Finastry, nur andere Farbe. Am Handy per Touch, am Desktop per Trackpad (ganz oben weiter nach oben wischen); nicht in Fenstern oder scrollbaren Listen.
  */
 const THRESHOLD = 72;
 export function PullToRefresh({ color, onRefresh = () => window.location.reload() }: { color: string; onRefresh?: () => void | Promise<void> }) {
@@ -26,20 +26,38 @@ export function PullToRefresh({ color, onRefresh = () => window.location.reload(
       if (dy <= 0 || window.scrollY > 0) { set(0); return; }
       set(Math.min(130, dy * 0.45));
     };
-    const up = () => {
-      if (start.current === null) return;
-      start.current = null;
+    const release = () => {
       if (cur.current >= THRESHOLD) {
         setBusy(true); set(THRESHOLD);
         if (navigator.vibrate) navigator.vibrate(10);
         void Promise.resolve(onRefresh()).finally(() => setTimeout(() => { setBusy(false); set(0); }, 600));
       } else set(0);
     };
+    const up = () => {
+      if (start.current === null) return;
+      start.current = null;
+      release();
+    };
+    // Desktop: Trackpad/Mausrad ganz oben weiter nach oben. Zählt nur, wenn die Geste oben beginnt –
+    // der Schwung vom Hochscrollen löst nichts aus; Strg + Rad (Zoomen) wird ignoriert
+    let gesture = false, last = 0, idle: number | undefined;
+    const wheel = (e: WheelEvent) => {
+      if (busy || e.ctrlKey) return;
+      const now = performance.now();
+      if (now - last > 300) gesture = window.scrollY <= 0 && document.body.style.overflow !== "hidden" && !scrolledParent(e.target);
+      last = now;
+      if (!gesture) return;
+      if (e.deltaY >= 0 || window.scrollY > 0) { gesture = false; set(0); return; }
+      set(Math.min(130, cur.current - e.deltaY * (e.deltaMode === 1 ? 12 : 0.35)));
+      clearTimeout(idle);
+      idle = window.setTimeout(() => { gesture = false; release(); }, 200);
+    };
+    window.addEventListener("wheel", wheel, { passive: true });
     window.addEventListener("touchstart", down, { passive: true });
     window.addEventListener("touchmove", move, { passive: true });
     window.addEventListener("touchend", up);
     window.addEventListener("touchcancel", up);
-    return () => { window.removeEventListener("touchstart", down); window.removeEventListener("touchmove", move); window.removeEventListener("touchend", up); window.removeEventListener("touchcancel", up); };
+    return () => { clearTimeout(idle); window.removeEventListener("wheel", wheel); window.removeEventListener("touchstart", down); window.removeEventListener("touchmove", move); window.removeEventListener("touchend", up); window.removeEventListener("touchcancel", up); };
   }, [busy, onRefresh]);
 
   if (!pull && !busy) return null;
