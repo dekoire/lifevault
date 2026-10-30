@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AiAvatar, type AiAvatarState } from "@/components/AiAvatar";
@@ -143,7 +144,7 @@ function ResearchCard({ r, onAnswer }: { r: Research; onAnswer?: (yes: boolean) 
   return (
     <div className="mt-4 rounded-2xl border border-card-line bg-surface p-4">
       <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-fg text-canvas"><Globe size={17} /></span>
+        <IconTile icon={Globe} size={36} />
         <div className="min-w-0 flex-1">
           <b className="block text-[15px]">Soll ich im Internet recherchieren?</b>
           {r.reason && <span className="mt-0.5 block text-[13px] text-soft">Fehlt: {r.reason}</span>}
@@ -168,7 +169,7 @@ function SaveCard({ o, onAnswer }: { o: SaveOffer; onAnswer?: (yes: boolean) => 
   return (
     <div className="mt-4 rounded-2xl border border-card-line bg-surface p-4">
       <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-fg text-canvas"><FileDown size={17} /></span>
+        <IconTile icon={FileDown} size={36} />
         <div className="min-w-0 flex-1">
           <b className="block text-[15px]">Soll ich das in Lifevault ablegen?</b>
           <span className="mt-0.5 block text-[13px] text-soft">„{o.title}“ {o.pdfUrl ? "als PDF (Original aus dem Internet)" : "als Notiz mit Quellen"}{related ? <> – als Ergänzung zu <Link href={`/d/${related.id}`} className="font-semibold text-selected">{related.title}</Link></> : null}</span>
@@ -472,8 +473,8 @@ export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu de
       {menu && <div className="fixed inset-0 z-10" onClick={() => setMenu("")} aria-hidden />}
       {menu === "plus" && (
         <div className="sheet-up absolute bottom-full left-2 z-20 mb-2 w-64 rounded-2xl border border-card-line bg-surface p-1.5 shadow-[0_12px_32px_rgba(16,24,40,.14)]">
-          <button type="button" onClick={() => cam.current?.click()} className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-[14px] hover:bg-surface-2"><span className="grid h-9 w-9 place-items-center rounded-full bg-fg text-canvas"><Camera size={16} /></span><span><b className="block">Fotografieren</b><span className="text-[12px] text-muted">Brief, Bon, Rechnung</span></span></button>
-          <button type="button" onClick={() => files.current?.click()} className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-[14px] hover:bg-surface-2"><span className="grid h-9 w-9 place-items-center rounded-full bg-fg text-canvas"><Paperclip size={16} /></span><span><b className="block">Foto oder PDF</b><span className="text-[12px] text-muted">wird abgelegt und im Chat genutzt</span></span></button>
+          <button type="button" onClick={() => cam.current?.click()} className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-[14px] hover:bg-surface-2"><IconTile icon={Camera} size={36} /><span><b className="block">Fotografieren</b><span className="text-[12px] text-muted">Brief, Bon, Rechnung</span></span></button>
+          <button type="button" onClick={() => files.current?.click()} className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-[14px] hover:bg-surface-2"><IconTile icon={Paperclip} size={36} /><span><b className="block">Foto oder PDF</b><span className="text-[12px] text-muted">wird abgelegt und im Chat genutzt</span></span></button>
         </div>
       )}
       {menu === "depth" && onDepth && (

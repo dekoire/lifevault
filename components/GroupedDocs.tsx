@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, ArrowDownAZ, Building2, CalendarDays, CalendarRange, Check, ChevronDown, CircleAlert, CircleCheck, Clock, Download, Hash, History, Info, Rows3, Search, Shapes, Star, Tag, Users, X, type LucideIcon } from "lucide-react";
@@ -242,9 +243,9 @@ function LabelPick({ value, onChange, counts }: { value: string; onChange: (v: s
   return <FilterSelect label="Tag" icon={Tag} value={value} onChange={onChange} options={options} />;
 }
 
-/** Platzhalter ohne Logo: schwarzer Kreis, weißes Icon */
-function Placeholder({ icon: Icon, size }: { icon: LucideIcon; size: number }) {
-  return <span className="grid shrink-0 place-items-center rounded-full bg-fg text-canvas" style={{ width: size, height: size }}><Icon size={Math.round(size * 0.5)} /></span>;
+/** Platzhalter ohne Logo: Kachel mit Farbverlauf */
+function Placeholder({ icon, size }: { icon: LucideIcon; size: number }) {
+  return <IconTile icon={icon} size={size} />;
 }
 
 /** Absender-Auswahl mit Partner-Logos: zugeklappt die Auswahl, aufgeklappt Liste mit Suche */

@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import Link from "next/link";
 import { ArrowRight, FileClock, GitBranch, History as HistoryIcon, Repeat, Home } from "lucide-react";
 import { SenderLogo } from "@/components/SenderLogo";
@@ -15,7 +16,7 @@ export function HistoryTimeline({ history, docs }: { history: History; docs: Doc
   if (!roles.length && !history.contracts.length) return null;
   return (
     <section className={`${CARD} overflow-hidden`}>
-      <h2 className="flex items-center gap-2.5 px-5 pt-4 pb-1 text-[16px] font-semibold"><span className="grid h-8 w-8 place-items-center rounded-full bg-fg text-canvas"><HistoryIcon size={16} /></span>Verlauf & Wechsel</h2>
+      <h2 className="flex items-center gap-2.5 px-5 pt-4 pb-1 text-[16px] font-semibold"><IconTile icon={HistoryIcon} size={36} />Verlauf & Wechsel</h2>
       <p className="px-5 pb-3 text-[13px] text-muted">Wer früher zuständig war und wer es jetzt ist – erkannt aus deinen Unterlagen. Übergaben ohne ausdrücklichen Beleg sind als „wahrscheinlich“ markiert.</p>
       <div className="divide-y divide-line border-t border-line">
         {roles.map((r) => (

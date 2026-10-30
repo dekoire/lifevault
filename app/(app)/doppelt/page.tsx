@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Combine, Copy, History, Users, type LucideIcon } from "lucide-react";
 import { MergeSuggestions } from "@/components/MergeSuggestions";
@@ -74,7 +75,7 @@ function Pills({ children }: { children: React.ReactNode }) {
 }
 
 function Hint({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
-  return <p className="flex items-start gap-3 rounded-2xl border border-card-line bg-surface px-4 py-3 text-[14px] leading-5 text-soft"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-fg text-canvas"><Icon size={15} /></span><span className="pt-1.5">{text}</span></p>;
+  return <p className="flex items-start gap-3 rounded-2xl border border-card-line bg-surface px-4 py-3 text-[14px] leading-5 text-soft"><IconTile icon={Icon} size={36} /><span className="pt-1.5">{text}</span></p>;
 }
 
 function Empty({ text }: { text: string }) {

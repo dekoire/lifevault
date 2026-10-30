@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowDownWideNarrow, ArrowUp, ArrowUpDown, ArrowUpNarrowWide, Check, ChevronDown, Search, SlidersHorizontal, X, type LucideIcon } from "lucide-react";
@@ -89,9 +90,7 @@ export type FilterOption = { value: string; label: string; icon?: React.ReactNod
 /** Runder Avatar mit Symbol: ohne Farbe schwarz/weiß, mit Farbe zart getönt */
 export function IconAvatar({ icon: Icon, color, size = 30, text }: { icon?: LucideIcon; color?: string; size?: number; text?: string }) {
   return (
-    <span className={`grid shrink-0 place-items-center rounded-full ${color ? "" : "bg-fg text-canvas"}`} style={{ width: size, height: size, ...(color ? { background: `${color}1f`, color } : {}) }}>
-      {Icon ? <Icon size={Math.round(size * 0.5)} strokeWidth={2} /> : <b className="tnum text-[11px]">{text}</b>}
-    </span>
+    <IconTile icon={Icon} color={color} size={size}><b className="tnum text-[11px]">{text}</b></IconTile>
   );
 }
 
