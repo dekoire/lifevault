@@ -1,4 +1,6 @@
 import { fileProblem } from "@/lib/filecheck";
+import { openPayment } from "@/lib/actions";
+import type { Doc } from "@/lib/types";
 import { createClient } from "@supabase/supabase-js";
 import { extract, FILE_TYPES, TEXT_TYPES, toColumns } from "@/lib/extract";
 
@@ -90,17 +92,31 @@ const kindsOrNull = (v?: string[]) => { const k = (v ?? []).filter((x) => KIND_I
 const uuidOrNull = (v?: string) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v : null);
 const dateOrNull = (v?: string) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
 
-export function search(cred: string, a: SearchArgs) {
-  return rpc("api_search_v2", {
+/**
+ * Lifevaults Entscheidung „ist hier etwas zu zahlen?“ mitgeben (gleich wie „Zu erledigen“), damit verbundene Apps
+ * nicht selbst raten: { amount, due, overdue, what } oder null.
+ */
+type ApiDoc = Record<string, unknown> & { id: string };
+const withPayment = (d: ApiDoc) => ({ ...d, open_payment: openPayment({ ...d, status: "ready" } as unknown as Doc) });
+function enrich<T>(r: T): T {
+  if (!r || typeof r !== "object") return r;
+  const o = r as Record<string, unknown>;
+  if (Array.isArray(o.documents)) return { ...o, documents: (o.documents as ApiDoc[]).map(withPayment) } as T;
+  if (typeof o.id === "string" && "deadlines" in o) return withPayment(o as ApiDoc) as T;
+  return r;
+}
+
+export async function search(cred: string, a: SearchArgs) {
+  return enrich(await rpc("api_search_v2", {
     p_cred: cred, p_query: a.query?.slice(0, 200) ?? null, p_project: uuidOrNull(a.project_id), p_cluster: a.cluster?.slice(0, 30) ?? null, p_kinds: kindsOrNull(a.kinds),
     p_since: dateOrNull(a.since), p_until: dateOrNull(a.until), p_archived: !!a.include_archived,
     p_limit: Number.isFinite(a.limit) ? a.limit : 20, p_offset: Number.isFinite(a.offset) ? a.offset : 0,
-  });
+  }));
 }
 
-export function getDocument(cred: string, id: string) {
+export async function getDocument(cred: string, id: string) {
   if (!uuidOrNull(id)) throw new ApiError(404, "not_found", ERRORS.not_found[1]);
-  return rpc("api_get_document", { p_cred: cred, p_id: id });
+  return enrich(await rpc("api_get_document", { p_cred: cred, p_id: id }));
 }
 
 /**
@@ -123,7 +139,7 @@ export async function getFile(cred: string, id: string): Promise<{ name: string;
 /** Änderungen seit der Lesemarke (neue/geänderte Dokumente, entfernte IDs), seitenweise – siehe api_changes */
 export async function changes(cred: string, cursor?: string | null, limit = 100) {
   if (cursor && (cursor.length > 100 || !/^[0-9T:.\-Z]+\|[0-9a-f-]{36}$/i.test(cursor))) throw new ApiError(400, "invalid_request", "cursor ist ungültig.");
-  return rpc("api_changes", { p_cred: cred, p_cursor: cursor || null, p_limit: Math.min(200, Math.max(1, limit || 100)) });
+  return enrich(await rpc("api_changes", { p_cred: cred, p_cursor: cursor || null, p_limit: Math.min(200, Math.max(1, limit || 100)) }));
 }
 
 /** Stups-Adresse der App setzen (https, Geheimnis 32–200 Zeichen) oder mit leerer Adresse entfernen */

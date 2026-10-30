@@ -66,7 +66,7 @@ GET  ${base}/api/v1/documents?kinds=rechnung,mahnung&since=2026-01-01
 GET  ${base}/api/v1/documents/<id>
 GET  ${base}/api/v1/documents/<id>/file         # Original-Datei
 POST ${base}/api/v1/documents                   # multipart: file (PDF, Bild, Text)`}</code>
-        <p>Jedes Dokument kommt mit Art (<code>kind</code>), Absender, Datum, Zusammenfassung, Beträgen (<code>amounts</code>), Fristen (<code>deadlines</code>) und Eckdaten (<code>key_facts</code>). Personenbezogene Angaben nur, wenn der Nutzer sie freigegeben hat.</p>
+        <p>Jedes Dokument kommt mit Art (<code>kind</code>), Absender, Datum, Zusammenfassung, Beträgen (<code>amounts</code>), Fristen (<code>deadlines</code>) und Eckdaten (<code>key_facts</code>). Dazu <code>open_payment</code>: ob laut Lifevault etwas zu zahlen ist (<code>amount</code>, <code>due</code>, <code>overdue</code>, <code>what</code>) – sonst <code>null</code>, z. B. bei reinen Infos wie einer Meldebescheinigung. Personenbezogene Angaben nur, wenn der Nutzer sie freigegeben hat.</p>
 
         <h3 className={h}>6. Nur Änderungen holen</h3>
         <p>
