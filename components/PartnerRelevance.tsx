@@ -128,11 +128,15 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
                 {list.map((d) => (
                   <li key={d.id}>
                     <Link href={`/d/${d.id}`} className={`flex items-start gap-3 px-4 py-3 hover:bg-surface-2/70 ${b.id === "erledigt" || b.id === "doppelt" ? "opacity-75" : ""}`}>
-                      {b.id === "erledigt" && <CircleCheck size={16} className="mt-0.5 shrink-0 text-positive-text" />}
+                      {/* wie im Überblick: Vorschaubild, Titel, Art und Datum, darunter warum es hier steht */}
+                      <span className="relative h-[52px] w-10 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2">
+                        <Thumb d={d} />
+                        {b.id === "erledigt" && <span className="absolute -right-1 -bottom-1 grid h-5 w-5 place-items-center rounded-full bg-surface text-positive-text"><CircleCheck size={15} /></span>}
+                      </span>
                       <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-1.5"><KindTag d={d} /><span className="truncate text-[14px] font-semibold">{d.title ?? d.file_name}</span></span>
-                        <span className="mt-0.5 block text-[12.5px] leading-5 text-soft">{sorted.get(d.id)?.why}</span>
-                        <span className="block text-[11.5px] text-muted">{shown(d, allDocs)}</span>
+                        <b className="block truncate text-[14.5px] leading-5 font-semibold">{d.title ?? d.file_name}</b>
+                        <span className="mt-0.5 flex min-w-0 items-center gap-2 text-[12.5px] text-muted"><KindTag d={d} /><span className="tnum truncate">{shown(d, allDocs)}</span></span>
+                        <span className="mt-0.5 line-clamp-2 block text-[12.5px] leading-[18px] text-soft">{sorted.get(d.id)?.why}</span>
                       </span>
                       {d.importance != null && <span className="mt-1.5"><ImportanceDots value={d.importance} /></span>}
                     </Link>
