@@ -121,7 +121,7 @@ function Row({ d, grid, cluster, sender }: { d: Doc; grid: string; cluster: bool
   const processing = d.status === "processing";
   const title = processing ? d.file_name : d.title ?? d.file_name;
   return (
-    <Link href={`/d/${d.id}`} role="row" className={`flex items-center gap-3 px-4 py-3.5 md:px-6 transition-colors hover:bg-canvas md:grid md:items-center ${grid} ${d.archived ? "opacity-60" : ""}`}>
+    <Link href={`/d/${d.id}`} role="row" className={`flex items-center gap-3 px-4 py-[18px] md:px-6 transition-colors hover:bg-canvas md:grid md:items-center ${grid} ${d.archived ? "opacity-60" : ""}`}>
       <span className="flex min-w-0 flex-1 items-center gap-3">
         <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} urgent={isUrgent(d)} size={36} />
         <span className="min-w-0 flex-1">

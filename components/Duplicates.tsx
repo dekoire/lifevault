@@ -47,7 +47,7 @@ export function DuplicateHint({ docs }: { docs: Doc[] }) {
       </div>
       <ul className="divide-y divide-line border-t border-line">
         {partnerGroups.slice(0, 2).map((g) => (
-          <li key={g.key} className="flex flex-wrap items-center gap-3 px-4 py-3.5 md:px-6 sm:flex-nowrap">
+          <li key={g.key} className="flex flex-wrap items-center gap-3 px-4 py-[18px] md:px-6 sm:flex-nowrap">
             <span className="flex shrink-0 -space-x-2">{g.partners.slice(0, 3).map((p) => <span key={p.name} className="rounded-full ring-2 ring-surface"><SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={32} /></span>)}</span>
             <span className="min-w-0 flex-1">
               <b className="block truncate text-[14px]">{g.partners.map((p) => p.name).slice(0, 3).join(" · ")}{g.partners.length > 3 ? ` +${g.partners.length - 3}` : ""}</b>
@@ -57,7 +57,7 @@ export function DuplicateHint({ docs }: { docs: Doc[] }) {
           </li>
         ))}
         {groups.slice(0, 3).map((g) => (
-          <li key={g.key} className="flex flex-wrap items-center gap-3 px-4 py-3.5 md:px-6 sm:flex-nowrap">
+          <li key={g.key} className="flex flex-wrap items-center gap-3 px-4 py-[18px] md:px-6 sm:flex-nowrap">
             <span className="flex shrink-0 -space-x-4">{g.docs.slice(0, 3).map((d, i) => <span key={d.id} className="h-14 w-11 overflow-hidden rounded-lg border-2 border-surface bg-surface-2 shadow-card" style={{ transform: `rotate(${(i - 1) * 4}deg)` }}><Thumb d={d} /></span>)}</span>
             <span className="min-w-0 flex-1">
               <b className="block truncate text-[14px]">{g.docs[0].title ?? g.docs[0].file_name}</b>

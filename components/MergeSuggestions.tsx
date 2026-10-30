@@ -87,7 +87,7 @@ export function MergeSuggestions({ intro, empty }: { intro?: React.ReactNode; em
           const d0 = g.docs[0];
           return (
             <li key={k}>
-              <button type="button" onClick={() => setOpen(g)} className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-canvas md:px-6">
+              <button type="button" onClick={() => setOpen(g)} className="flex w-full items-center gap-3 px-4 py-[18px] text-left transition-colors hover:bg-canvas md:px-6">
                 <span className="flex w-[124px] shrink-0 items-center gap-3">
                   {d0 && <SenderLogo domain={d0.sender_domain} sender={d0.sender} cluster={d0.cluster} size={36} />}
                   {/* kleine Vorschau der Teile, überlappend */}

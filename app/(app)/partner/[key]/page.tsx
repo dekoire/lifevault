@@ -133,7 +133,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
                 {topics.map((topic) => { const isOpen = shownTopic === topic; const n = p.ids.filter((i) => i.topic === topic).length; return (
                   <div key={topic}>
                     <h3 className="border-t border-line">
-                      <button type="button" aria-expanded={isOpen} onClick={() => setOpenTopic(isOpen ? null : topic)} className="flex w-full items-center gap-2 px-4 py-3.5 md:px-6 text-left text-[15px] font-semibold transition-colors hover:bg-surface-2">
+                      <button type="button" aria-expanded={isOpen} onClick={() => setOpenTopic(isOpen ? null : topic)} className="flex w-full items-center gap-2 px-4 py-[18px] md:px-6 text-left text-[15px] font-semibold transition-colors hover:bg-surface-2">
                         <span className="min-w-0 flex-1">{topic}</span>
                         <span className="tnum rounded-full bg-surface px-3 py-1 text-[12px] font-semibold text-soft">{n}</span>
                         <ChevronDown size={17} className={`shrink-0 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />

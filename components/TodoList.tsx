@@ -102,7 +102,7 @@ export function TodoList({ docs }: { docs: Doc[] }) {
           const amt = t.total ?? t.payment?.amount;
           const amount = amt !== undefined ? fmtMoney(amt, t.payment?.currency ?? "EUR") : null;
           return (
-            <li key={k} className={`flex items-center gap-3 px-4 py-3.5 md:px-6 ${GRID} ${isDone ? "opacity-50" : ""}`}>
+            <li key={k} className={`flex items-center gap-3 px-4 py-[18px] md:px-6 ${GRID} ${isDone ? "opacity-50" : ""}`}>
               <button type="button" onClick={() => toggle(k)} aria-label={isDone ? "Wieder offen" : "Als erledigt markieren"} title={isDone ? "Wieder offen" : "Erledigt"} className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 ${isDone ? "border-positive bg-positive text-white" : "border-line-strong hover:border-fg"}`}>{isDone && <Check size={13} strokeWidth={3} />}</button>
               <button type="button" onClick={() => open?.({ kind: "doc", id: t.doc.id })} className="flex min-w-0 flex-1 items-center gap-3 text-left md:contents">
                 <span className="flex min-w-0 flex-1 items-center gap-3">

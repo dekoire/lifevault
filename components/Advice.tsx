@@ -82,7 +82,7 @@ export function AdviceList() {
           const isOpen = open === i;
           return (
             <div key={i}>
-              <button type="button" onClick={() => setOpen(isOpen ? null : i)} aria-expanded={isOpen} className={`flex w-full items-center gap-3 px-4 py-3.5 md:px-6 text-left transition-colors hover:bg-canvas ${GRID}`}>
+              <button type="button" onClick={() => setOpen(isOpen ? null : i)} aria-expanded={isOpen} className={`flex w-full items-center gap-3 px-4 py-[18px] md:px-6 text-left transition-colors hover:bg-canvas ${GRID}`}>
                 <span className="min-w-0 flex-1">
                   <b className="block truncate text-[15px] font-semibold">{it.title}</b>
                   <span className="block truncate text-[12px] text-muted md:hidden">{k.label} · Aufwand {it.effort}{it.saving ? ` · ca. ${Math.round(it.saving).toLocaleString("de-DE")} €/Jahr` : ""}</span>
