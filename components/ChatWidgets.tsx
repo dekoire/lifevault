@@ -43,6 +43,9 @@ const BAR = ["#6d4aff", "#1f9688", "#2b5fe6", "#c46d06", "#d4143c", "#1b2130", "
 
 // Die KI schreibt mal nur die ID, mal einen Link [Titel](/d/ID) – wir nehmen, was drinsteckt
 const ids = (body: string) => [...new Set(body.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) ?? [])];
+/** zahlung-Baustein: „<ID> | 75“ = anderer Betrag (Teilzahlung, Rate, Abschlag) für dieses Dokument */
+const askedAmounts = (body: string) => new Map(body.split("\n").map((l) => [/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.exec(l)?.[0]?.toLowerCase(), /\|\s*([\d.]+(?:,\d{1,2})?|\d+(?:\.\d{1,2})?)\s*(?:€|eur)?/i.exec(l)?.[1]] as const).filter((x): x is [string, string] => !!x[0] && !!x[1]).map(([id, v]) => [id, parseAmount(v)] as const).filter(([, v]) => v > 0 && v < 1e7));
+const parseAmount = (v: string) => Number(/,\d{1,2}$/.test(v) ? v.replace(/\./g, "").replace(",", ".") : v.replace(/,/g, ""));
 const keys = (body: string) => [...new Set(body.split("\n").map((l) => (l.match(/\/partner\/([^\s)]+)/)?.[1] ?? l.replace(/^[-*\s]+/, "")).trim()).filter(Boolean))];
 const dateOf = (d: Doc) => d.doc_date ?? d.received_at.slice(0, 10);
 
@@ -84,9 +87,17 @@ function PaymentWidget({ body }: { body: string }) {
   }), [body, allDocs, today, name]);
   const [sel, setSel] = useState<string[]>([]);
   useEffect(() => setSel((cur) => (cur.length ? cur : list.map((x) => x.d.id))), [list]);
+  // Betrag frei wählbar: aus dem Chat („<ID> | 75“) oder selbst eingetippt – GiroCode und Text folgen
+  const asked = useMemo(() => askedAmounts(body), [body]);
+  const [typed, setTyped] = useState<Record<string, string>>({});
   if (!list.length) return null;
+  const amountOf = (x: (typeof list)[number]) => {
+    const t = typed[x.d.id];
+    if (t !== undefined) { const v = parseAmount(t.replace(/\s|€/g, "")); return t.trim() && v > 0 ? v : undefined; }
+    return asked.get(x.d.id.toLowerCase()) ?? x.total;
+  };
   const chosen = list.filter((x) => sel.includes(x.d.id));
-  const sum = chosen.reduce((s, x) => s + (x.total ?? 0), 0);
+  const sum = chosen.reduce((s, x) => s + (amountOf(x) ?? 0), 0);
   return (
     <div className="space-y-3">
       {list.length > 1 && (
@@ -99,7 +110,7 @@ function PaymentWidget({ body }: { body: string }) {
                   <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 ${on ? "border-fg bg-fg text-canvas" : "border-line-strong"}`}>{on && <Check size={12} strokeWidth={3} />}</span>
                   <SenderLogo domain={x.d.sender_domain} sender={x.d.sender} cluster={x.d.cluster} size={30} />
                   <span className="min-w-0 flex-1"><b className="block truncate text-[13.5px]">{x.d.title ?? x.d.file_name}</b><span className="block truncate text-[12px] text-muted">{fmtDate(dateOf(x.d))}{x.todo && <> · <span className={`font-semibold ${x.todo.days < 0 ? "text-negative-text" : ""}`}>{dueLabel(x.todo.days)}</span></>}</span></span>
-                  <b className="tnum shrink-0 text-[13.5px]">{x.total !== undefined ? fmtMoney(x.total) : "–"}</b>
+                  <b className="tnum shrink-0 text-[13.5px]">{amountOf(x) !== undefined ? fmtMoney(amountOf(x)!) : "–"}</b>
                 </button>
               </li>
             ); })}
@@ -109,7 +120,9 @@ function PaymentWidget({ body }: { body: string }) {
       {/* je Zahlung eine Karte, nach rechts wischen */}
       <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
         {chosen.map((x) => {
-          const all = [x.p?.recipient && `Empfänger: ${x.p.recipient}`, x.p && `IBAN: ${fmtIban(x.p.iban)}`, x.p?.bic && `BIC: ${x.p.bic}`, x.total !== undefined && `Betrag: ${fmtMoney(x.total)}`, `Verwendungszweck: ${x.purpose.text}`].filter(Boolean).join("\n");
+          const amount = amountOf(x);
+          const partial = amount !== undefined && x.total !== undefined && Math.abs(amount - x.total) > 0.004;
+          const all = [x.p?.recipient && `Empfänger: ${x.p.recipient}`, x.p && `IBAN: ${fmtIban(x.p.iban)}`, x.p?.bic && `BIC: ${x.p.bic}`, amount !== undefined && `Betrag: ${fmtMoney(amount)}`, `Verwendungszweck: ${x.purpose.text}`].filter(Boolean).join("\n");
           return (
             <article key={x.d.id} className={`w-[88%] max-w-[420px] shrink-0 snap-start overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card ${chosen.length === 1 ? "w-full max-w-none" : ""}`}>
               <div className="flex items-start gap-3 px-4 pt-4 pb-3">
@@ -119,7 +132,8 @@ function PaymentWidget({ body }: { body: string }) {
                   <button type="button" onClick={() => open?.({ kind: "doc", id: x.d.id })} className="block max-w-full truncate text-left text-[12px] text-selected hover:underline">{x.d.title} · {fmtDate(dateOf(x.d))}</button>
                 </span>
                 <span className="text-right">
-                  {x.total !== undefined && <b className="tnum block text-[20px] leading-6">{fmtMoney(x.total)}</b>}
+                  {amount !== undefined && <b className="tnum block text-[20px] leading-6">{fmtMoney(amount)}</b>}
+                  {partial && <span className="block text-[11px] text-muted">von {fmtMoney(x.total!)} offen</span>}
                   {x.todo && <span className={`mt-1 inline-block rounded-full border px-2 py-px text-[11px] font-semibold ${x.todo.days < 0 ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>bis {fmtDate(x.todo.date)}</span>}
                 </span>
               </div>
@@ -135,17 +149,24 @@ function PaymentWidget({ body }: { body: string }) {
                   {x.p.recipient && <Row label="Empfänger" value={x.p.recipient} />}
                   <Row label="IBAN" value={x.p.iban} shown={fmtIban(x.p.iban)} />
                   {x.p.bic && <Row label="BIC" value={x.p.bic} />}
-                  {x.total !== undefined && <Row label="Betrag" value={x.total.toFixed(2).replace(".", ",")} shown={fmtMoney(x.total)} />}
+                  {/* Betrag: änderbar (Teilzahlung, Rate) – der GiroCode übernimmt ihn */}
+                  <label className="flex items-center gap-3 px-4 py-2.5">
+                    <span className="w-28 shrink-0 text-[12px] text-muted">Betrag{partial ? " (Teilbetrag)" : ""}</span>
+                    <span className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-card-line px-2.5 focus-within:border-fg">
+                      <input inputMode="decimal" value={typed[x.d.id] ?? (amount !== undefined ? amount.toFixed(2).replace(".", ",") : "")} onChange={(e) => setTyped({ ...typed, [x.d.id]: e.target.value })} placeholder="Betrag eingeben" aria-label="Betrag" className="tnum h-8 min-w-0 flex-1 bg-transparent text-[14px] font-semibold outline-none" />
+                      <span className="text-[13px] text-muted">€</span>
+                    </span>
+                  </label>
                   <Row label={x.purpose.note ? `Verwendungszweck (${x.purpose.note})` : x.purpose.given ? "Verwendungszweck" : "Verwendungszweck (Vorschlag)"} value={x.purpose.text} />
                 </div>
               ) : <p className="border-t border-line px-4 py-3 text-[12.5px] text-muted">Keine Bankverbindung im Schreiben – vermutlich Lastschrift oder Zahlung im Kundenkonto.</p>}
               <div className="flex items-center gap-3 border-t border-line p-3">
-                {x.p && <Qr text={epcPayload({ ...x.p, amount: x.total, reference: x.purpose.text })} size={84} />}
+                {x.p && <Qr text={epcPayload({ ...x.p, amount, reference: x.purpose.text })} size={84} />}
                 <span className="min-w-0 flex-1 space-y-2 text-[12px] text-muted">
                   {x.p && <span className="block">GiroCode: mit der Banking-App scannen.</span>}
                   {x.links.slice(0, 1).map((l) => <a key={l} href={l} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-semibold text-selected"><Globe size={13} /> Online bezahlen <ExternalLink size={11} /></a>)}
                   <button type="button" onClick={() => void navigator.clipboard.writeText(all)} className="flex h-8 items-center gap-1.5 rounded-full border border-card-line px-3 font-semibold text-fg hover:bg-surface-2"><Copy size={13} /> Alles kopieren</button>
-                  {x.p && <PayImageButton data={{ p: { ...x.p, amount: x.total, reference: x.purpose.text }, sender: x.d.sender, domain: x.d.sender_domain, title: x.d.title, due: x.todo?.date }} />}
+                  {x.p && <PayImageButton data={{ p: { ...x.p, amount, reference: x.purpose.text }, sender: x.d.sender, domain: x.d.sender_domain, title: x.d.title, due: x.todo?.date }} />}
                 </span>
               </div>
             </article>
