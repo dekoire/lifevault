@@ -2,7 +2,7 @@
 import { IconTile } from "@/components/ClusterIcon";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { BookOpen, ChevronDown, CircleCheck, Copy, Crown, FileText, Files, RefreshCw, type LucideIcon } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronRight, CircleCheck, Copy, Crown, FileText, Files, RefreshCw, type LucideIcon } from "lucide-react";
 import { ImportanceDots } from "@/components/Importance";
 import { KindTag } from "@/components/KindTag";
 import { Thumb } from "@/components/ChatWidgets";
@@ -66,84 +66,83 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
   const due = docs.filter((d) => !d.archived && (d.deadlines ?? []).some((x) => x.date >= today)).length;
   const count = (b: Bucket) => docs.filter((d) => sorted.get(d.id)?.bucket === b).length;
   const first = byDate[byDate.length - 1], last = byDate[0];
+  // Dokumentzeilen wie die Tabelle „Letzte Buchungen“ in Finastry: Kopfzeile, gleicher Rand, höchstens zwei Zeilen Text
+  const GRID = "md:grid md:grid-cols-[minmax(0,1fr)_8.5rem_6.5rem_3.5rem_1rem] md:items-center md:gap-4";
+  const HEAD = "text-[12px] font-semibold text-muted";
+  const Head = () => (
+    <div className={`hidden border-b border-line px-6 py-3.5 ${GRID}`} role="row">
+      <span className={HEAD}>Dokument</span><span className={HEAD}>Art</span><span className={HEAD}>Datum</span><span className={HEAD}>Wichtig</span><span />
+    </div>
+  );
+  const Row = ({ d, note, dim }: { d: Doc; note?: string | null; dim?: boolean }) => (
+    <Link href={`/d/${d.id}`} className={`flex items-center gap-3 px-4 py-4 hover:bg-canvas md:px-6 ${GRID} ${dim ? "opacity-70" : ""}`}>
+      <span className="flex min-w-0 flex-1 items-center gap-3">
+        <span className="relative h-11 w-9 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2"><Thumb d={d} /></span>
+        <span className="min-w-0">
+          <b className="block truncate text-[14px] leading-5 font-semibold">{d.title ?? d.file_name}</b>
+          <span className="block truncate text-[12px] leading-[18px] text-muted"><span className="md:hidden">{shown(d, allDocs)}{note ? " · " : ""}</span>{note}</span>
+        </span>
+      </span>
+      <span className="hidden min-w-0 text-[13px] md:block"><KindTag d={d} /></span>
+      <span className="tnum hidden truncate text-[13px] text-soft md:block">{shown(d, allDocs)}</span>
+      <span className="hidden md:block">{d.importance != null && <ImportanceDots value={d.importance} />}</span>
+      <ChevronRight size={16} className="hidden shrink-0 text-muted md:block" />
+    </Link>
+  );
+  const years = first ? [iso(first).slice(0, 4), iso(last).slice(0, 4)].filter((y, i, a) => a.indexOf(y) === i).join("–") : "";
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {main && (
-        <Link href={`/d/${main.id}`} className="block rounded-2xl bg-brand-500 p-4 text-white shadow-card transition hover:brightness-105">
-          <span className="flex items-center gap-1.5 text-[12px] font-semibold tracking-wide text-white/80 uppercase"><FileText size={14} /> Hauptdokument</span>
-          <b className="mt-1 block text-[17px] leading-6">{main.title ?? main.file_name}</b>
-          <span className="mt-0.5 block text-[13px] text-white/85">{main.doc_type ?? ""}{main.doc_type ? " · " : ""}{fmtDate(dateOf(main))} · das schaust du nach, wenn etwas ist</span>
+        <Link href={`/d/${main.id}`} className="block rounded-2xl bg-brand-500 px-6 py-5 text-white shadow-card transition hover:brightness-105">
+          <span className="flex items-center gap-1.5 text-[13px] font-medium text-white/80"><FileText size={14} /> Hauptdokument</span>
+          <b className="mt-1 line-clamp-2 block text-[18px] leading-[26px]">{main.title ?? main.file_name}</b>
+          <span className="mt-0.5 block truncate text-[13px] text-white/85">{main.doc_type ?? ""}{main.doc_type ? " · " : ""}{fmtDate(dateOf(main))}</span>
         </Link>
       )}
       {afterMain}
-      {/* Überblick: was es hier gibt, auf einen Blick – darunter alle Dokumente kompakt */}
+      {/* Überblick: Zahlen auf einen Blick, darunter die neuesten Dokumente */}
       <section className={`${CARD} overflow-hidden`}>
-        <div className="px-4 pt-5 pb-3 md:px-6">
-          <span className="flex items-center gap-2.5 text-[18px] leading-[26px] font-semibold"><Badge icon={Files} color="#6d4aff" /> Überblick</span>
-          <p className="mt-1 text-[13px] leading-5 text-soft">{docs.length} {docs.length === 1 ? "Dokument" : "Dokumente"}{first ? ` von ${fmtDate(iso(first))} bis ${fmtDate(iso(last))}` : ""}{last ? <>, zuletzt <b className="font-semibold text-fg">{last.title ?? last.file_name}</b></> : null}.</p>
+        <div className="flex items-center gap-3 px-4 pt-5 pb-4 md:px-6">
+          <Badge icon={Files} color="#6d4aff" />
+          <span className="min-w-0">
+            <h2 className="text-[18px] leading-[26px] font-semibold">Überblick</h2>
+            <p className="truncate text-[13px] text-muted">{docs.length} {docs.length === 1 ? "Dokument" : "Dokumente"}{years ? ` · ${years}` : ""}</p>
+          </span>
         </div>
-        <div className="grid grid-cols-4 divide-x divide-line border-t border-line text-center">
+        <div className="grid grid-cols-4 divide-x divide-line border-y border-line text-center">
           {([["Wichtig", count("wichtig"), ""], ["Laufend", count("laufend"), ""], ["Offen", due, due ? "text-negative-text" : ""], ["Erledigt", count("erledigt"), "text-positive-text"]] as const).map(([l, n, c]) => (
-            <div key={l} className="px-2 py-2.5"><b className={`tnum block text-[18px] leading-6 ${n ? c : "text-muted"}`}>{n}</b><span className="text-[12px] text-muted">{l}</span></div>
+            <div key={l} className="px-2 py-4"><b className={`tnum block text-[20px] leading-7 ${n ? c : "text-muted"}`}>{n}</b><span className="text-[12px] text-muted">{l}</span></div>
           ))}
         </div>
-        <ul className="divide-y divide-line border-t border-line">
-          {(all ? byDate : byDate.slice(0, 6)).map((d) => {
+        <Head />
+        <div className="divide-y divide-line">
+          {(all ? byDate : byDate.slice(0, 5)).map((d) => {
             const b = sorted.get(d.id)?.bucket;
-            const gone = b === "erledigt" || b === "doppelt";
-            return (
-              <li key={d.id}>
-                {/* wie die übrigen Dokumentzeilen: Vorschau des Blatts, Titel, Art und Datum, darunter worum es geht */}
-                <Link href={`/d/${d.id}`} className={`flex items-start gap-3 px-4 py-3.5 md:px-6 hover:bg-canvas ${gone ? "opacity-70" : ""}`}>
-                  <span className="relative h-[52px] w-10 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2">
-                    <Thumb d={d} />
-                    {gone && <span className="absolute -right-1 -bottom-1 grid h-5 w-5 place-items-center rounded-full bg-surface text-positive-text"><CircleCheck size={15} /></span>}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <b className="block truncate text-[15px] leading-5 font-semibold">{d.title ?? d.file_name}</b>
-                    <span className="mt-0.5 flex min-w-0 items-center gap-2 text-[13px] text-muted"><KindTag d={d} /><span className="tnum truncate">{shown(d, allDocs)}</span></span>
-                    {d.summary && <span className="mt-0.5 line-clamp-1 block text-[13px] leading-[18px] text-soft">{d.summary}</span>}
-                  </span>
-                </Link>
-              </li>
-            );
+            return <Row key={d.id} d={d} note={d.doc_type} dim={b === "erledigt" || b === "doppelt"} />;
           })}
-        </ul>
-        {byDate.length > 6 && <button type="button" onClick={() => setAll(!all)} className="w-full border-t border-line py-2.5 text-[13px] font-semibold text-selected hover:bg-surface-2/60">{all ? "Weniger anzeigen" : `Alle ${byDate.length} anzeigen`}</button>}
+        </div>
+        {byDate.length > 5 && <button type="button" onClick={() => setAll(!all)} className="w-full border-t border-line py-3.5 text-[13px] font-semibold text-selected hover:bg-canvas">{all ? "Weniger anzeigen" : `Alle ${byDate.length} anzeigen`}</button>}
       </section>
       {BUCKETS.map((b) => {
         const list = of(b.id).filter((d) => d.id !== main?.id);
         if (!list.length) return null;
         return (
           <section key={b.id} className={`${CARD} overflow-hidden`}>
-            <button type="button" onClick={() => setOpen({ ...open, [b.id]: !open[b.id] })} aria-expanded={open[b.id]} className="flex w-full items-start gap-3 px-4 py-4 text-left md:px-6 hover:bg-surface-2/60">
+            <button type="button" onClick={() => setOpen({ ...open, [b.id]: !open[b.id] })} aria-expanded={open[b.id]} className="flex w-full items-center gap-3 px-4 py-5 text-left hover:bg-canvas md:px-6">
               <Badge icon={b.icon} color={b.color} />
               <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">{b.title}<span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] text-soft">{list.length}</span></span>
-                <span className="block text-[13px] text-muted">{b.hint}</span>
+                <span className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">{b.title}<span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] font-semibold text-soft">{list.length}</span></span>
+                <span className="block truncate text-[13px] text-muted">{b.hint}</span>
               </span>
-              <ChevronDown size={16} className={`mt-1 shrink-0 text-muted transition-transform ${open[b.id] ? "rotate-180" : ""}`} />
+              <ChevronDown size={16} className={`shrink-0 text-muted transition-transform ${open[b.id] ? "rotate-180" : ""}`} />
             </button>
             {open[b.id] && (
-              <ul className="divide-y divide-line border-t border-line">
-                {list.map((d) => (
-                  <li key={d.id}>
-                    <Link href={`/d/${d.id}`} className={`flex items-start gap-3 px-4 py-3.5 md:px-6 hover:bg-canvas ${b.id === "erledigt" || b.id === "doppelt" ? "opacity-75" : ""}`}>
-                      {/* wie im Überblick: Vorschaubild, Titel, Art und Datum, darunter warum es hier steht */}
-                      <span className="relative h-[52px] w-10 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2">
-                        <Thumb d={d} />
-                        {b.id === "erledigt" && <span className="absolute -right-1 -bottom-1 grid h-5 w-5 place-items-center rounded-full bg-surface text-positive-text"><CircleCheck size={15} /></span>}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <b className="block truncate text-[15px] leading-5 font-semibold">{d.title ?? d.file_name}</b>
-                        <span className="mt-0.5 flex min-w-0 items-center gap-2 text-[13px] text-muted"><KindTag d={d} /><span className="tnum truncate">{shown(d, allDocs)}</span></span>
-                        <span className="mt-0.5 line-clamp-2 block text-[13px] leading-[18px] text-soft">{sorted.get(d.id)?.why}</span>
-                      </span>
-                      {d.importance != null && <span className="mt-1.5"><ImportanceDots value={d.importance} /></span>}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <div className="border-t border-line">
+                <Head />
+                <div className="divide-y divide-line">
+                  {list.map((d) => <Row key={d.id} d={d} note={sorted.get(d.id)?.why} dim={b.id === "erledigt" || b.id === "doppelt"} />)}
+                </div>
+              </div>
             )}
           </section>
         );

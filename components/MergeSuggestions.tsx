@@ -77,20 +77,24 @@ export function MergeSuggestions({ intro, empty }: { intro?: React.ReactNode; em
         <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">Gehören zusammen? <span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] font-semibold text-soft">{groups.length}</span></h2>
         <p className="mt-0.5 text-[13px] text-muted">Kurz nacheinander hochgeladen – sieht nach einem Dokument aus</p>
       </div>
-      <ul className="divide-y divide-line border-t border-line">
+      {/* statt Trennstrich: Kopfzeile wie eine Tabelle */}
+      <div className="hidden border-y border-line px-6 py-3.5 text-[12px] font-semibold text-muted sm:flex sm:items-center sm:gap-3">
+        <span className="w-[76px] shrink-0">Teile</span><span className="flex-1">Dokument</span><span className="w-[214px] shrink-0 text-right">Aktion</span>
+      </div>
+      <ul className="divide-y divide-line border-t border-line sm:border-t-0">
         {groups.map((g) => {
           const k = g.ids.join(",");
           return (
-            <li key={k} className="flex flex-wrap items-center gap-3 px-4 py-3.5 md:px-6 sm:flex-nowrap">
+            <li key={k} className="flex flex-wrap items-center gap-3 px-4 py-4 sm:flex-nowrap md:px-6">
               {/* kleine Vorschau der Teile, überlappend */}
-              <button type="button" onClick={() => setOpen(g)} className="flex shrink-0 -space-x-4" aria-label="Ansehen">
+              <button type="button" onClick={() => setOpen(g)} className="flex w-[76px] shrink-0 -space-x-4" aria-label="Ansehen">
                 {g.docs.slice(0, 3).map((d, i) => <span key={d.id} className="h-14 w-11 overflow-hidden rounded-lg border-2 border-surface bg-surface-2 shadow-card" style={{ transform: `rotate(${(i - 1) * 4}deg)` }}><Thumb d={d} /></span>)}
               </button>
               <span className="min-w-0 flex-1">
                 <b className="block truncate text-[14px]">{g.title}</b>
-                <span className="line-clamp-2 block text-[12px] text-muted">{g.docs.length} Teile · {g.reason}</span>
+                <span className="block truncate text-[12px] text-muted">{g.docs.length} Teile · {g.reason}</span>
               </span>
-              <span className="flex shrink-0 gap-2">
+              <span className="flex shrink-0 justify-end gap-2 sm:w-[214px]">
                 <button type="button" onClick={() => dismiss(g)} className="inline-flex h-9 items-center gap-1 rounded-full border border-card-line px-3 text-[13px] font-semibold hover:bg-surface-2"><X size={13} /> Nein</button>
                 <button type="button" onClick={() => setOpen(g)} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[13px] font-semibold text-canvas"><Combine size={13} /> Ansehen & prüfen</button>
               </span>
