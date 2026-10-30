@@ -71,7 +71,7 @@ export function AdviceList() {
         <button type="button" onClick={() => void load()} disabled={busy} title="Neu bewerten" aria-label="Neu bewerten" className="grid h-9 w-9 place-items-center rounded-full text-soft hover:bg-surface-2 disabled:opacity-50">{busy ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}</button>
       </div>
       {error && <p className="mx-4 mb-3 rounded-xl bg-negative/10 px-3 py-2 text-[13px] text-negative-text">{error}</p>}
-      <div className={`hidden border-b border-line px-4 py-3.5 md:px-6 ${GRID}`} role="row">
+      <div className={`hidden border-b border-line px-4 py-[18px] md:px-6 ${GRID}`} role="row">
         <span className={HEAD}>Empfehlung</span><span className={HEAD}>Art</span><span className={HEAD}>Aufwand</span><span className={`${HEAD} text-right`}>Ersparnis</span><span />
       </div>
       <div className="divide-y divide-line border-t border-line md:border-t-0">

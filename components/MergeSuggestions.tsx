@@ -79,7 +79,7 @@ export function MergeSuggestions({ intro, empty }: { intro?: React.ReactNode; em
         <p className="mt-0.5 text-[13px] text-muted">Kurz nacheinander hochgeladen – sieht nach einem Dokument aus</p>
       </div>
       {/* Kopfzeile wie eine Tabelle; Zeile antippen öffnet die Prüfung – dort „Zusammenführen“, „Nicht zusammen“ oder „Später“ */}
-      <div className="hidden border-y border-line px-6 py-3.5 text-[12px] font-semibold text-muted sm:flex sm:items-center sm:gap-3">
+      <div className="hidden border-y border-line px-6 py-[18px] text-[12px] font-semibold text-muted sm:flex sm:items-center sm:gap-3">
         <span className="w-[124px] shrink-0">Teile</span><span className="flex-1">Dokument</span>
       </div>
       <ul className="divide-y divide-line border-t border-line sm:border-t-0">
