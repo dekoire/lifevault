@@ -6,6 +6,7 @@ import { ClusterIcon } from "@/components/ClusterIcon";
 import { SenderLogo } from "@/components/SenderLogo";
 import { LabelChip } from "@/components/Labels";
 import { VaultUnlock } from "@/components/VaultUnlock";
+import { Segmented } from "@/components/ui";
 import { groupOf, LABEL_GROUPS } from "@/lib/labels";
 import { CLUSTERS, clusterOf } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
@@ -63,9 +64,7 @@ export function ExportSheet({ onClose }: { onClose: () => void }) {
           <button type="button" onClick={onClose} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3 disabled:opacity-40"><X size={18} /></button>
         </div>
         <div className="px-6 pb-3">
-          <div className="flex gap-1 rounded-full bg-surface-3 p-1">
-            {TABS.map((t) => <button key={t.id} type="button" onClick={() => setTab(t.id)} aria-pressed={tab === t.id} className={`h-9 flex-1 rounded-full px-2 text-[13px] font-semibold transition-colors ${tab === t.id ? "bg-surface text-fg shadow-card" : "text-soft hover:text-fg"}`}>{t.label}</button>)}
-          </div>
+          <Segmented value={tab} onChange={setTab} options={TABS} full />
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto border-t border-line">
           {tab === "areas" && <Areas docs={docs} sel={sel} setMany={setMany} />}

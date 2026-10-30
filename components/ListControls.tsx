@@ -112,6 +112,11 @@ export function FilterToggle({ label, on, onChange }: { label: string; on: boole
 /** Suchfeld + ein „Filter“-Knopf; die Filter öffnen sich als Seitenpanel von rechts */
 export function FilterBar({ q, onQ, placeholder, children, actions, activeCount, onReset, count }: { q?: string; onQ?: (v: string) => void; placeholder?: string; children?: React.ReactNode; actions?: React.ReactNode; activeCount: number; onReset: () => void; count?: string }) {
   const [open, setOpen] = useState(false);
+  // mobil: Suche als Lupe, aufgeklappt über die ganze Breite (Export/Filter weichen, bis ✕)
+  const collapsible = !!onQ && !!(actions || children);
+  const [searching, setSearching] = useState(!!q);
+  const input = useRef<HTMLInputElement>(null);
+  const close = () => { onQ?.(""); setSearching(false); };
   useEffect(() => {
     if (!open) return;
     const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -121,20 +126,25 @@ export function FilterBar({ q, onQ, placeholder, children, actions, activeCount,
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2">
+        {collapsible && !searching && (
+          <button type="button" onClick={() => { setSearching(true); setTimeout(() => input.current?.focus(), 0); }} aria-label="Suchen" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-card-line bg-surface text-fg hover:bg-surface-2 sm:hidden"><Search size={18} /></button>
+        )}
         {onQ && (
-          <label className="flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full border border-card-line bg-surface px-4 focus-within:border-brand-500">
+          <label className={`${collapsible && !searching ? "hidden sm:flex" : "flex"} search-open h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full border border-card-line bg-surface px-4 focus-within:border-brand-500`}>
             <Search size={17} className="shrink-0 text-muted" />
-            <input value={q} onChange={(e) => onQ(e.target.value)} placeholder={placeholder} className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted" />
-            {q && <button type="button" onClick={() => onQ("")} aria-label="Suche leeren" className="text-muted hover:text-fg"><X size={16} /></button>}
+            <input ref={input} value={q} onChange={(e) => onQ(e.target.value)} onKeyDown={(e) => e.key === "Escape" && close()} placeholder={placeholder} className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted" />
+            {(q || collapsible) && <button type="button" onClick={close} aria-label="Suche schließen" className={`text-muted hover:text-fg ${q ? "" : "sm:hidden"}`}><X size={16} /></button>}
           </label>
         )}
-        {actions}
-        {children && (
-          <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-[14px] font-semibold ${activeCount ? "border-fg bg-fg text-canvas" : "border-card-line bg-surface text-fg hover:bg-surface-2"} ${onQ ? "" : "ml-auto"}`}>
-            <SlidersHorizontal size={16} /> Filter
-            {activeCount > 0 && <span className="tnum grid h-5 min-w-5 place-items-center rounded-full bg-canvas px-1.5 text-[11.5px] font-bold text-fg">{activeCount}</span>}
-          </button>
-        )}
+        <div className={`${searching ? "hidden sm:flex" : "flex"} ml-auto shrink-0 items-center gap-2 sm:ml-0`}>
+          {actions}
+          {children && (
+            <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-[14px] font-semibold ${activeCount ? "border-fg bg-fg text-canvas" : "border-card-line bg-surface text-fg hover:bg-surface-2"}`}>
+              <SlidersHorizontal size={16} /> Filter
+              {activeCount > 0 && <span className="tnum grid h-5 min-w-5 place-items-center rounded-full bg-canvas px-1.5 text-[11.5px] font-bold text-fg">{activeCount}</span>}
+            </button>
+          )}
+        </div>
       </div>
       {count && <p className="text-right text-[12.5px] text-muted">{count}{activeCount > 0 && <> · <button type="button" onClick={onReset} className="font-semibold text-selected">Filter zurücksetzen</button></>}</p>}
       {/* ins body: sonst schneidet ein Elternteil mit transform/Animation das Panel ab */}
