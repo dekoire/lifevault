@@ -26,6 +26,8 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { PressFeedback } from "@/components/PressFeedback";
 import { RedateMissing } from "@/components/RedateMissing";
+import { RetryStuck } from "@/components/RetryStuck";
+import { isStuck } from "@/lib/types";
 import { KeyboardWatch } from "@/components/KeyboardWatch";
 import { AvatarMenu } from "@/components/AvatarMenu";
 import { supabase, useSession } from "@/lib/supabase";
@@ -90,7 +92,8 @@ function QueueSync() {
 function PullWithDocs() {
   const { allDocs } = useDocs();
   const router = useRouter();
-  const running = allDocs.filter((d) => d.status === "processing").length;
+  // hängende (über 10 Min.) nicht mitzählen – die stößt RetryStuck neu an
+  const running = allDocs.filter((d) => d.status === "processing" && !isStuck(d)).length;
   return <PullToRefresh color="#6d4aff" activity={running} activityLabel="Dokumente werden ausgelesen" onActivity={() => router.push("/")} />;
 }
 
@@ -122,6 +125,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       <PullWithDocs />
       <PressFeedback />
       <RedateMissing />
+      <RetryStuck />
       <KeyboardWatch />
       <UploadProgress />
       <JobToasts />
