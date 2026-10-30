@@ -92,8 +92,8 @@ export default function Home() {
                   <div className="mb-3 flex items-center justify-between"><h2 className="text-[17px] font-semibold">Deine Partner</h2><Link href="/partner" className="text-[13px] font-semibold text-selected">Alle {partners.length}</Link></div>
                   <div ref={partnerRow} className="fade-x -mx-4 flex gap-3 overflow-x-auto px-4 pt-1 pb-2 [scrollbar-width:none] md:mx-0 md:px-0">
                     {partners.slice(0, 12).map((p) => (
-                      <Link key={p.key} href={`/partner/${p.key}`} title={p.name} className={`${TILE} flex w-[128px] shrink-0 flex-col items-center gap-2.5 px-3 pt-4 pb-3 text-center ${p.active ? "" : "opacity-60"}`}>
-                        <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={52} bare />
+                      <Link key={p.key} href={`/partner/${p.key}`} title={p.name} className={`${TILE} flex w-[156px] shrink-0 flex-col items-center gap-3 px-4 pt-6 pb-5 text-center ${p.active ? "" : "opacity-60"}`}>
+                        <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={56} bare />
                         <span className="w-full min-w-0">
                           <span className="block truncate text-[13px] leading-5 font-semibold">{p.name}</span>
                           <span className="block text-[12px] text-muted">{p.docs.length} {p.docs.length === 1 ? "Dokument" : "Dokumente"}</span>

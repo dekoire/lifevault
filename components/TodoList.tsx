@@ -65,10 +65,10 @@ export function TodoList({ docs }: { docs: Doc[] }) {
     <section className={`${CARD} overflow-hidden`}>
       {/* Kopf: Titel + Zähler links, Auswahlfelder rechtsbündig in einer Zeile; mobil darunter je 50 % */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 px-4 pt-5 pb-3 md:px-6">
-        <h2 className="flex min-w-0 flex-1 items-center gap-2 text-[18px] leading-[26px] font-semibold"><ListTodo size={18} className="shrink-0" /> Zu erledigen
+        <h2 className="flex min-w-0 flex-1 items-center gap-2 text-[18px] leading-[26px] font-semibold">Zu erledigen
           {openList.length > 0 && (late > 0
-            ? <span className="tnum text-[13px] font-semibold text-fg" title={`${late} von ${openList.length} überfällig`}>{late} von {openList.length}</span>
-            : <span className="tnum rounded-full bg-surface-2 px-2 py-px text-[12px] font-bold">{openList.length}</span>)}
+            ? <span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] font-semibold text-soft" title={`${late} von ${openList.length} überfällig`}>{late} von {openList.length}</span>
+            : <span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] font-semibold text-soft">{openList.length}</span>)}
         </h2>
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
           <MultiSelect label="Status" name={(v) => ([...v].sort().join() === "late,later,soon" ? "Offen" : undefined)} value={status} onChange={(v) => { setStatus(v as Status[]); setAll(false); }} allLabel="Alle"

@@ -74,7 +74,7 @@ export function MergeSuggestions({ intro, empty }: { intro?: React.ReactNode; em
     {intro}
     <section className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
       <div className="px-4 pt-5 pb-3 md:px-6">
-        <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold"><Combine size={18} className="shrink-0" /> Gehören zusammen? <span className="tnum text-[13px] font-semibold text-fg">{groups.length}</span></h2>
+        <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">Gehören zusammen? <span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] font-semibold text-soft">{groups.length}</span></h2>
         <p className="mt-0.5 text-[13px] text-muted">Kurz nacheinander hochgeladen – sieht nach einem Dokument aus</p>
       </div>
       <ul className="divide-y divide-line border-t border-line">

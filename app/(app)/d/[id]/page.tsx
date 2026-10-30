@@ -1,4 +1,5 @@
 "use client";
+import { NotFound } from "@/components/NotFound";
 import { isCardDoc, PdfPages } from "@/components/PdfPages";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -150,13 +151,14 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
     if (target) router.replace(`/d/${target.id}`);
   };
   const [doc, setDoc] = useState<Doc>();
+  const [missing, setMissing] = useState(false);
   const [opened, setOpened] = useState<{ content: SecretPart | null; url: string }>();
   const [url, setUrl] = useState<string>();
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    void supabase.from("documents").select("*").eq("id", id).maybeSingle().then(({ data }) => setDoc((data as Doc) ?? undefined));
+    void supabase.from("documents").select("*").eq("id", id).maybeSingle().then(({ data }) => { setDoc((data as Doc) ?? undefined); setMissing(!data); });
   }, [id, listed?.status, listed?.encrypted, listed?.archived]);
   // Original: unverschlüsselt per kurzlebigem Link, verschlüsselt im Browser öffnen
   useEffect(() => {
@@ -182,7 +184,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
   }, [doc]);
   const chat = useChat({ docId: id, docText: doc?.encrypted && content ? `${content.summary ?? ""}\n${JSON.stringify(content.key_facts)}\n${content.full_text ?? ""}` : undefined });
 
-  if (!doc) return <p className="py-20 text-center text-muted">Lädt …</p>;
+  if (!doc) return missing ? <NotFound title="Dokument nicht gefunden" /> : <p className="py-20 text-center text-muted">Lädt …</p>;
   const c = clusterOf(doc.cluster);
   const explain = explainDoc(doc.doc_type, doc.title);
   // Auf einen Blick: wichtigste Beträge und die nächste Frist
@@ -329,8 +331,8 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
 
           {/* 2. Inhalt: worum es geht – Befund, Leistungen, was versichert ist … */}
           {(view?.content.points.length || explain || (show.summary && content?.summary)) && (
-            <section className={`${CARD} p-4`}>
-              <h2 className="mb-1.5 text-[16px] leading-6 font-semibold">{view?.content.title ?? explain ?? "Worum es geht"}</h2>
+            <section className={`${CARD} p-5`}>
+              <h2 className="mb-2 text-[18px] leading-[26px] font-semibold">{view?.content.title ?? explain ?? "Worum es geht"}</h2>
               {show.summary && content?.summary && <Clamp className="text-[15px] leading-6 text-soft">{content.summary}</Clamp>}
               {!!view?.content.points.length && <ul className="mt-3 space-y-1.5 text-[14px] leading-6">{view.content.points.map((p, i) => <li key={i} className="flex gap-2.5"><span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />{p}</li>)}</ul>}
               {!doc.encrypted && !view && doc.status === "ready" && <p className="mt-3 text-[13px] text-muted">Wird aufbereitet …</p>}
@@ -339,7 +341,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
 
           {/* 3. Überblick – immer offen, nur das Nötige */}
           <section className={`${CARD} overflow-hidden`}>
-            <h2 className="flex items-center gap-2 px-4 pt-3.5 pb-1 text-[15px] font-semibold"><FileText size={16} /> Überblick</h2>
+            <h2 className="flex items-center gap-2 px-5 pt-5 pb-2 text-[18px] leading-[26px] font-semibold"><FileText size={16} /> Überblick</h2>
             <KeyValueTable rows={[
               { label: "Art", value: doc.doc_type ?? "–" },
               { label: "Absender", value: doc.sender ?? "–" },
@@ -376,11 +378,11 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
           {contact && (contact.phones.length + contact.emails.length + contact.addresses.length + contact.links.length > 0) && (
             <Section title="Kontakt" icon={<Phone size={16} />} open={isOpen("ct", true)} onToggle={() => toggle("ct", true)}>
               <ul className="divide-y divide-line border-t border-line text-[14px]">
-                {doc.sender && <li className="px-4 py-2.5 font-semibold">{doc.sender}</li>}
-                {contact.phones.map((p) => <li key={p} className="group relative flex items-center gap-2.5 px-4 py-2.5"><Phone size={14} className="shrink-0 text-muted" /><a href={`tel:${p.replace(/[^\d+]/g, "")}`} className="font-semibold hover:underline">{p}</a><CopyBtn value={p} className="absolute top-1/2 right-2.5 -translate-y-1/2" /></li>)}
-                {contact.emails.map((e) => <li key={e} className="group relative flex items-center gap-2.5 px-4 py-2.5"><Mail size={14} className="shrink-0 text-muted" /><a href={`mailto:${e}`} className="font-semibold break-all hover:underline">{e}</a><CopyBtn value={e} className="absolute top-1/2 right-2.5 -translate-y-1/2" /></li>)}
-                {contact.addresses.map((a) => <li key={a} className="group relative flex items-start gap-2.5 px-4 py-2.5"><MapPin size={14} className="mt-1 shrink-0 text-muted" /><span className="pr-8">{a}</span><CopyBtn value={a} className="absolute top-1/2 right-2.5 -translate-y-1/2" /></li>)}
-                {contact.links.slice(0, 3).map((l) => <li key={l} className="flex items-center gap-2.5 px-4 py-2.5"><Globe size={14} className="shrink-0 text-muted" /><a href={l} target="_blank" rel="noopener noreferrer" className="truncate font-semibold text-selected hover:underline">{l.replace(/^https?:\/\//, "")}</a></li>)}
+                {doc.sender && <li className="px-5 py-3 font-semibold">{doc.sender}</li>}
+                {contact.phones.map((p) => <li key={p} className="group relative flex items-center gap-2.5 px-5 py-3"><Phone size={14} className="shrink-0 text-muted" /><a href={`tel:${p.replace(/[^\d+]/g, "")}`} className="font-semibold hover:underline">{p}</a><CopyBtn value={p} className="absolute top-1/2 right-2.5 -translate-y-1/2" /></li>)}
+                {contact.emails.map((e) => <li key={e} className="group relative flex items-center gap-2.5 px-5 py-3"><Mail size={14} className="shrink-0 text-muted" /><a href={`mailto:${e}`} className="font-semibold break-all hover:underline">{e}</a><CopyBtn value={e} className="absolute top-1/2 right-2.5 -translate-y-1/2" /></li>)}
+                {contact.addresses.map((a) => <li key={a} className="group relative flex items-start gap-2.5 px-5 py-3"><MapPin size={14} className="mt-1 shrink-0 text-muted" /><span className="pr-8">{a}</span><CopyBtn value={a} className="absolute top-1/2 right-2.5 -translate-y-1/2" /></li>)}
+                {contact.links.slice(0, 3).map((l) => <li key={l} className="flex items-center gap-2.5 px-5 py-3"><Globe size={14} className="shrink-0 text-muted" /><a href={l} target="_blank" rel="noopener noreferrer" className="truncate font-semibold text-selected hover:underline">{l.replace(/^https?:\/\//, "")}</a></li>)}
               </ul>
             </Section>
           )}
@@ -392,9 +394,9 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
                 const all = more[g];
                 return (
                   <div key={g}>
-                    <h3 className="border-t border-line bg-surface-2/60 px-4 py-1.5 text-[12px] font-semibold tracking-wide text-muted uppercase">{g}</h3>
+                    <h3 className="border-t border-line px-5 pt-4 pb-1.5 text-[12px] font-semibold text-muted">{g}</h3>
                     <FactGrid facts={all ? fs : fs.slice(0, 8)} />
-                    {fs.length > 8 && <button type="button" onClick={() => setMore({ ...more, [g]: !all })} className="w-full border-t border-line px-4 py-2 text-center text-[13px] font-semibold text-fg hover:bg-surface-2">{all ? "Weniger anzeigen" : `Alle ${fs.length} anzeigen`}</button>}
+                    {fs.length > 8 && <button type="button" onClick={() => setMore({ ...more, [g]: !all })} className="w-full border-t border-line px-5 py-2.5 text-center text-[13px] font-semibold text-fg hover:bg-surface-2">{all ? "Weniger anzeigen" : `Alle ${fs.length} anzeigen`}</button>}
                   </div>
                 );
               })}
@@ -421,8 +423,8 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
           <MergedParts doc={doc} onSplit={() => router.push("/")} />
           {!doc.encrypted && <WebSourceCard doc={doc} onChanged={() => void refresh()} />}
           {show.chat && (
-            <section className={`${CARD} p-4`}>
-              <h2 className="mb-3 text-[15px] font-semibold">Frag zu diesem Dokument</h2>
+            <section className={`${CARD} p-5`}>
+              <h2 className="mb-3 text-[18px] leading-[26px] font-semibold">Frag zu diesem Dokument</h2>
               {chat.msgs.length > 0 && <div className="mb-4 max-h-[50vh] overflow-y-auto pr-1"><MessageList msgs={chat.msgs} compact busy={chat.busy} onAsk={(q) => void chat.send(q)} onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} /></div>}
               <Composer plain busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} placeholder="z. B. Wie hoch ist mein Netto?" depth={chat.depth} onDepth={chat.setDepth} />
             </section>
@@ -441,16 +443,16 @@ function CostCard({ costs }: { costs: NonNullable<DocView["costs"]> }) {
   const per = costs.total?.per && costs.total.per !== "einmalig" ? ` ${costs.total.per}` : "";
   return (
     <section className={`${CARD} overflow-hidden`}>
-      <div className="flex items-start justify-between gap-3 px-4 pt-3.5 pb-3">
+      <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-4">
         <span className="min-w-0">
-          <span className="flex items-center gap-2 text-[12px] font-semibold tracking-wide text-muted uppercase"><Wallet size={14} /> Kosten · Stand heute</span>
+          <span className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold"><Wallet size={16} /> Kosten · Stand heute</span>
           {costs.total ? <><b className="tnum mt-1 block text-[24px] leading-8">{fmtMoney(costs.total.value, "EUR")}<span className="text-[14px] font-semibold text-muted">{per}</span></b><span className="block text-[13px] text-muted">{costs.total.label}</span></> : <b className="mt-1 block text-[15px]">{costs.items.length} Positionen</b>}
         </span>
       </div>
       {costs.items.length > 0 && (
         <>
-          <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center justify-between border-t border-line px-4 py-2.5 text-[13px] font-semibold hover:bg-surface-2">Zusammensetzung<ChevronDown size={15} className={`text-muted transition-transform ${open ? "rotate-180" : ""}`} /></button>
-          {open && <ul className="divide-y divide-line border-t border-line text-[14px]">{costs.items.map((x, i) => <li key={i} className="flex items-baseline gap-3 px-4 py-2"><span className="min-w-0 flex-1">{x.label}{x.note && <span className="block text-[12px] text-muted">{x.note}</span>}</span><span className="tnum shrink-0 font-semibold">{fmtMoney(x.value, "EUR")}</span></li>)}</ul>}
+          <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center justify-between border-t border-line px-5 py-3 text-[13px] font-semibold hover:bg-surface-2">Zusammensetzung<ChevronDown size={15} className={`text-muted transition-transform ${open ? "rotate-180" : ""}`} /></button>
+          {open && <ul className="divide-y divide-line border-t border-line text-[14px]">{costs.items.map((x, i) => <li key={i} className="flex items-baseline gap-3 px-5 py-2.5"><span className="min-w-0 flex-1">{x.label}{x.note && <span className="block text-[12px] text-muted">{x.note}</span>}</span><span className="tnum shrink-0 font-semibold">{fmtMoney(x.value, "EUR")}</span></li>)}</ul>}
         </>
       )}
     </section>
@@ -462,7 +464,7 @@ function FactGrid({ facts }: { facts: Fact[] }) {
   return (
     <dl className="grid sm:grid-cols-2">
       {facts.map((f, i) => (
-        <div key={i} className="group relative min-w-0 border-t border-line px-4 py-2.5 sm:odd:border-r">
+        <div key={i} className="group relative min-w-0 border-t border-line px-5 py-3 sm:odd:border-r">
           <dt className="truncate pr-8 text-[12px] text-muted" title={f.label}>{f.label}</dt>
           <dd className="pr-8 text-[14px] font-semibold break-words">{f.value}</dd>
           <CopyBtn value={f.value} className="absolute top-1/2 right-2.5 -translate-y-1/2" />
