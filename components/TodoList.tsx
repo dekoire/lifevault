@@ -9,8 +9,8 @@ import { CARD } from "@/components/ui";
 import { dueLabel, todoKind, todos, type TodoKind } from "@/lib/actions";
 import { fmtDate, fmtMoney } from "@/lib/docs";
 import type { Doc } from "@/lib/types";
+import { todoKey, useTodoDone } from "@/lib/todoDone";
 
-const KEY = "lifevault:todo-done";
 
 const critical = (k: TodoKind) => k === "zahlung";
 const warn = (k: TodoKind) => k === "widerspruch" || k === "vertrag" || k === "frist";
@@ -34,21 +34,18 @@ export const KIND: Record<TodoKind, { label: string; icon: typeof Euro; cls: str
 };
 /** passendes Schreiben je Art der Aufgabe */
 const DRAFT_FOR: Record<TodoKind, DraftPurpose> = { zahlung: "stundung", widerspruch: "widerspruch", vertrag: "kuendigung", angebot: "rueckfrage", formular: "rueckfrage", termin: "rueckfrage", frist: "rueckfrage" };
-const load = (): string[] => { try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; } };
 
 /** „Zu erledigen“: Fristen mit Handlungsbedarf, überfällige rot; Klick öffnet Details (Überweisung, Kontakt) rechts */
 export function TodoList({ docs }: { docs: Doc[] }) {
   const open = useDetail();
   const today = new Date().toISOString().slice(0, 10);
-  const [done, setDone] = useState<string[]>([]);
+  const { done, toggle } = useTodoDone();
   const [status, setStatus] = useState<Status[]>(["late", "soon", "later"]);
   const [all, setAll] = useState(false);
-  useEffect(() => setDone(load()), []);
-  const toggle = (k: string) => setDone((cur) => { const n = cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]; try { localStorage.setItem(KEY, JSON.stringify(n)); } catch { /* egal */ } return n; });
   const [kinds_, setKinds] = useState<TodoKind[]>([]);
   const all0 = useMemo(() => todos(docs, today).map((t) => ({ ...t, kind: todoKind(t) })), [docs, today]);
   const list = kinds_.length ? all0.filter((t) => kinds_.includes(t.kind)) : all0;
-  const key = (t: (typeof list)[number]) => `${t.doc.id}|${t.date}`;
+  const key = (t: (typeof list)[number]) => todoKey(t.doc.id, t.date);
   const openList = list.filter((t) => !done.includes(key(t)));
   const doneList = list.filter((t) => done.includes(key(t)));
   // als „überfällig“ zählt nur, was wirklich kritisch ist (Zahlungen)

@@ -76,6 +76,12 @@ function pair(a: Doc, b: Doc): { sure: boolean; why: string } | null {
     if (!sameDate && bothDated) return { sure: false, why: `gleicher Inhalt, nur anderes Datum (${a.doc_date!.split("-").reverse().join(".")} / ${b.doc_date!.split("-").reverse().join(".")}) – wohl erneut zugeschickt` };
     return partial ? { sure: false, why: "gleicher Inhalt – eines enthält mehr Seiten/Angaben" } : { sure: true, why: "gleicher Inhalt (Beträge, Nummern, Text)" };
   }
+  // 1b) derselbe Vertrag: gleiche Art (Vertrag, Police …) mit gleichem Datum und grob gleichem Inhalt –
+  //     oft einmal einzeln und einmal in einer ganzen Mappe (z. B. Arbeitsvertrag + Onboarding-Formulare)
+  if (sameType && sameDate && /vertrag|police|versicherungsschein|vereinbarung/i.test(a.doc_type ?? "") && ((c.overlap ?? 0) >= 0.4 || c.text >= 0.45)) {
+    const big = a.size_bytes > b.size_bytes * 3 || b.size_bytes > a.size_bytes * 3;
+    return { sure: false, why: big ? "derselbe Vertrag – einmal einzeln, einmal in einer größeren Mappe" : "derselbe Vertrag zweimal (gleiche Art, gleiches Datum, gleicher Inhalt)" };
+  }
   // 2) unsicher (ähnlich): dann entscheiden Kennung und Datum
   const similar = (c.overlap !== undefined && c.overlap >= 0.6) || c.text >= 0.6;
   if (similar && shared && (sameDate || !bothDated)) return { sure: false, why: `ähnlicher Inhalt, gleiche Kennung (${shared.label} ${shared.value})${sameDate ? " und gleiches Datum" : ""}` };
