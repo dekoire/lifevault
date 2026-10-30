@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { AlertCircle, Archive, Check, BookOpen, FileQuestion, FileSignature, Info, PenLine, Crown, Receipt, Scale, Wallet } from "lucide-react";
 import { KindTag } from "@/components/KindTag";
+import { SenderLogo } from "@/components/SenderLogo";
 import { ImportanceDots } from "@/components/Importance";
 import { CARD } from "@/components/ui";
 import { fmtDate, knownDate, knownDateLabel, useDocs } from "@/lib/docs";
@@ -113,10 +114,11 @@ export function RelationGraph({ doc }: { doc: Doc }) {
     const here = d.id === doc.id;
     return (
       <li>
-        <Link href={`/d/${d.id}`} className={`flex items-start gap-2 rounded-xl bg-surface px-2.5 py-2 text-[13px] text-fg shadow-[0_1px_2px_rgba(16,24,40,.08)] transition hover:-translate-y-px hover:shadow-card ${here ? "ring-2 ring-fg" : ""}`}>
-          {w >= 4 ? <Crown size={13} strokeWidth={2.2} className="mt-[3px] shrink-0 text-fg" aria-label="wichtig" /> : <span className="w-[13px] shrink-0" />}
+        <Link href={`/d/${d.id}`} className={`flex items-start gap-2.5 rounded-xl bg-surface px-2.5 py-2 text-[13px] text-fg shadow-[0_1px_2px_rgba(16,24,40,.08)] transition hover:-translate-y-px hover:shadow-card ${here ? "ring-2 ring-fg" : ""}`}>
+          {/* links der Absender als Avatar – man sieht sofort, von wem */}
+          <span className="mt-0.5 shrink-0"><SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={30} /></span>
           <span className="min-w-0 flex-1">
-            <span className="line-clamp-2 leading-[18px]">{short(d.title ?? d.file_name)}</span>
+            <span className="line-clamp-2 leading-[18px]">{w >= 4 && <Crown size={12} strokeWidth={2.2} className="mr-1 inline -translate-y-px text-fg" aria-label="wichtig" />}{short(d.title ?? d.file_name)}</span>
             <span className="tnum block text-[11.5px] text-muted">{when(d)}{here ? " · du bist hier" : ""}</span>
             {(due || finished(d)) && <DueChip d={d} />}
           </span>
