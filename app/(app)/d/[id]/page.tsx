@@ -337,7 +337,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
             <div className={`grid gap-3 ${tiles.length >= 3 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2"}`}>
               {/* farbig mit Verlauf wie die Kacheln in Finastry – jede Kachel eine eigene Farbe, dringend immer rot */}
               {tiles.map((g, i) => (
-                <div key={i} className={`group relative min-w-0 rounded-2xl px-4 py-4 text-white shadow-card ${tiles.length === 3 && i === 2 ? "col-span-2 sm:col-span-1" : ""}`} style={{ background: g.urgent ? TILE_URGENT : TILE_GRADS[i % TILE_GRADS.length], boxShadow: `0 10px 24px -8px ${g.urgent ? "rgb(180 35 24 / .45)" : TILE_GLOW[i % TILE_GLOW.length]}, inset 0 1px 0 rgb(255 255 255 / .18)` }}>
+                <div key={i} className={`group relative flex min-w-0 flex-col justify-center rounded-2xl px-4 py-4 text-white shadow-card lg:h-[112px] ${tiles.length === 3 && i === 2 ? "col-span-2 sm:col-span-1" : ""}`} style={{ background: g.urgent ? TILE_URGENT : TILE_GRADS[i % TILE_GRADS.length], boxShadow: `0 10px 24px -8px ${g.urgent ? "rgb(180 35 24 / .45)" : TILE_GLOW[i % TILE_GLOW.length]}, inset 0 1px 0 rgb(255 255 255 / .18)` }}>
                   <span className="block truncate text-[12px] font-medium text-white/80">{g.label}</span>
                   <span className="tnum mt-1 block truncate text-[19px] leading-7 font-semibold" title={g.value}>{g.value}</span>
                   {g.sub && <span className="block truncate text-[12px] text-white/75" title={g.sub}>{g.sub}</span>}

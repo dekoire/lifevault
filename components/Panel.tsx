@@ -8,7 +8,8 @@ import { CARD } from "@/components/ui";
  * Einheitliche Kachel für Detailseiten: Symbol-Kachel, Überschrift (18 px), optional Anzahl und Unterzeile,
  * aufklappbar. Gesteuert (open/onToggle) oder selbst gemerkt (defaultOpen).
  */
-export function Panel({ title, icon, color, count, sub, aside, open: given, onToggle, defaultOpen = true, children }: {
+export function Panel({ title, icon, color, count, sub, aside, open: given, onToggle, defaultOpen = true, headClass = "", children }: {
+  /** z. B. feste Höhe des Kopfs, damit er neben anderen Kacheln gleich hoch ist */ headClass?: string;
   title: React.ReactNode; icon: LucideIcon; color?: string; count?: number; sub?: React.ReactNode; aside?: React.ReactNode;
   open?: boolean; onToggle?: () => void; defaultOpen?: boolean; children: React.ReactNode;
 }) {
@@ -17,7 +18,7 @@ export function Panel({ title, icon, color, count, sub, aside, open: given, onTo
   const toggle = onToggle ?? (() => setOwn(!own));
   return (
     <section className={`${CARD} overflow-hidden`}>
-      <div className="flex items-center gap-3 px-5 py-4">
+      <div className={`flex items-center gap-3 px-5 py-4 ${headClass}`}>
         <button type="button" onClick={toggle} aria-expanded={open} className="flex min-w-0 flex-1 items-center gap-3 text-left">
           <IconTile icon={icon} color={color} size={36} />
           <span className="min-w-0 flex-1">

@@ -101,7 +101,7 @@ export function ImportanceCard({ doc, onChange }: { doc: Doc; onChange: (d: Doc)
     children.length > 0 && { k: "Grundlage für", v: <>{children.slice(0, 3).map(docLink)}{children.length > 3 && <span className="text-muted">+ {children.length - 3} weitere</span>}</> },
   ].filter((r): r is { k: string; v: React.JSX.Element } => !!r);
   return (
-    <Panel title="Wichtigkeit" icon={Crown} color="#6d4aff" sub={importanceLabel(value)} defaultOpen={false}
+    <Panel title="Wichtigkeit" icon={Crown} color="#6d4aff" sub={importanceLabel(value)} defaultOpen={false} headClass="lg:min-h-[110px]"
       aside={<ImportanceDots value={value} />}>
       <div className="px-5 py-4">
         <div className="flex items-center gap-3">
