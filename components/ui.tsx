@@ -32,7 +32,7 @@ export function Section({ title, icon, count, open, onToggle, children }: { titl
       <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-2.5 px-5 py-4 text-left">
         {icon && <span className="text-fg">{icon}</span>}
         <span className="flex-1 text-[18px] leading-[26px] font-semibold">{title}</span>
-        {count !== undefined && <span className="tnum rounded-full border border-card-line px-2 py-0.5 text-[12px] font-semibold text-soft">{count}</span>}
+        {count !== undefined && <span className="tnum rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold text-soft">{count}</span>}
         <ChevronDown size={18} className={`text-muted transition ${open ? "rotate-180" : ""}`} />
       </button>
       {open && <div className="border-t border-line">{children}</div>}
@@ -91,7 +91,7 @@ export function BackLink({ href, label, aside }: { href: string; label: string; 
 export function Segmented<T extends string>({ value, onChange, options, full }: { value: T; onChange: (v: T) => void; options: { id: T; label: string; icon?: React.ReactNode }[]; full?: boolean }) {
   return (
     <span className={`${full ? "flex" : "inline-flex"} gap-0.5 rounded-full border border-line-strong bg-surface p-1`}>
-      {options.map((o) => <button key={o.id} type="button" onClick={() => onChange(o.id)} aria-pressed={value === o.id} className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition-colors ${full ? "flex-1 px-2" : ""} ${value === o.id ? "bg-fg text-canvas" : "text-soft hover:text-fg"}`}>{o.icon}{o.label}</button>)}
+      {options.map((o) => <button key={o.id} type="button" onClick={() => onChange(o.id)} aria-pressed={value === o.id} className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition-colors ${full ? "flex-1 px-3" : ""} ${value === o.id ? "bg-fg text-canvas" : "text-soft hover:text-fg"}`}>{o.icon}{o.label}</button>)}
     </span>
   );
 }

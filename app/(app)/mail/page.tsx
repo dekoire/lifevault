@@ -256,7 +256,7 @@ export default function MailPage() {
 
       {rows.length > 0 && (
         <section className={`${CARD} mt-4 overflow-hidden`}>
-          <h2 className="flex items-center gap-2 px-4 pt-5 pb-3 md:px-6 text-[18px] leading-[26px] font-semibold"><Sparkles size={17} className="text-brand-500" /> Relevant <span className="tnum rounded-full border border-card-line px-2 py-px text-[12px]">{relevant.length}</span></h2>
+          <h2 className="flex items-center gap-2 px-4 pt-5 pb-3 md:px-6 text-[18px] leading-[26px] font-semibold"><Sparkles size={17} className="text-brand-500" /> Relevant <span className="tnum rounded-full border border-card-line px-3 py-1 text-[12px]">{relevant.length}</span></h2>
           <ul className="divide-y divide-line border-t border-line">
             {relevant.map((r) => <MailRow key={r.m.id} r={r} />)}
             {!relevant.length && <li className="px-5 py-4 text-[14px] text-muted">Nichts Relevantes gefunden.</li>}
@@ -302,7 +302,7 @@ function MailRow({ r, onImport }: { r: Row; onImport?: () => void }) {
         <span className="block truncate text-[12px] text-muted">{senderName(r.m.from)}{r.m.date ? ` · ${fmtDate(r.m.date)}` : ""} · {r.reason}</span>
         <span className="mt-1 flex flex-wrap gap-1">
           {r.m.attachments.map((a, i) => <span key={i} className={`inline-flex max-w-[16rem] items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${r.relevant && r.pick.includes(i) ? "border-fg text-fg" : "border-card-line text-muted"}`}><Paperclip size={10} className="shrink-0" /><span className="truncate">{a.name}</span></span>)}
-          {r.body && <span className="inline-flex items-center gap-1 rounded-full border border-fg px-2 py-0.5 text-[11px] font-medium text-fg"><Mail size={10} className="shrink-0" /> Mailtext als PDF</span>}
+          {r.body && <span className="inline-flex items-center gap-1 rounded-full border border-fg px-3 py-1 text-[12px] font-medium text-fg"><Mail size={10} className="shrink-0" /> Mailtext als PDF</span>}
         </span>
       </span>
       <span className="shrink-0 pt-1">

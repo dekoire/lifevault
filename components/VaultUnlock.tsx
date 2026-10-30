@@ -56,7 +56,7 @@ export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib de
     <form onSubmit={submit} className="w-full">
       {card(<>
         <div className="mt-2.5 [&_input]:border-transparent [&_input]:text-fg">{field("")}</div>
-        <div className="mt-2 flex items-center justify-between gap-2 pl-0.5 [&_label]:text-white/85 [&_label>span]:border-transparent">{keepBox}{error && <span className="rounded-full bg-white px-2 py-0.5 text-[12px] text-negative-text" role="alert">{error}</span>}</div>
+        <div className="mt-2 flex items-center justify-between gap-2 pl-0.5 [&_label]:text-white/85 [&_label>span]:border-transparent">{keepBox}{error && <span className="rounded-full bg-white px-3 py-1 text-[12px] text-negative-text" role="alert">{error}</span>}</div>
       </>)}
       <div className="mt-2.5 flex gap-2 [&>*]:h-10 [&>*]:flex-1">
         {footer}

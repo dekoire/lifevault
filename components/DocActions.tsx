@@ -145,7 +145,7 @@ function PaymentSection({ doc, codes, links, related, always = false }: { doc: D
           {nothing ? <b className="mt-1 block text-[18px] leading-7">Nichts offen</b> : total !== undefined ? <b className="tnum mt-1 block text-[26px] leading-8">{fmtMoney(total, "EUR")}</b> : <b className="mt-1 block text-[15px]">Betrag nicht erkannt</b>}
           <span className="block text-[13px] text-muted">{nothing ? (doc.archived ? "erledigt bzw. archiviert" : "aus diesem Dokument ist gerade nichts zu zahlen") : todo?.items?.length ? `offen insgesamt · ${todo.items.length} Posten` : todo ? "offen" : "laut Dokument"}</span>
         </span>
-        {todo && <span className={`mt-1 shrink-0 rounded-full border px-2.5 py-0.5 text-[12px] font-semibold ${late ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>{late ? dueLabel(todo.days) : `bis ${fmtDate(todo.date)}`}</span>}
+        {todo && <span className={`mt-1 shrink-0 rounded-full border px-3.5 py-1 text-[12px] font-semibold ${late ? "border-negative/40 text-negative-text" : "border-card-line text-soft"}`}>{late ? dueLabel(todo.days) : `bis ${fmtDate(todo.date)}`}</span>}
       </div>
       {todo?.items && todo.items.length > 1 && (
         <div className="border-t border-line">

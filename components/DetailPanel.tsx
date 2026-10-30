@@ -101,7 +101,7 @@ function DocDetail({ id, page, quote, open, close, back = false }: { id: string;
         <div className="min-w-0">
           <h2 className="text-[18px] leading-6 font-semibold">{doc.title ?? doc.file_name}</h2>
           <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[12px] text-muted">
-            <span className="rounded-full border border-card-line px-2 py-px font-semibold text-fg">{c.label}</span>
+            <span className="rounded-full border border-card-line px-3 py-1 font-semibold text-fg">{c.label}</span>
             {fmtDate(doc.doc_date ?? doc.received_at)}
             {doc.sender && <> · <button type="button" onClick={() => open({ kind: "partner", key: partnerKey(doc.sender!) })} className="font-semibold text-selected hover:underline">{doc.sender}</button></>}
           </p>

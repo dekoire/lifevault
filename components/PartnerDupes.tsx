@@ -111,7 +111,7 @@ function Group({ g, onDismiss }: { g: PartnerGroup; onDismiss: () => void }) {
       <div className="px-4 pt-4">
         <p className="text-[15px] font-semibold">Ist das derselbe Partner?</p>
         <p className="mt-0.5 text-[13px] text-muted">
-          <span className={`mr-1.5 rounded-full px-2 py-px text-[11px] font-semibold ${g.score >= 0.7 ? "bg-fg text-canvas" : "border border-card-line text-soft"}`}>{Math.round(g.score * 100)} % wahrscheinlich</span>
+          <span className={`mr-1.5 rounded-full px-3 py-1 text-[12px] font-semibold ${g.score >= 0.7 ? "bg-fg text-canvas" : "border border-card-line text-soft"}`}>{Math.round(g.score * 100)} % wahrscheinlich</span>
           {g.reasons.join(" · ")}
         </p>
       </div>

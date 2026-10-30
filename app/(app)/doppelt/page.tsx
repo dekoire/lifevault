@@ -37,7 +37,7 @@ export default function DoppeltPage() {
           const n = count[x.id];
           return (
             <button key={x.id} type="button" onClick={() => setTab(x.id)} aria-pressed={on} className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-4 text-[14px] font-semibold whitespace-nowrap ${on ? "border-fg bg-fg text-canvas" : "border-card-line bg-surface text-fg hover:bg-surface-2"}`}>
-              <x.icon size={15} /> {x.label}{n ? <span className={`tnum rounded-full px-1.5 text-[12px] ${on ? "bg-canvas/20" : "bg-surface-3"}`}>{n}</span> : null}
+              <x.icon size={15} /> {x.label}{n ? <span className={`tnum rounded-full px-3 text-[12px] ${on ? "bg-canvas/20" : "bg-surface-3"}`}>{n}</span> : null}
             </button>
           );
         })}

@@ -200,7 +200,7 @@ export function RelationGraph({ doc }: { doc: Doc }) {
                 <div key={g.id} className="relative w-full rounded-2xl p-2.5 text-white shadow-card sm:w-[270px]" style={{ background: `linear-gradient(160deg, ${GROUP_COLOR[g.id]}, color-mix(in srgb, ${GROUP_COLOR[g.id]} 82%, black))` }}>
                   <span className="absolute -top-4 left-1/2 h-4 w-px bg-line-strong" aria-hidden />
                   <div className="px-1.5 pt-0.5 pb-1">
-                    <span className="flex items-center gap-1.5 text-[14px] font-semibold"><span className="opacity-90">{g.icon}</span>{g.title}<span className="tnum ml-auto rounded-full bg-white/20 px-2 text-[11px] font-bold">{list.length}</span></span>
+                    <span className="flex items-center gap-1.5 text-[14px] font-semibold"><span className="opacity-90">{g.icon}</span>{g.title}<span className="tnum ml-auto rounded-full bg-white/20 px-3 text-[12px] font-bold">{list.length}</span></span>
                     <span className="mt-0.5 block text-[12px] leading-[17px] text-white/80">{due ? <b className="font-semibold text-white">{due} offen · </b> : null}{g.means}</span>
                   </div>
                   <ul className="mt-1.5 space-y-1.5">{list.slice(0, 4).map((d) => <Leaf key={d.id} d={d} />)}</ul>

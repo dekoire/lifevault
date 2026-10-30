@@ -162,13 +162,13 @@ a, button, [role="button"], summary, input, select, textarea {
 input:is([type="text"], [type="email"], [type="password"], [type="search"], [type="number"], [type="tel"], [type="url"], [type="date"], [type="time"], [type="datetime-local"], [type="month"], :not([type])) {
   border-radius: 9999px !important;
 }
-/* Gefüllte Knöpfe schweben: lila Schimmer darunter, beim Überfahren etwas kräftiger (nicht im Menü und nicht in Umschaltern) */
-:is(button, a):is(.bg-brand-500, .bg-brand-600, .bg-fg):not(nav *):not([aria-pressed]):not([aria-current]):not(:disabled) {
+/* Lila Knöpfe schweben (nur lila, nicht schwarz oder weiß): lila Schimmer darunter, beim Überfahren etwas kräftiger (nicht im Menü und nicht in Umschaltern) */
+:is(button, a):is(.bg-brand-500, .bg-brand-600):not(nav *):not([aria-pressed]):not([aria-current]):not(:disabled) {
   box-shadow: 0 6px 16px -4px rgb(109 74 255 / 0.45), 0 2px 4px -1px rgb(109 74 255 / 0.25), inset 0 1px 0 rgb(255 255 255 / 0.18);
   transition: box-shadow 0.15s ease-out, transform 0.15s ease-out, background-color 0.15s ease-out;
 }
 @media (hover: hover) {
-  :is(button, a):is(.bg-brand-500, .bg-brand-600, .bg-fg):not(nav *):not([aria-pressed]):not([aria-current]):not(:disabled):hover {
+  :is(button, a):is(.bg-brand-500, .bg-brand-600):not(nav *):not([aria-pressed]):not([aria-current]):not(:disabled):hover {
     box-shadow: 0 10px 24px -6px rgb(109 74 255 / 0.55), 0 3px 6px -2px rgb(109 74 255 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.18);
   }
 }

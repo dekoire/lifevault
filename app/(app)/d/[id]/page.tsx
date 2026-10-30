@@ -283,9 +283,9 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
             <h1 className="text-[24px] leading-8 font-[650] tracking-tight md:text-[28px] md:leading-9">{doc.title ?? doc.file_name}</h1>
             {doc.sender && <button type="button" onClick={() => detail?.({ kind: "partner", key: partnerKey(doc.sender!) })} className="mt-0.5 text-[14px] font-semibold text-soft hover:text-selected hover:underline">{doc.sender}</button>}
             <div className="mt-2 flex flex-wrap gap-1.5">
-              <Link href={`/c/${c.id}`} className="inline-flex h-7 items-center rounded-full px-2.5 text-[12px] font-semibold border border-card-line text-fg">{c.label}</Link>
-              {doc.archived ? <span className="inline-flex h-7 items-center gap-1 rounded-full border border-card-line px-2.5 text-[12px] font-semibold text-soft" title={doc.archived_reason ?? ""}><Archive size={12} /> Archiviert</span> : doc.status === "ready" && <span className="inline-flex h-7 items-center rounded-full bg-positive/10 px-2.5 text-[12px] font-semibold text-positive-text">Aktuell</span>}
-              {doc.encrypted && <span className="inline-flex h-7 items-center gap-1 rounded-full border border-card-line px-2.5 text-[12px] font-semibold text-fg"><Lock size={12} /> Verschlüsselt</span>}
+              <Link href={`/c/${c.id}`} className="inline-flex h-8 items-center rounded-full px-3.5 text-[12px] font-semibold border border-card-line text-fg">{c.label}</Link>
+              {doc.archived ? <span className="inline-flex h-8 items-center gap-1 rounded-full border border-card-line px-3.5 text-[12px] font-semibold text-soft" title={doc.archived_reason ?? ""}><Archive size={12} /> Archiviert</span> : doc.status === "ready" && <span className="inline-flex h-8 items-center rounded-full bg-positive/10 px-3.5 text-[12px] font-semibold text-positive-text">Aktuell</span>}
+              {doc.encrypted && <span className="inline-flex h-8 items-center gap-1 rounded-full border border-card-line px-3.5 text-[12px] font-semibold text-fg"><Lock size={12} /> Verschlüsselt</span>}
               {/* eine Zeile: Bereich, Status, Tags – Wichtigkeit hat rechts eine eigene Kachel */}
               <DocLabels inline doc={doc} onChange={setDoc} />
             </div>
@@ -364,7 +364,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
               ...originRows(doc, mail, content?.full_text),
               ...(projects.length > 1 ? [{ label: "Projekt", value: (
                 <select value={doc.project_id ?? ""} onChange={(e) => void run(async () => { const { error } = await supabase.from("documents").update({ project_id: e.target.value }).eq("id", doc.id); if (error) throw error; setDoc({ ...doc, project_id: e.target.value }); })}
-                  className="h-8 rounded-full border border-card-line bg-surface px-2.5 text-[13px] font-semibold">
+                  className="h-8 rounded-full border border-card-line bg-surface px-3.5 text-[13px] font-semibold">
                   {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               ) }] : []),

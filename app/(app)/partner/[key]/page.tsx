@@ -108,7 +108,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
         <section className={`mb-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border px-4 py-3 text-[14px] ${link.entry.status === "früher" ? "border-amber/30 bg-amber/5" : "border-card-line bg-surface"}`}>
           <span className="inline-flex items-center gap-2 font-semibold"><ClusterIcon id={p.cluster} size={26} tone="plain" />{link.role} · {span(link.entry)}</span>
           {link.entry.status === "früher" && (link.next ?? link.current) && (
-            <span className="inline-flex items-center gap-1.5">Abgelöst durch <ArrowRight size={13} /> <PLink name={(link.next ?? link.current)!.name} strong />{link.next?.change && <span className="inline-flex items-center gap-1 rounded-full border border-card-line px-2 py-px text-[11px] font-semibold">{link.next.change === "uebergabe" && <GitBranch size={11} />}{CHANGE_LABEL[link.next.change]}</span>}</span>
+            <span className="inline-flex items-center gap-1.5">Abgelöst durch <ArrowRight size={13} /> <PLink name={(link.next ?? link.current)!.name} strong />{link.next?.change && <span className="inline-flex items-center gap-1 rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold">{link.next.change === "uebergabe" && <GitBranch size={11} />}{CHANGE_LABEL[link.next.change]}</span>}</span>
           )}
           {link.prev && <span className="inline-flex flex-wrap items-center gap-1.5 text-soft">Vorher: <PLink name={link.prev.name} /> <span className="text-muted">({span(link.prev)})</span></span>}
           {(link.entry.note || link.next?.note) && <span className="basis-full text-[13px] text-muted">{link.next?.note ?? link.entry.note}</span>}
@@ -135,7 +135,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
                     <h3 className="border-t border-line">
                       <button type="button" aria-expanded={isOpen} onClick={() => setOpenTopic(isOpen ? null : topic)} className="flex w-full items-center gap-2 px-4 py-3.5 md:px-6 text-left text-[15px] font-semibold transition-colors hover:bg-surface-2">
                         <span className="min-w-0 flex-1">{topic}</span>
-                        <span className="tnum rounded-full bg-surface px-2 py-px text-[12px] font-semibold text-soft">{n}</span>
+                        <span className="tnum rounded-full bg-surface px-3 py-1 text-[12px] font-semibold text-soft">{n}</span>
                         <ChevronDown size={17} className={`shrink-0 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
                       </button>
                     </h3>
@@ -147,7 +147,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
                           <li key={`${i.label}|${i.value}|${i.docId}`} role="button" tabIndex={0} aria-pressed={on}
                             onClick={() => setPick(on ? null : i)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPick(on ? null : i); } }}
                             className={`grid cursor-pointer grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 px-4 py-3 md:px-6 text-[14px] transition-colors ${on ? "bg-lavender shadow-[inset_3px_0_0_var(--color-brand-500)]" : "hover:bg-canvas"} ${old && !on ? "opacity-55" : ""}`}>
-                            <span className="min-w-0 break-words hyphens-auto text-muted" lang="de">{i.label}{old && <span className="ml-1.5 rounded-full border border-card-line px-1.5 text-[10px]">früher</span>}</span>
+                            <span className="min-w-0 break-words hyphens-auto text-muted" lang="de">{i.label}{old && <span className="ml-1.5 rounded-full border border-card-line px-3 text-[10px]">früher</span>}</span>
                             <span className="min-w-0">
                               <CopyValue value={i.value} />
                               <Link href={`/d/${i.docId}`} onClick={(e) => e.stopPropagation()} className="block truncate text-[11px] text-muted hover:text-selected">aus {i.docTitle} · {fmtDate(i.date)}</Link>

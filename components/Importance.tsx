@@ -15,7 +15,7 @@ export function ImportanceDots({ value, size = 5 }: { value: number; size?: numb
   );
 }
 
-const CHIP = "inline-flex h-7 items-center gap-1.5 rounded-full border border-card-line px-2.5 text-[12px] font-semibold";
+const CHIP = "inline-flex h-8 items-center gap-1.5 rounded-full border border-card-line px-3.5 text-[12px] font-semibold";
 
 /**
  * Wichtigkeit als Chip (gleich hoch wie Bereich/Status/Tags) und, falls bekannt, die Rolle beim Partner.

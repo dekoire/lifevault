@@ -42,7 +42,7 @@ export function DuplicateHint({ docs }: { docs: Doc[] }) {
   return (
     <section className={`${CARD} overflow-hidden`}>
       <div className="px-4 pt-5 pb-3 md:px-6">
-        <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">Doppeltes aufräumen <span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] font-semibold text-soft">{n}</span></h2>
+        <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">Doppeltes aufräumen <span className="tnum rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold text-soft">{n}</span></h2>
         <p className="mt-0.5 text-[13px] text-muted">Gleiches mehrfach abgelegt – eines behalten, den Rest löschen</p>
       </div>
       <ul className="divide-y divide-line border-t border-line">
@@ -134,7 +134,7 @@ function Group({ g, onApply }: { g: DupGroup; onApply: (keep: string[]) => Promi
   return (
     <div className="px-4 py-3.5">
       <p className="mb-1 flex flex-wrap items-center gap-1.5 text-[12px] font-semibold text-soft">
-        <span className={`rounded-full px-2 py-px text-[11px] ${g.sure ? "bg-fg text-canvas" : "border border-card-line"}`}>{g.sure ? "sicher gleich" : "vielleicht gleich"}</span>{g.why}
+        <span className={`rounded-full px-3 py-1 text-[12px] ${g.sure ? "bg-fg text-canvas" : "border border-card-line"}`}>{g.sure ? "sicher gleich" : "vielleicht gleich"}</span>{g.why}
       </p>
       <p className="mb-3 text-[13px] text-soft"><b className="text-fg">Was willst du behalten?</b> Tippe an, was bleiben soll – auch mehrere. Nicht Markiertes wird gelöscht.</p>
       <div className={`grid grid-cols-1 gap-2.5 ${cols}`}>
@@ -145,7 +145,7 @@ function Group({ g, onApply }: { g: DupGroup; onApply: (keep: string[]) => Promi
               {/* groß: Antippen öffnet das Dokument rechts (mobil im Vollbild) – dort Seiten wischen und zoomen */}
               <button type="button" onClick={() => open?.({ kind: "doc", id: d.id })} className="relative block h-56 w-full overflow-hidden bg-surface-2 sm:h-44" aria-label="Groß ansehen">
                 <Thumb d={d} />
-                <span className="absolute right-2 bottom-2 inline-flex items-center gap-1 rounded-full bg-fg/85 px-2.5 py-1 text-[12px] font-semibold text-canvas"><Maximize2 size={12} /> Groß ansehen</span>
+                <span className="absolute right-2 bottom-2 inline-flex items-center gap-1 rounded-full bg-fg/85 px-3.5 py-1 text-[12px] font-semibold text-canvas"><Maximize2 size={12} /> Groß ansehen</span>
               </button>
               <div className="flex flex-1 flex-col gap-1 p-2.5">
                 <span className="line-clamp-2 text-[13px] leading-4 font-semibold">{d.title ?? d.file_name}</span>
@@ -153,7 +153,7 @@ function Group({ g, onApply }: { g: DupGroup; onApply: (keep: string[]) => Promi
                   {d.mime_type.startsWith("image/") ? <FileImage size={11} /> : <FileText size={11} />}
                   {d.mime_type.startsWith("image/") ? "Foto" : "PDF"} · {size(d.size_bytes)} · {d.doc_date ? fmtDate(d.doc_date) : "ohne Datum"} · {d.key_facts?.length ?? 0} Angaben
                 </span>
-                {caseIds(d).length > 0 && <span className="flex flex-wrap gap-1">{caseIds(d).slice(0, 2).map((c) => <span key={c.kind + c.value} className="max-w-full truncate rounded-full border border-card-line px-2 py-px text-[11px] text-soft">{c.label}: <b className="font-semibold text-fg">{c.value}</b></span>)}</span>}
+                {caseIds(d).length > 0 && <span className="flex flex-wrap gap-1">{caseIds(d).slice(0, 2).map((c) => <span key={c.kind + c.value} className="max-w-full truncate rounded-full border border-card-line px-3 py-1 text-[12px] text-soft">{c.label}: <b className="font-semibold text-fg">{c.value}</b></span>)}</span>}
                 <button type="button" role="checkbox" aria-checked={on} onClick={() => toggle(d.id)} className={`mt-auto inline-flex h-9 items-center justify-center gap-1.5 rounded-full text-[13px] font-semibold ${on ? "bg-fg text-canvas" : "border border-card-line text-soft hover:bg-surface-2"}`}>
                   {on ? <><Check size={14} strokeWidth={3} /> Behalten</> : <><Trash2 size={13} /> Wird gelöscht – antippen zum Behalten</>}
                 </button>
