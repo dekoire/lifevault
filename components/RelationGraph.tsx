@@ -5,7 +5,7 @@ import { AlertCircle, Archive, Check, BookOpen, FileQuestion, FileSignature, Inf
 import { KindTag } from "@/components/KindTag";
 import { ImportanceDots } from "@/components/Importance";
 import { CARD } from "@/components/ui";
-import { fmtDate, useDocs } from "@/lib/docs";
+import { fmtDate, knownDate, knownDateLabel, useDocs } from "@/lib/docs";
 import { importanceOf } from "@/lib/importance";
 import { partnerKey } from "@/lib/partners";
 import { todoKey, useTodoDone } from "@/lib/todoDone";
@@ -92,7 +92,7 @@ export function RelationGraph({ doc }: { doc: Doc }) {
   const open = (d: Doc) => (d.deadlines ?? []).find((x) => x.date >= today && !isDone(d, x.date));
   const finished = (d: Doc) => !open(d) && (d.deadlines ?? []).some((x) => isDone(d, x.date));
   // Datum: das Datum auf dem Dokument; fehlt es, das Hochladedatum – dann so beschriftet
-  const when = (d: Doc) => (d.doc_date ? fmtDate(d.doc_date) : `ohne Datum · hochgeladen ${fmtDate(d.received_at)}`);
+  const when = (d: Doc) => knownDateLabel(knownDate(d, docs));
   const check = (d: Doc, date: string) => (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); toggle(todoKey(d.id, date)); };
   const DueChip = ({ d }: { d: Doc }) => {
     const due = open(d);
@@ -171,7 +171,7 @@ export function RelationGraph({ doc }: { doc: Doc }) {
                 {y !== (i ? dateOf(list[i - 1]).slice(0, 4) : "") && <p className="tnum mt-1 mb-1 text-[12px] font-bold text-soft">{y}</p>}
                 <Link href={`/d/${d.id}`} className={`relative ml-1 flex gap-3 border-l-2 border-line py-1.5 pl-4 hover:bg-surface-2/60 ${here ? "bg-brand-500/[.06]" : ""}`}>
                   <span className={`absolute top-3 -left-[6px] h-2.5 w-2.5 rounded-full ring-2 ring-surface ${here ? "bg-brand-500" : due ? "bg-negative" : finished(d) ? "bg-positive" : "bg-line-strong"}`} aria-hidden />
-                  <span className="tnum w-12 shrink-0 pt-px text-[12px] text-muted" title={d.doc_date ? "Datum auf dem Dokument" : "kein Datum auf dem Dokument – Tag des Hochladens"}>{fmtDate(dateOf(d)).slice(0, 6)}{!d.doc_date && <span className="block text-[10px] leading-3">hoch­geladen</span>}</span>
+                  {(() => { const k = knownDate(d, docs); return <span className="tnum w-12 shrink-0 pt-px text-[12px] text-muted" title={k.how === "dokument" ? "Datum auf dem Dokument" : k.how === "mappe" ? "Datum der Mappe, aus der das Blatt stammt" : "kein Datum auf dem Dokument – Eingang"}>{fmtDate(k.iso).slice(0, 6)}{k.how !== "dokument" && <span className="block text-[10px] leading-3">{k.how === "mappe" ? "Mappe" : "Eingang"}</span>}</span>; })()}
                   <span className="min-w-0 flex-1">
                     <span className="line-clamp-2 text-[13.5px] leading-[18px] font-semibold">{weight(d) >= 4 && <Crown size={12} strokeWidth={2.2} className="mr-1 inline text-fg" aria-label="wichtig" />}{short(d.title ?? d.file_name)}</span>
                     <span className="mt-0.5 flex items-center gap-2 text-[11.5px] text-muted"><KindTag d={d} />{here && "du bist hier"}<DueChip d={d} /></span>
