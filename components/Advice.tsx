@@ -8,6 +8,7 @@ import { CARD } from "@/components/ui";
 import { useDocs } from "@/lib/docs";
 import { DRAFT_PURPOSES, type DraftPurpose } from "@/lib/drafts";
 import { authFetch } from "@/lib/supabase";
+import { secureGet, secureSet } from "@/lib/devicekey";
 
 /**
  * „Handlungsempfehlungen“: Was das Leben leichter oder günstiger macht – Kosten senken, Geld zurückholen,
@@ -25,8 +26,9 @@ const KINDS: Record<string, { label: string; icon: typeof Coins; color: string }
   ordnung: { label: "Ordnung", icon: FolderCheck, color: "#2563eb" },
 };
 
-export function readAdvice(): { at: string; items: AdviceItem[] } | null {
-  try { return JSON.parse(localStorage.getItem(KEY) ?? "null"); } catch { return null; }
+/** Letzte Bewertung – verschlüsselt im Browser (lib/devicekey.ts), beim Abmelden gelöscht */
+export function readAdvice(): Promise<{ at: string; items: AdviceItem[] } | null> {
+  return secureGet(KEY);
 }
 
 export function AdviceList() {
@@ -44,13 +46,14 @@ export function AdviceList() {
       if (!res.ok || !j.items) throw new Error(j.error ?? "Das hat nicht geklappt.");
       const v = { at: j.at ?? new Date().toISOString(), items: j.items };
       setData(v);
-      try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* egal */ }
+      void secureSet(KEY, v);
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
   useEffect(() => {
-    const c = readAdvice();
-    if (c && Date.now() - Date.parse(c.at) < DAYS * 86_400_000) setData(c);
-    else if (allDocs.some((d) => d.status === "ready")) void load();
+    void readAdvice().then((c) => {
+      if (c && Date.now() - Date.parse(c.at) < DAYS * 86_400_000) setData(c);
+      else if (allDocs.some((d) => d.status === "ready")) void load();
+    });
   }, [allDocs.length > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const items = data?.items ?? [];
@@ -115,7 +118,7 @@ export function AdviceList() {
 /** Empfehlung zu einem Dokument (aus der letzten Bewertung), für das Seitenpanel */
 export function DocAdvice({ id }: { id: string }) {
   const [it, setIt] = useState<AdviceItem>();
-  useEffect(() => setIt(readAdvice()?.items.find((x) => x.doc_ids.includes(id))), [id]);
+  useEffect(() => { void readAdvice().then((a) => setIt(a?.items.find((x) => x.doc_ids.includes(id)))); }, [id]);
   if (!it) return null;
   const k = KINDS[it.kind] ?? KINDS.ordnung;
   return (

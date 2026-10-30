@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Loader2, LogOut, ShieldCheck } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { supabase } from "@/lib/supabase";
+import { signOutClean } from "@/lib/leave";
 
 const codeField = "h-14 w-full rounded-xl border border-card-line bg-surface px-4 text-center text-[24px] tracking-[0.4em] tnum outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10";
 
@@ -87,7 +88,7 @@ function Screen({ title, text, children }: { title: string; text: string; childr
         <h1 className="text-[26px] leading-8 font-[650] tracking-tight">{title}</h1>
         <p className="mt-1.5 mb-6 text-[15px] text-muted">{text}</p>
         {children}
-        <button type="button" onClick={() => void supabase.auth.signOut()} className="mx-auto mt-6 flex items-center gap-1.5 text-[13px] font-semibold text-muted hover:text-fg"><LogOut size={14} /> Abmelden</button>
+        <button type="button" onClick={() => void signOutClean()} className="mx-auto mt-6 flex items-center gap-1.5 text-[13px] font-semibold text-muted hover:text-fg"><LogOut size={14} /> Abmelden</button>
       </div>
     </div>
   );

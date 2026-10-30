@@ -6,8 +6,9 @@ import { dismissJob, listDownloads, saveFile, shareExport, useJobs } from "@/lib
 export function JobToasts() {
   const jobs = useJobs();
   if (!jobs.length) return null;
-  const mail = async (id?: string) => { const d = (await listDownloads()).find((x) => x.id === id); if (d) await shareExport(d); };
-  const again = async (id?: string) => { const d = (await listDownloads()).find((x) => x.id === id); if (d) saveFile(d.blob, d.name); };
+  // das Passwort steht nur hier in der Meldung (im Arbeitsspeicher) – gespeichert wird es nie
+  const mail = async (id?: string, password?: string) => { const d = (await listDownloads()).find((x) => x.id === id); if (d) await shareExport({ blob: await d.load(), name: d.name, password }); };
+  const again = async (id?: string) => { const d = (await listDownloads()).find((x) => x.id === id); if (d) saveFile(await d.load(), d.name); };
   return (
     <div className="pointer-events-none fixed right-4 bottom-24 z-40 flex w-[min(22rem,calc(100vw-2rem))] flex-col gap-2 lg:bottom-6">
       {jobs.map((j) => {
@@ -27,7 +28,7 @@ export function JobToasts() {
                 <span className="block truncate text-[12px] text-white/75">{j.state === "running" && j.total ? `${j.done} von ${j.total}` : j.detail}{j.state === "running" && j.total && j.detail ? ` · ${j.detail}` : ""}</span>
               </span>
               {j.kind === "export" && j.state === "done" && <button type="button" onClick={() => void again(j.downloadId)} className="h-8 shrink-0 rounded-full bg-white px-3 text-[12.5px] font-semibold text-brand-600">Laden</button>}
-              {j.kind === "export" && j.state === "done" && <button type="button" onClick={() => void mail(j.downloadId)} aria-label="Per Mail senden" title="Per Mail senden" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/15 hover:bg-white/25"><Mail size={15} /></button>}
+              {j.kind === "export" && j.state === "done" && <button type="button" onClick={() => void mail(j.downloadId, j.password)} aria-label="Per Mail senden" title="Per Mail senden" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/15 hover:bg-white/25"><Mail size={15} /></button>}
               {j.state !== "running" && <button type="button" onClick={() => dismissJob(j.id)} aria-label="Ausblenden" className="grid h-7 w-7 shrink-0 place-items-center rounded-full hover:bg-white/15"><X size={15} /></button>}
             </div>
             {j.password && j.state === "done" && (

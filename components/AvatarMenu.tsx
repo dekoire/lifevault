@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { LogOut, Settings, UserRound, type LucideIcon } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { signOutClean } from "@/lib/leave";
 
 /** „nael.ahmed@…“ → „Nael Ahmed“ */
 export const nameFromEmail = (email: string) => email.split("@")[0].split(/[._-]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(" ") || email;
@@ -38,7 +38,7 @@ export function AvatarMenu({ email, extra = [], size = 36 }: { email: string; ex
           {extra.length > 0 && <div className="my-1 h-px bg-line" />}
           <Link href="/profil" onClick={() => setOpen(false)} className={item}><UserRound size={16} /> Profil</Link>
           <Link href="/einstellungen" onClick={() => setOpen(false)} className={item}><Settings size={16} /> Einstellungen</Link>
-          <button type="button" onClick={() => void supabase.auth.signOut()} className={`${item} text-negative-text`}><LogOut size={16} /> Abmelden</button>
+          <button type="button" onClick={() => void signOutClean()} className={`${item} text-negative-text`}><LogOut size={16} /> Abmelden</button>
         </div>
       )}
     </div>

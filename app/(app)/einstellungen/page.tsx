@@ -2,7 +2,8 @@
 import { AtSign, Download, BellRing, Gauge, Timer, Building2, Cable, FolderKanban, KeyRound, LockKeyhole, LogOut, Palette, ShieldCheck, UserRound } from "lucide-react";
 import { PageHeader, TileMenu } from "@/components/ui";
 import { useMe } from "@/lib/me";
-import { supabase, useSession } from "@/lib/supabase";
+import { signOutClean } from "@/lib/leave";
+import { useSession } from "@/lib/supabase";
 
 /** Einstellungen als Kachel-Menü wie bei Finastry */
 export default function SettingsPage() {
@@ -10,7 +11,7 @@ export default function SettingsPage() {
   const { isAdmin } = useMe();
   return (
     <>
-      <PageHeader title="Einstellungen" subtitle={session?.user.email} action={<button type="button" onClick={() => void supabase.auth.signOut()} className="inline-flex h-11 items-center gap-2 rounded-full bg-negative px-5 text-sm font-semibold text-white hover:brightness-105"><LogOut size={17} /> Abmelden</button>} />
+      <PageHeader title="Einstellungen" subtitle={session?.user.email} action={<button type="button" onClick={() => void signOutClean()} className="inline-flex h-11 items-center gap-2 rounded-full bg-negative px-5 text-sm font-semibold text-white hover:brightness-105"><LogOut size={17} /> Abmelden</button>} />
       <TileMenu tiles={[
         { href: "/partner", title: "Partner", text: "Vertragspartner, Händler und alle Kunden- und Vertragsnummern", icon: <Building2 size={22} strokeWidth={1.75} /> },
         { href: "/einstellungen/mitteilungen", title: "Mitteilungen", text: "Erinnerungen an Fristen aufs Handy – wann und wofür", icon: <BellRing size={22} strokeWidth={1.75} /> },
