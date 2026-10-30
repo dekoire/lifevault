@@ -200,9 +200,8 @@ begin
     'expires_at', c.expires_at);
 end $$;
 
--- Suche: zusätzlich nach Dokumentart filterbar
-drop function if exists public.api_search(text, text, uuid, text, date, date, boolean, int, int);
-create or replace function public.api_search(p_cred text, p_query text default null, p_project uuid default null, p_cluster text default null,
+-- Suche: zusätzlich nach Dokumentart filterbar (neue Funktion; die alte api_search bleibt für ältere Aufrufer unverändert)
+create or replace function public.api_search_v2(p_cred text, p_query text default null, p_project uuid default null, p_cluster text default null,
   p_since date default null, p_until date default null, p_archived boolean default false, p_limit int default 20, p_offset int default 0, p_kinds text[] default null) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare c public.api_clients; q text := nullif(trim(coalesce(p_query, '')), ''); lim int := least(greatest(coalesce(p_limit, 20), 1), 100);
@@ -392,9 +391,9 @@ end $$;
 revoke execute on function public.api_clients_revoked() from public, anon, authenticated;
 create trigger api_clients_revoked after update on public.api_clients for each row execute function public.api_clients_revoked();
 
-revoke execute on function public.api_search(text, text, uuid, text, date, date, boolean, int, int, text[]), public.api_file(text, uuid),
+revoke execute on function public.api_search_v2(text, text, uuid, text, date, date, boolean, int, int, text[]), public.api_file(text, uuid),
   public.oauth_app_info(text, text), public.oauth_exchange(text, text, text, text, text), public.oauth_refresh_token(text, text, text), public.oauth_revoke(text, text, text),
   public.oauth_my_grant(text), public.oauth_approve(text, text, text, boolean, boolean, uuid[], text, text[], boolean, boolean, boolean) from public;
-grant execute on function public.api_search(text, text, uuid, text, date, date, boolean, int, int, text[]), public.api_file(text, uuid),
+grant execute on function public.api_search_v2(text, text, uuid, text, date, date, boolean, int, int, text[]), public.api_file(text, uuid),
   public.oauth_app_info(text, text), public.oauth_exchange(text, text, text, text, text), public.oauth_refresh_token(text, text, text), public.oauth_revoke(text, text, text) to anon, authenticated;
 grant execute on function public.oauth_my_grant(text), public.oauth_approve(text, text, text, boolean, boolean, uuid[], text, text[], boolean, boolean, boolean) to authenticated;

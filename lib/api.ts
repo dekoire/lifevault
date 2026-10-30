@@ -81,7 +81,7 @@ const uuidOrNull = (v?: string) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v : null);
 const dateOrNull = (v?: string) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
 
 export function search(cred: string, a: SearchArgs) {
-  return rpc("api_search", {
+  return rpc("api_search_v2", {
     p_cred: cred, p_query: a.query?.slice(0, 200) ?? null, p_project: uuidOrNull(a.project_id), p_cluster: a.cluster?.slice(0, 30) ?? null,
     p_since: dateOrNull(a.since), p_until: dateOrNull(a.until), p_archived: !!a.include_archived,
     p_limit: Number.isFinite(a.limit) ? a.limit : 20, p_offset: Number.isFinite(a.offset) ? a.offset : 0,
