@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, Copy, FileImage, FileText, GitMerge, Loader2, X } from "lucide-react";
+import { Check, ChevronRight, Copy, FileImage, FileText, Loader2, Maximize2, Trash2 } from "lucide-react";
 import { useDetail } from "@/components/DetailPanel";
 import { Thumb } from "@/components/ChatWidgets";
 import { CARD } from "@/components/ui";
@@ -20,7 +20,7 @@ export function useDuplicates(docs: Doc[]) {
   // Entscheidungen „nicht doppelt“ geräteübergreifend gespeichert – einmal entschieden, nie wieder gefragt
   const { pairs } = useDecisions();
   const groups = useMemo(() => findDuplicates(docs, pairs("distinct_docs")), [docs, pairs]);
-  const notDupes = (g: DupGroup) => void addDecision("distinct_docs", pairKeys(g), g.docs.map((d) => d.title ?? d.file_name).slice(0, 3).join(" ≠ "));
+  const notDupes = (g: DupGroup) => addDecision("distinct_docs", pairKeys(g), g.docs.map((d) => d.title ?? d.file_name).slice(0, 3).join(" ≠ "));
   return { groups, notDupes };
 }
 
@@ -76,13 +76,18 @@ export function DuplicateHint({ docs }: { docs: Doc[] }) {
 export function DuplicateManager({ docs }: { docs: Doc[] }) {
   const { remove } = useDocs();
   const { groups, notDupes } = useDuplicates(docs);
-  if (!groups.length) return <p className={`${CARD} p-6 text-center text-[14px] text-muted`}>Keine doppelten Dokumente gefunden. 👍</p>;
+  if (!groups.length) return <p className={`${CARD} p-6 text-center text-[14px] text-muted`}>Nichts doppelt – alles aufgeräumt.</p>;
   return (
     <div className="space-y-3">
       {groups.map((g) => (
         <section key={g.key} className={`${CARD} overflow-hidden`}>
           <p className="px-4 pt-3.5 text-[12.5px] text-soft">{where(g)}</p>
-          <Group g={g} onMerge={async (keep) => { for (const d of g.docs) if (d.id !== keep) await remove(d); }} onDismiss={() => notDupes(g)} />
+          <Group g={g} onApply={async (keep) => {
+            for (const d of g.docs) if (!keep.includes(d.id)) await remove(d);
+            // was bleibt, ist ausdrücklich verschieden – nicht mehr vorschlagen
+            const kept = g.docs.filter((d) => keep.includes(d.id));
+            if (kept.length > 1) await notDupes({ ...g, docs: kept });
+          }} />
         </section>
       ))}
     </div>
@@ -106,33 +111,52 @@ function diffRows(docs: Doc[]) {
   return { diff, same: rows.length - rows.filter(differs).length };
 }
 
-function Group({ g, onMerge, onDismiss }: { g: DupGroup; onMerge: (keep: string) => Promise<void>; onDismiss: () => void }) {
+/**
+ * Eine Gruppe ähnlicher Dokumente: du markierst, was bleiben soll (eins, mehrere oder alle).
+ * Nicht Markiertes wird gelöscht; was du behältst, gilt danach als „verschieden“ und wird nicht mehr vorgeschlagen.
+ */
+function Group({ g, onApply }: { g: DupGroup; onApply: (keep: string[]) => Promise<void> }) {
   const open = useDetail();
-  const [keep, setKeep] = useState(g.docs[0].id);
+  const [keep, setKeep] = useState<string[]>([g.docs[0].id]);
   const [busy, setBusy] = useState(false);
   const [all, setAll] = useState(false);
   const { diff, same } = useMemo(() => diffRows(g.docs), [g.docs]);
-  const cols = g.docs.length >= 3 ? "md:grid-cols-3" : "grid-cols-2";
+  const toggle = (id: string) => setKeep((k) => (k.includes(id) ? k.filter((x) => x !== id) : [...k, id]));
+  const drop = g.docs.filter((d) => !keep.includes(d.id));
+  const cols = g.docs.length >= 3 ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2";
+  const label = !keep.length ? "Wähle mindestens eins zum Behalten" : drop.length ? `${keep.length === 1 ? "1 behalten" : `${keep.length} behalten`}, ${drop.length} löschen` : "Alle behalten – sind verschieden";
+  const apply = () => {
+    if (!keep.length) return;
+    if (drop.length && !confirm(`${drop.length} ${drop.length === 1 ? "Dokument wird" : "Dokumente werden"} gelöscht:\n\n${drop.map((d) => `• ${d.title ?? d.file_name}`).join("\n")}\n\nBehalten: ${keep.length}. Fortfahren?`)) return;
+    setBusy(true);
+    void onApply(keep).finally(() => setBusy(false));
+  };
   return (
     <div className="px-4 py-3.5">
-      <p className="mb-3 flex flex-wrap items-center gap-1.5 text-[12px] font-semibold text-soft">
-        <span className={`rounded-full px-2 py-px text-[11px] ${g.sure ? "bg-fg text-canvas" : "border border-card-line"}`}>{g.sure ? "sicher doppelt" : "vielleicht doppelt"}</span>{g.why}
+      <p className="mb-1 flex flex-wrap items-center gap-1.5 text-[12px] font-semibold text-soft">
+        <span className={`rounded-full px-2 py-px text-[11px] ${g.sure ? "bg-fg text-canvas" : "border border-card-line"}`}>{g.sure ? "sicher gleich" : "vielleicht gleich"}</span>{g.why}
       </p>
-      {/* nebeneinander: Vorschau, Eckdaten, behalten */}
-      <div className={`grid gap-2.5 ${cols}`}>
+      <p className="mb-3 text-[13px] text-soft"><b className="text-fg">Was willst du behalten?</b> Tippe an, was bleiben soll – auch mehrere. Nicht Markiertes wird gelöscht.</p>
+      <div className={`grid grid-cols-1 gap-2.5 ${cols}`}>
         {g.docs.map((d) => {
-          const on = keep === d.id;
+          const on = keep.includes(d.id);
           return (
-            <div key={d.id} className={`flex min-w-0 flex-col overflow-hidden rounded-xl border ${on ? "border-fg ring-1 ring-fg" : "border-card-line"}`}>
-              <button type="button" onClick={() => open?.({ kind: "doc", id: d.id })} className="block h-36 w-full overflow-hidden bg-surface-2 sm:h-44" aria-label="Öffnen"><Thumb d={d} /></button>
+            <div key={d.id} className={`flex min-w-0 flex-col overflow-hidden rounded-xl border ${on ? "border-fg ring-1 ring-fg" : "border-card-line opacity-80"}`}>
+              {/* groß: Antippen öffnet das Dokument rechts (mobil im Vollbild) – dort Seiten wischen und zoomen */}
+              <button type="button" onClick={() => open?.({ kind: "doc", id: d.id })} className="relative block h-56 w-full overflow-hidden bg-surface-2 sm:h-44" aria-label="Groß ansehen">
+                <Thumb d={d} />
+                <span className="absolute right-2 bottom-2 inline-flex items-center gap-1 rounded-full bg-fg/85 px-2.5 py-1 text-[11.5px] font-semibold text-canvas"><Maximize2 size={12} /> Groß ansehen</span>
+              </button>
               <div className="flex flex-1 flex-col gap-1 p-2.5">
-                <button type="button" onClick={() => open?.({ kind: "doc", id: d.id })} className="line-clamp-2 text-left text-[13px] leading-4 font-semibold hover:underline">{d.title ?? d.file_name}</button>
+                <span className="line-clamp-2 text-[13px] leading-4 font-semibold">{d.title ?? d.file_name}</span>
                 <span className="flex flex-wrap items-center gap-1 text-[11.5px] text-muted">
                   {d.mime_type.startsWith("image/") ? <FileImage size={11} /> : <FileText size={11} />}
                   {d.mime_type.startsWith("image/") ? "Foto" : "PDF"} · {size(d.size_bytes)} · {d.doc_date ? fmtDate(d.doc_date) : "ohne Datum"} · {d.key_facts?.length ?? 0} Angaben
                 </span>
                 {caseIds(d).length > 0 && <span className="flex flex-wrap gap-1">{caseIds(d).slice(0, 2).map((c) => <span key={c.kind + c.value} className="max-w-full truncate rounded-full border border-card-line px-2 py-px text-[10.5px] text-soft">{c.label}: <b className="font-semibold text-fg">{c.value}</b></span>)}</span>}
-                <button type="button" role="radio" aria-checked={on} onClick={() => setKeep(d.id)} className={`mt-auto inline-flex h-8 items-center justify-center gap-1.5 rounded-full text-[12px] font-semibold ${on ? "bg-fg text-canvas" : "border border-card-line hover:bg-surface-2"}`}>{on ? "✓ Behalten" : "Dieses behalten"}</button>
+                <button type="button" role="checkbox" aria-checked={on} onClick={() => toggle(d.id)} className={`mt-auto inline-flex h-9 items-center justify-center gap-1.5 rounded-full text-[12.5px] font-semibold ${on ? "bg-fg text-canvas" : "border border-card-line text-soft hover:bg-surface-2"}`}>
+                  {on ? <><Check size={14} strokeWidth={3} /> Behalten</> : <><Trash2 size={13} /> Wird gelöscht – antippen zum Behalten</>}
+                </button>
               </div>
             </div>
           );
@@ -140,26 +164,28 @@ function Group({ g, onMerge, onDismiss }: { g: DupGroup; onMerge: (keep: string)
       </div>
       {/* Unterschiede */}
       <div className="mt-3 overflow-hidden rounded-xl border border-card-line">
-        <p className="flex items-center justify-between bg-surface-2 px-3 py-2 text-[12px] font-semibold">{diff.length ? `${diff.length} ${diff.length === 1 ? "Unterschied" : "Unterschiede"}` : "Keine Unterschiede in den Angaben"}<span className="font-normal text-muted">{same} Angaben gleich</span></p>
+        <p className="flex items-center justify-between bg-surface-2 px-3 py-2 text-[12px] font-semibold">{diff.length ? `Worin sie sich unterscheiden (${diff.length})` : "Keine Unterschiede in den Angaben"}<span className="font-normal text-muted">{same} Angaben gleich</span></p>
         {diff.length > 0 && (
-          <table className="w-full table-fixed text-[12px]">
-            <tbody className="divide-y divide-line">
-              {(all ? diff : diff.slice(0, 6)).map((r) => (
-                <tr key={r.label}>
-                  <td className="w-[28%] truncate px-3 py-1.5 text-muted">{r.label}</td>
-                  {r.values.map((v, i) => <td key={i} className={`truncate px-2 py-1.5 ${v ? "font-semibold" : "text-muted"}`} title={v}>{v ?? "–"}</td>)}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[28rem] table-fixed text-[12px]">
+              <tbody className="divide-y divide-line">
+                {(all ? diff : diff.slice(0, 6)).map((r) => (
+                  <tr key={r.label}>
+                    <td className="w-[28%] truncate px-3 py-1.5 text-muted">{r.label}</td>
+                    {r.values.map((v, i) => <td key={i} className={`truncate px-2 py-1.5 ${v ? "font-semibold" : "text-muted"}`} title={v}>{v ?? "–"}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         {diff.length > 6 && <button type="button" onClick={() => setAll(!all)} className="w-full border-t border-line bg-surface-2 px-3 py-1.5 text-center text-[12px] font-semibold text-fg transition-colors hover:bg-surface-3">{all ? "Weniger" : `Alle ${diff.length} zeigen`}</button>}
       </div>
-      <div className="mt-2.5 flex flex-wrap gap-2">
-        <button type="button" disabled={busy} onClick={() => { if (!confirm(`${g.docs.length - 1} ${g.docs.length === 2 ? "Dokument" : "Dokumente"} löschen und nur das ausgewählte behalten?`)) return; setBusy(true); void onMerge(keep).finally(() => setBusy(false)); }} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas disabled:opacity-50">
-          {busy ? <Loader2 size={14} className="animate-spin" /> : <GitMerge size={14} />} Zusammenführen
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button type="button" disabled={busy || !keep.length} onClick={apply} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas disabled:opacity-40">
+          {busy ? <Loader2 size={14} className="animate-spin" /> : drop.length ? <Trash2 size={14} /> : <Check size={14} />} {label}
         </button>
-        <button type="button" onClick={onDismiss} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-card-line px-4 text-[13px] font-semibold hover:bg-surface-2"><X size={14} /> Sind verschieden</button>
+        {drop.length > 0 && keep.length > 0 && <button type="button" onClick={() => setKeep(g.docs.map((d) => d.id))} className="inline-flex h-10 items-center gap-1.5 rounded-full border border-card-line px-4 text-[13px] font-semibold hover:bg-surface-2">Alle behalten</button>}
       </div>
     </div>
   );
