@@ -19,7 +19,7 @@ export type AgingDoc = {
 export type Verdict = { reason: string; cap: number };
 
 const DAY = 86_400_000;
-const INVOICE = /rechnung|mahnung|zahlungserinnerung|zahlungsaufforderung|abrechnung|forderung|lastschriftankündigung|beitragsrechnung/i;
+const INVOICE = /(?<!an)rechnung|mahnung|zahlungserinnerung|zahlungsaufforderung|abrechnung|forderung|lastschriftankündigung|beitragsrechnung/i;
 const RECEIPT = /kassenbon|kaufbeleg|quittung|\bbeleg\b|bon\b/i;
 const KEEP = /urkunde|ausweis|pass\b|zeugnis|testament|grundbuch|bescheid|steuer|lohnsteuer|rente|renten|sozialversicherung|police|versicherungsschein|vertrag\b|arbeitsvertrag|mietvertrag/i;
 const PAYSLIP = /gehalt|entgelt|lohn|bezüge/i;

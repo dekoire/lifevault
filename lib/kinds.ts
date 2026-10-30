@@ -6,13 +6,14 @@ import type { Doc } from "@/lib/types";
  */
 export const KINDS = [
   { id: "mahnung", label: "Mahnung & Forderung", short: "Mahnung", color: "#dc2626", re: /mahnung|zahlungsaufforderung|vollstreck|zahlungsverzug|verwarnung|bußgeld|anhörung|inkasso|zahlschein/ },
+  { id: "gehalt", label: "Gehalt & Lohn", short: "Gehalt", color: "#0f766e", re: /gehalt|entgelt|arbeitslohn|lohnabrechnung|lohnsteuerbescheinigung|lohnzettel|bezüge|vergütungsabrechnung|verdienstabrechnung|sozialversicherungsnachweis|dienstzeit/ },
   { id: "medizin", label: "Arztbrief & Befund", short: "Medizinisch", color: "#0891b2", re: /arzt|befund|kranken(akte|haus)|entlass|operation|labor|überweisungsschein|rezept|attest|krankmeldung|arbeitsunfähig/ },
   { id: "ausweis", label: "Ausweis & Karte", short: "Ausweis/Karte", color: "#7c3aed", re: /ausweis|reisepass|führerschein|\bkarte\b|karte\b|chipkarte|gesundheitskarte|debitkarte|kreditkarte/ },
   { id: "angebot", label: "Angebot", short: "Angebot", color: "#0d9488", re: /angebot|kostenvoranschlag|offerte/ },
   { id: "bescheid", label: "Bescheid", short: "Bescheid", color: "#ea580c", re: /bescheid|bescheinigung|meldebescheinigung|festsetzung/ },
   { id: "formular", label: "Formular", short: "Formular", color: "#a16207", re: /formular|fragebogen|verzicht|verpflichtungserklärung|zählerstand|personalunterlage|onboarding/ },
   { id: "bedingungen", label: "Bedingungen & Infos", short: "AGB/Info", color: "#64748b", re: /agb|geschäftsbedingung|bedingungen|belehrung|widerruf|datenschutz|merkblatt|information|hinweis|preisliste|preis- und leistung|leistungsbeschreibung|leistungsverzeichnis|erstinformation|ipid|vorvertraglich|broschüre|hausordnung|arbeitsordnung|richtlinie|stichwortverzeichnis|deckblatt|grundriss|mitteilung/ },
-  { id: "rechnung", label: "Rechnung & Abrechnung", short: "Rechnung", color: "#16a34a", re: /rechnung|abrechnung|kassenbon|quittung|beleg|kontoauszug|umsatz|lohnsteuer|zahlungstermin|gutschrift/ },
+  { id: "rechnung", label: "Rechnung & Abrechnung", short: "Rechnung", color: "#16a34a", re: /(?<!an)rechnung|abrechnung|kassenbon|quittung|beleg|kontoauszug|umsatz|lohnsteuer|zahlungstermin|gutschrift/ },
   { id: "bestaetigung", label: "Bestätigung & Kündigung", short: "Bestätigung", color: "#2563eb", re: /bestätigung|kündigung|eingangs/ },
   { id: "vertrag", label: "Vertrag & Police", short: "Vertrag", color: "#111827", re: /vertrag|police|versicherungsschein|mandat|antrag|eintrittserklärung|nachtrag|aufnahme/ },
   { id: "schreiben", label: "Schreiben & Sonstiges", short: "Schreiben", color: "#6b7280", re: /./ },
