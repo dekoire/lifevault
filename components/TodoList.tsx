@@ -75,10 +75,10 @@ export function TodoList({ docs }: { docs: Doc[] }) {
             options={STATUS.map((x) => ({ id: x.id, label: x.label, icon: x.icon, n: statusCount(x.id), alert: x.id === "late" }))} />
           <MultiSelect label="Art" value={kinds_} onChange={(v) => { setKinds(v as TodoKind[]); setAll(false); }} allLabel="Alle"
             options={kinds.map(({ k, n }) => ({ id: k, label: KIND[k].label, icon: KIND[k].icon, n }))} />
-          {(kinds_.length > 0 || status.join() !== "late,soon,later") && <button type="button" onClick={() => { setKinds([]); setStatus(["late", "soon", "later"]); }} className="col-span-2 text-[12.5px] font-semibold text-selected sm:col-span-1">Zurücksetzen</button>}
+          {(kinds_.length > 0 || status.join() !== "late,soon,later") && <button type="button" onClick={() => { setKinds([]); setStatus(["late", "soon", "later"]); }} className="col-span-2 text-[13px] font-semibold text-selected sm:col-span-1">Zurücksetzen</button>}
         </div>
       </div>
-      {current.length === 0 && <p className="border-t border-line px-4 py-4 text-[13.5px] text-muted">{status.length === 1 && status[0] === "done" ? "Noch nichts abgehakt." : openList.length === 0 ? "Alles erledigt. 🎉" : "Nichts in dieser Auswahl."}</p>}
+      {current.length === 0 && <p className="border-t border-line px-4 py-4 text-[14px] text-muted">{status.length === 1 && status[0] === "done" ? "Noch nichts abgehakt." : openList.length === 0 ? "Alles erledigt. 🎉" : "Nichts in dieser Auswahl."}</p>}
       {current.length > 0 && (
         <div className={`hidden border-t border-b border-line bg-surface-2/60 px-4 py-3.5 ${GRID}`} role="row">
           <span />
@@ -98,7 +98,7 @@ export function TodoList({ docs }: { docs: Doc[] }) {
           const K = KIND[t.kind];
           // Farbe nach Wichtigkeit: Zahlung rot, Widerspruch/Vertrag orange, alles andere (Zählerstand, Formular …) grün
           const tone = critical(t.kind) ? "text-negative-text" : warn(t.kind) ? "text-amber" : "text-positive-text";
-          const due = <span className={`inline-block text-[12.5px] font-semibold whitespace-nowrap ${overdue || soon ? tone : "text-soft"}`}>{overdue || soon ? dueLabel(t.days) : `bis ${fmtDate(t.date)}`}</span>;
+          const due = <span className={`inline-block text-[13px] font-semibold whitespace-nowrap ${overdue || soon ? tone : "text-soft"}`}>{overdue || soon ? dueLabel(t.days) : `bis ${fmtDate(t.date)}`}</span>;
           const amt = t.total ?? t.payment?.amount;
           const amount = amt !== undefined ? fmtMoney(amt, t.payment?.currency ?? "EUR") : null;
           return (
@@ -119,7 +119,7 @@ export function TodoList({ docs }: { docs: Doc[] }) {
                   </span>
                 </span>
                 <span className="hidden items-center gap-1.5 text-[13px] font-medium text-fg md:inline-flex"><K.icon size={14} strokeWidth={2} className="shrink-0" />{K.label}</span>
-                <span className="tnum hidden text-right text-[13.5px] font-semibold md:block">{amount ?? <span className="text-muted">–</span>}</span>
+                <span className="tnum hidden text-right text-[14px] font-semibold md:block">{amount ?? <span className="text-muted">–</span>}</span>
                 <span className="hidden shrink-0 text-right md:block">{due}</span>
               </button>
               <button type="button" onClick={() => openDraft(t.doc, DRAFT_FOR[t.kind])} aria-label="Schreiben vorbereiten" title="Mail oder Brief vorbereiten" className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-soft hover:bg-surface-2 hover:text-fg"><PenLine size={15} /></button>
@@ -157,12 +157,12 @@ export function MultiSelect({ label, value, options, onChange, allLabel, name }:
       {open && (
         <div role="listbox" aria-multiselectable="true" className="pop-in absolute inset-x-0 z-30 mt-1.5 min-w-[11rem] sm:right-0 sm:left-auto sm:w-64 rounded-xl border border-card-line bg-surface p-1 shadow-lg">
           {options.map((o) => { const on = value.includes(o.id); return (
-            <button key={o.id} type="button" role="option" aria-selected={on} onClick={() => toggle(o.id)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13.5px] hover:bg-surface-2">
+            <button key={o.id} type="button" role="option" aria-selected={on} onClick={() => toggle(o.id)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[14px] hover:bg-surface-2">
               <span className={`grid h-4.5 w-4.5 shrink-0 place-items-center rounded-[5px] border-2 ${on ? "border-fg bg-fg text-canvas" : "border-line-strong"}`}>{on && <Check size={11} strokeWidth={3} />}</span>
               <o.icon size={15} className="shrink-0" /><span className="flex-1">{o.label}</span><span className={`tnum text-[12px] ${o.alert && o.n ? "font-semibold text-negative-text" : "text-muted"}`}>{o.n}</span>
             </button>
           ); })}
-          <div className="mt-1 flex justify-between border-t border-line px-2.5 pt-1.5 pb-1 text-[12.5px] font-semibold">
+          <div className="mt-1 flex justify-between border-t border-line px-2.5 pt-1.5 pb-1 text-[13px] font-semibold">
             <button type="button" onClick={() => onChange(options.map((o) => o.id))} className="text-selected">Alle wählen</button>
             <button type="button" onClick={() => setOpen(false)} className="text-soft hover:text-fg">Fertig</button>
           </div>

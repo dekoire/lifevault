@@ -136,10 +136,10 @@ export function useCaptureTray() {
                     {it.url ? <img src={it.url} alt={`Seite ${i + 1}`} className="h-full w-full object-cover" /> : (
                       <span className="flex h-full flex-col items-center justify-center gap-1.5 p-2 text-center"><FileText size={26} className="text-soft" /><span className="line-clamp-3 text-[11px] font-medium break-all text-soft">{it.file.name}</span></span>
                     )}
-                    <span className="absolute top-1.5 left-1.5 grid h-6 min-w-6 place-items-center rounded-full bg-fg px-1.5 text-[11.5px] font-bold text-canvas">{i + 1}</span>
+                    <span className="absolute top-1.5 left-1.5 grid h-6 min-w-6 place-items-center rounded-full bg-fg px-1.5 text-[12px] font-bold text-canvas">{i + 1}</span>
                     {it.scanning && <span className="absolute inset-0 grid place-items-center bg-black/30 text-white"><Loader2 size={22} className="animate-spin" /></span>}
                     {it.quality && !it.scanning && (
-                      <span title={it.quality.note} className={`absolute inset-x-1.5 top-9 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold text-white ${it.quality.ok ? "bg-positive" : "bg-amber"}`}>
+                      <span title={it.quality.note} className={`absolute inset-x-1.5 top-9 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold text-white ${it.quality.ok ? "bg-positive" : "bg-amber"}`}>
                         {it.quality.ok ? <Check size={11} strokeWidth={3} /> : <AlertTriangle size={11} />}<span className="truncate">{it.quality.ok ? "Gut eingerahmt" : it.quality.note}</span>
                       </span>
                     )}
@@ -154,7 +154,7 @@ export function useCaptureTray() {
                 ))}
                 {/* nächste Seite */}
                 <li>
-                  <button type="button" onClick={() => cam.current?.click()} className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-brand-500/30 bg-gradient-to-br from-brand-500/[.05] to-brand-500/[.16] text-[12.5px] font-semibold text-brand-600 hover:to-brand-500/[.22] active:scale-[.98]">
+                  <button type="button" onClick={() => cam.current?.click()} className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-brand-500/30 bg-gradient-to-br from-brand-500/[.05] to-brand-500/[.16] text-[13px] font-semibold text-brand-600 hover:to-brand-500/[.22] active:scale-[.98]">
                     <Camera size={24} /> {pages ? "Nächste Seite" : "Fotografieren"}
                   </button>
                 </li>
@@ -166,12 +166,12 @@ export function useCaptureTray() {
                 <span className="min-w-0 text-[13px] leading-5">
                   <b className="block text-[14px] text-fg">{scan ? "Fotos werden wie ein Scan" : "Fotos bleiben wie aufgenommen"}</b>
                   <span className="block text-soft">{scan ? "Geradegezogen und schwarz-weiß aufgehellt – gut lesbar und zum Drucken." : "Ohne Geradeziehen und Aufhellen, in Farbe."}</span>
-                  {scan && <span className="mt-1 block text-[12.5px] text-muted">Tipp: Blatt auf einen dunklen Untergrund legen.</span>}
+                  {scan && <span className="mt-1 block text-[13px] text-muted">Tipp: Blatt auf einen dunklen Untergrund legen.</span>}
                 </span>
               </div>
               <div className="mt-2.5 grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => files.current?.click()} className="inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-full border border-card-line px-3 text-[13.5px] font-semibold hover:bg-surface-2"><FileUp size={16} className="shrink-0" /> <span className="truncate">Fotos oder PDFs</span></button>
-                <button type="button" role="switch" aria-checked={scan} onClick={toggleScan} title="Fotos geradeziehen und als Schwarz-Weiß-Scan aufhellen" className={`inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-full px-3 text-[13.5px] font-semibold ${scan ? "bg-brand-500 text-white" : "border border-card-line text-soft hover:bg-surface-2"}`}><ScanLine size={16} className="shrink-0" /> <span className="truncate">Scan-Modus {scan ? "an" : "aus"}</span></button>
+                <button type="button" onClick={() => files.current?.click()} className="inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-full border border-card-line px-3 text-[14px] font-semibold hover:bg-surface-2"><FileUp size={16} className="shrink-0" /> <span className="truncate">Fotos oder PDFs</span></button>
+                <button type="button" role="switch" aria-checked={scan} onClick={toggleScan} title="Fotos geradeziehen und als Schwarz-Weiß-Scan aufhellen" className={`inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-full px-3 text-[14px] font-semibold ${scan ? "bg-brand-500 text-white" : "border border-card-line text-soft hover:bg-surface-2"}`}><ScanLine size={16} className="shrink-0" /> <span className="truncate">Scan-Modus {scan ? "an" : "aus"}</span></button>
               </div>
 
               {canCombine && (

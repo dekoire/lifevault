@@ -37,13 +37,13 @@ export function DuplicateHint({ docs }: { docs: Doc[] }) {
   const { groups: partnerGroups } = usePartnerDuplicates(docs);
   if (!groups.length && !partnerGroups.length) return null;
   const n = groups.length + partnerGroups.length;
-  const btn = "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[12.5px] font-semibold text-canvas";
+  const btn = "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[13px] font-semibold text-canvas";
   // gleicher Aufbau wie „Zu erledigen“ und „Gehören zusammen?“: schwarzes Symbol, Zahl, Zeilen mit Vorschau und Knopf
   return (
     <section className={`${CARD} overflow-hidden`}>
       <div className="px-4 pt-4 pb-3">
         <h2 className="flex items-center gap-2 text-[16px] font-semibold"><Copy size={18} className="shrink-0" /> Doppeltes aufräumen <span className="tnum text-[13px] font-semibold text-fg">{n}</span></h2>
-        <p className="mt-0.5 text-[12.5px] text-muted">Gleiches mehrfach abgelegt – eines behalten, den Rest löschen</p>
+        <p className="mt-0.5 text-[13px] text-muted">Gleiches mehrfach abgelegt – eines behalten, den Rest löschen</p>
       </div>
       <ul className="divide-y divide-line border-t border-line">
         {partnerGroups.slice(0, 2).map((g) => (
@@ -81,7 +81,7 @@ export function DuplicateManager({ docs }: { docs: Doc[] }) {
     <div className="space-y-3">
       {groups.map((g) => (
         <section key={g.key} className={`${CARD} overflow-hidden`}>
-          <p className="px-4 pt-3.5 text-[12.5px] text-soft">{where(g)}</p>
+          <p className="px-4 pt-3.5 text-[13px] text-soft">{where(g)}</p>
           <Group g={g} onApply={async (keep) => {
             for (const d of g.docs) if (!keep.includes(d.id)) await remove(d);
             // was bleibt, ist ausdrücklich verschieden – nicht mehr vorschlagen
@@ -145,16 +145,16 @@ function Group({ g, onApply }: { g: DupGroup; onApply: (keep: string[]) => Promi
               {/* groß: Antippen öffnet das Dokument rechts (mobil im Vollbild) – dort Seiten wischen und zoomen */}
               <button type="button" onClick={() => open?.({ kind: "doc", id: d.id })} className="relative block h-56 w-full overflow-hidden bg-surface-2 sm:h-44" aria-label="Groß ansehen">
                 <Thumb d={d} />
-                <span className="absolute right-2 bottom-2 inline-flex items-center gap-1 rounded-full bg-fg/85 px-2.5 py-1 text-[11.5px] font-semibold text-canvas"><Maximize2 size={12} /> Groß ansehen</span>
+                <span className="absolute right-2 bottom-2 inline-flex items-center gap-1 rounded-full bg-fg/85 px-2.5 py-1 text-[12px] font-semibold text-canvas"><Maximize2 size={12} /> Groß ansehen</span>
               </button>
               <div className="flex flex-1 flex-col gap-1 p-2.5">
                 <span className="line-clamp-2 text-[13px] leading-4 font-semibold">{d.title ?? d.file_name}</span>
-                <span className="flex flex-wrap items-center gap-1 text-[11.5px] text-muted">
+                <span className="flex flex-wrap items-center gap-1 text-[12px] text-muted">
                   {d.mime_type.startsWith("image/") ? <FileImage size={11} /> : <FileText size={11} />}
                   {d.mime_type.startsWith("image/") ? "Foto" : "PDF"} · {size(d.size_bytes)} · {d.doc_date ? fmtDate(d.doc_date) : "ohne Datum"} · {d.key_facts?.length ?? 0} Angaben
                 </span>
-                {caseIds(d).length > 0 && <span className="flex flex-wrap gap-1">{caseIds(d).slice(0, 2).map((c) => <span key={c.kind + c.value} className="max-w-full truncate rounded-full border border-card-line px-2 py-px text-[10.5px] text-soft">{c.label}: <b className="font-semibold text-fg">{c.value}</b></span>)}</span>}
-                <button type="button" role="checkbox" aria-checked={on} onClick={() => toggle(d.id)} className={`mt-auto inline-flex h-9 items-center justify-center gap-1.5 rounded-full text-[12.5px] font-semibold ${on ? "bg-fg text-canvas" : "border border-card-line text-soft hover:bg-surface-2"}`}>
+                {caseIds(d).length > 0 && <span className="flex flex-wrap gap-1">{caseIds(d).slice(0, 2).map((c) => <span key={c.kind + c.value} className="max-w-full truncate rounded-full border border-card-line px-2 py-px text-[11px] text-soft">{c.label}: <b className="font-semibold text-fg">{c.value}</b></span>)}</span>}
+                <button type="button" role="checkbox" aria-checked={on} onClick={() => toggle(d.id)} className={`mt-auto inline-flex h-9 items-center justify-center gap-1.5 rounded-full text-[13px] font-semibold ${on ? "bg-fg text-canvas" : "border border-card-line text-soft hover:bg-surface-2"}`}>
                   {on ? <><Check size={14} strokeWidth={3} /> Behalten</> : <><Trash2 size={13} /> Wird gelöscht – antippen zum Behalten</>}
                 </button>
               </div>

@@ -64,12 +64,12 @@ export function AdviceList() {
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
         <span className="min-w-0 flex-1">
           <h2 className="text-[16px] font-semibold">Handlungsempfehlungen</h2>
-          <span className="block text-[12.5px] text-muted">{busy && !items.length ? "Deine Unterlagen werden durchgesehen …" : total > 0 ? `Bis zu ${Math.round(total).toLocaleString("de-DE")} € im Jahr möglich · nach Nutzen und Aufwand sortiert` : "Nach Nutzen und Aufwand sortiert"}</span>
+          <span className="block text-[13px] text-muted">{busy && !items.length ? "Deine Unterlagen werden durchgesehen …" : total > 0 ? `Bis zu ${Math.round(total).toLocaleString("de-DE")} € im Jahr möglich · nach Nutzen und Aufwand sortiert` : "Nach Nutzen und Aufwand sortiert"}</span>
         </span>
         <button type="button" onClick={() => void load()} disabled={busy} title="Neu bewerten" aria-label="Neu bewerten" className="grid h-9 w-9 place-items-center rounded-full text-soft hover:bg-surface-2 disabled:opacity-50">{busy ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}</button>
       </div>
       {error && <p className="mx-4 mb-3 rounded-xl bg-negative/10 px-3 py-2 text-[13px] text-negative-text">{error}</p>}
-      {!busy && data && !items.length && <p className="px-4 pb-4 text-[13.5px] text-muted">Gerade nichts zu tun – alles im grünen Bereich.</p>}
+      {!busy && data && !items.length && <p className="px-4 pb-4 text-[14px] text-muted">Gerade nichts zu tun – alles im grünen Bereich.</p>}
       {items.length > 0 && (
         <div className={`hidden border-y border-line bg-surface-2/60 px-4 py-3.5 ${GRID}`} role="row">
           <span className={HEAD}>Empfehlung</span><span className={HEAD}>Art</span><span className={HEAD}>Aufwand</span><span className={`${HEAD} text-right`}>Ersparnis</span><span />
@@ -85,25 +85,25 @@ export function AdviceList() {
             <div key={i}>
               <button type="button" onClick={() => setOpen(isOpen ? null : i)} aria-expanded={isOpen} className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-2/70 ${GRID}`}>
                 <span className="min-w-0 flex-1">
-                  <b className="block truncate text-[14.5px] font-semibold">{it.title}</b>
+                  <b className="block truncate text-[15px] font-semibold">{it.title}</b>
                   <span className="block truncate text-[12px] text-muted md:hidden">{k.label} · Aufwand {it.effort}{it.saving ? ` · ca. ${Math.round(it.saving).toLocaleString("de-DE")} €/Jahr` : ""}</span>
                 </span>
-                <span className="hidden items-center gap-1.5 text-[13.5px] md:inline-flex"><k.icon size={14} className="shrink-0" />{k.label}</span>
-                <span className="hidden text-[13.5px] text-soft md:block">{it.effort}</span>
-                <span className="tnum hidden text-right text-[13.5px] font-semibold md:block">{it.saving ? `${Math.round(it.saving).toLocaleString("de-DE")} €/J.` : "–"}</span>
+                <span className="hidden items-center gap-1.5 text-[14px] md:inline-flex"><k.icon size={14} className="shrink-0" />{k.label}</span>
+                <span className="hidden text-[14px] text-soft md:block">{it.effort}</span>
+                <span className="tnum hidden text-right text-[14px] font-semibold md:block">{it.saving ? `${Math.round(it.saving).toLocaleString("de-DE")} €/J.` : "–"}</span>
                 <ChevronDown size={16} className={`shrink-0 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
               </button>
               {isOpen && (
                 <div className="space-y-3 px-4 pb-4">
-                  <p className="text-[13.5px] text-soft">{it.why}</p>
-                  <ol className="space-y-1.5">{it.steps.map((s, j) => <li key={j} className="flex gap-2 text-[13.5px]"><span className="tnum grid h-5 w-5 shrink-0 place-items-center rounded-full bg-surface-3 text-[11px] font-bold">{j + 1}</span>{s}</li>)}</ol>
+                  <p className="text-[14px] text-soft">{it.why}</p>
+                  <ol className="space-y-1.5">{it.steps.map((s, j) => <li key={j} className="flex gap-2 text-[14px]"><span className="tnum grid h-5 w-5 shrink-0 place-items-center rounded-full bg-surface-3 text-[11px] font-bold">{j + 1}</span>{s}</li>)}</ol>
                   <div className="flex flex-wrap items-center gap-2">
                     {docs.map((d) => (
-                      <button key={d.id} type="button" onClick={() => detail?.({ kind: "doc", id: d.id })} className="inline-flex max-w-[16rem] items-center gap-1.5 rounded-full border border-card-line py-1 pr-3 pl-1 text-[12.5px] font-semibold hover:bg-surface-2">
+                      <button key={d.id} type="button" onClick={() => detail?.({ kind: "doc", id: d.id })} className="inline-flex max-w-[16rem] items-center gap-1.5 rounded-full border border-card-line py-1 pr-3 pl-1 text-[13px] font-semibold hover:bg-surface-2">
                         <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={22} /><span className="truncate">{d.title ?? d.file_name}</span>
                       </button>
                     ))}
-                    {draft && docs[0] && <button type="button" onClick={() => openDraft(docs[0], draft.id as DraftPurpose)} className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-full bg-brand-500 px-3.5 text-[12.5px] font-semibold text-white"><PenLine size={13} /> {draft.label} vorbereiten</button>}
+                    {draft && docs[0] && <button type="button" onClick={() => openDraft(docs[0], draft.id as DraftPurpose)} className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-full bg-brand-500 px-3.5 text-[13px] font-semibold text-white"><PenLine size={13} /> {draft.label} vorbereiten</button>}
                   </div>
                 </div>
               )}
@@ -123,9 +123,9 @@ export function DocAdvice({ id }: { id: string }) {
   const k = KINDS[it.kind] ?? KINDS.ordnung;
   return (
     <div className="rounded-2xl border border-card-line bg-surface px-3.5 py-3">
-      <span className="mb-1 inline-flex items-center gap-1.5 text-[11.5px] font-semibold" style={{ color: k.color }}><Lightbulb size={12} /> Empfehlung</span>
-      <b className="block text-[13.5px]">{it.title}</b>
-      <p className="mt-0.5 text-[12.5px] text-soft">{it.why}</p>
+      <span className="mb-1 inline-flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: k.color }}><Lightbulb size={12} /> Empfehlung</span>
+      <b className="block text-[14px]">{it.title}</b>
+      <p className="mt-0.5 text-[13px] text-soft">{it.why}</p>
     </div>
   );
 }

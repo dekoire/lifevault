@@ -83,7 +83,7 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
         </div>
         <div className="grid grid-cols-4 divide-x divide-line border-t border-line text-center">
           {([["Wichtig", count("wichtig"), ""], ["Laufend", count("laufend"), ""], ["Offen", due, due ? "text-negative-text" : ""], ["Erledigt", count("erledigt"), "text-positive-text"]] as const).map(([l, n, c]) => (
-            <div key={l} className="px-2 py-2.5"><b className={`tnum block text-[18px] leading-6 ${n ? c : "text-muted"}`}>{n}</b><span className="text-[11.5px] text-muted">{l}</span></div>
+            <div key={l} className="px-2 py-2.5"><b className={`tnum block text-[18px] leading-6 ${n ? c : "text-muted"}`}>{n}</b><span className="text-[12px] text-muted">{l}</span></div>
           ))}
         </div>
         <ul className="divide-y divide-line border-t border-line">
@@ -99,9 +99,9 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
                     {gone && <span className="absolute -right-1 -bottom-1 grid h-5 w-5 place-items-center rounded-full bg-surface text-positive-text"><CircleCheck size={15} /></span>}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <b className="block truncate text-[14.5px] leading-5 font-semibold">{d.title ?? d.file_name}</b>
-                    <span className="mt-0.5 flex min-w-0 items-center gap-2 text-[12.5px] text-muted"><KindTag d={d} /><span className="tnum truncate">{shown(d, allDocs)}</span></span>
-                    {d.summary && <span className="mt-0.5 line-clamp-1 block text-[12.5px] leading-[18px] text-soft">{d.summary}</span>}
+                    <b className="block truncate text-[15px] leading-5 font-semibold">{d.title ?? d.file_name}</b>
+                    <span className="mt-0.5 flex min-w-0 items-center gap-2 text-[13px] text-muted"><KindTag d={d} /><span className="tnum truncate">{shown(d, allDocs)}</span></span>
+                    {d.summary && <span className="mt-0.5 line-clamp-1 block text-[13px] leading-[18px] text-soft">{d.summary}</span>}
                   </span>
                 </Link>
               </li>
@@ -118,8 +118,8 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
             <button type="button" onClick={() => setOpen({ ...open, [b.id]: !open[b.id] })} aria-expanded={open[b.id]} className="flex w-full items-start gap-3 px-4 py-3.5 text-left hover:bg-surface-2/60">
               <Badge icon={b.icon} color={b.color} />
               <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-2 text-[15px] font-semibold">{b.title}<span className="tnum rounded-full border border-card-line px-2 py-px text-[11.5px] text-soft">{list.length}</span></span>
-                <span className="block text-[12.5px] text-muted">{b.hint}</span>
+                <span className="flex items-center gap-2 text-[15px] font-semibold">{b.title}<span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] text-soft">{list.length}</span></span>
+                <span className="block text-[13px] text-muted">{b.hint}</span>
               </span>
               <ChevronDown size={16} className={`mt-1 shrink-0 text-muted transition-transform ${open[b.id] ? "rotate-180" : ""}`} />
             </button>
@@ -134,9 +134,9 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
                         {b.id === "erledigt" && <span className="absolute -right-1 -bottom-1 grid h-5 w-5 place-items-center rounded-full bg-surface text-positive-text"><CircleCheck size={15} /></span>}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <b className="block truncate text-[14.5px] leading-5 font-semibold">{d.title ?? d.file_name}</b>
-                        <span className="mt-0.5 flex min-w-0 items-center gap-2 text-[12.5px] text-muted"><KindTag d={d} /><span className="tnum truncate">{shown(d, allDocs)}</span></span>
-                        <span className="mt-0.5 line-clamp-2 block text-[12.5px] leading-[18px] text-soft">{sorted.get(d.id)?.why}</span>
+                        <b className="block truncate text-[15px] leading-5 font-semibold">{d.title ?? d.file_name}</b>
+                        <span className="mt-0.5 flex min-w-0 items-center gap-2 text-[13px] text-muted"><KindTag d={d} /><span className="tnum truncate">{shown(d, allDocs)}</span></span>
+                        <span className="mt-0.5 line-clamp-2 block text-[13px] leading-[18px] text-soft">{sorted.get(d.id)?.why}</span>
                       </span>
                       {d.importance != null && <span className="mt-1.5"><ImportanceDots value={d.importance} /></span>}
                     </Link>

@@ -56,7 +56,7 @@ export function ForwardGuide({ address, allowed }: { address: string; allowed: s
         <Filter size={15} className="shrink-0" />
         <span className="min-w-0 flex-1">
           <b className="block text-[14px]">Rechnungen automatisch weiterleiten</b>
-          <span className="text-[12.5px] text-muted">Gmail-Filter, die nur Rechnungen, Verträge & Angebote an Lifevault schicken</span>
+          <span className="text-[13px] text-muted">Gmail-Filter, die nur Rechnungen, Verträge & Angebote an Lifevault schicken</span>
         </span>
         <ChevronDown size={16} className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
@@ -78,19 +78,19 @@ export function ForwardGuide({ address, allowed }: { address: string; allowed: s
           <div className="space-y-4">
             {FILTERS.map((f) => (
               <div key={f.id}>
-                <b className="block text-[13.5px]">{f.title}</b>
-                <span className="text-[12.5px] text-muted">{f.hint}</span>
+                <b className="block text-[14px]">{f.title}</b>
+                <span className="text-[13px] text-muted">{f.hint}</span>
                 <CopyBox text={f.query} />
               </div>
             ))}
           </div>
 
           <div>
-            <b className="block text-[13.5px]">Tipps</b>
-            <ul className="mt-1.5 list-disc space-y-1 pl-5 text-[12.5px] text-soft">
+            <b className="block text-[14px]">Tipps</b>
+            <ul className="mt-1.5 list-disc space-y-1 pl-5 text-[13px] text-soft">
               {TIPS.map((t) => <li key={t}>{t}</li>)}
             </ul>
-            <p className="mt-2 text-[12.5px] text-muted">Outlook, iCloud & Co.: dort heißt es „Regeln“. Bedingung „Betreff enthält“ mit denselben Wörtern, Aktion „Weiterleiten an“ deine Lifevault-Adresse.</p>
+            <p className="mt-2 text-[13px] text-muted">Outlook, iCloud & Co.: dort heißt es „Regeln“. Bedingung „Betreff enthält“ mit denselben Wörtern, Aktion „Weiterleiten an“ deine Lifevault-Adresse.</p>
           </div>
         </div>
       )}

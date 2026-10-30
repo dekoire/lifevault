@@ -114,7 +114,7 @@ export function FilterSelect({ label, value, onChange, options, empty = "Alle", 
       <div className={`overflow-hidden rounded-2xl border ${value ? "border-fg" : "border-card-line"} bg-surface`}>
         <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-3 py-2.5 text-left">
           {cur?.icon ?? none}
-          <span className="min-w-0 flex-1 truncate text-[14.5px] font-semibold">{cur?.label ?? empty}</span>
+          <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{cur?.label ?? empty}</span>
           <ChevronDown size={17} className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
         {open && (
@@ -122,14 +122,14 @@ export function FilterSelect({ label, value, onChange, options, empty = "Alle", 
             {options.length > 8 && (
               <label className="mb-1 flex h-9 items-center gap-2 rounded-full bg-surface-2 px-3">
                 <Search size={14} className="text-muted" />
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`${label} suchen`} className="min-w-0 flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-muted" />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`${label} suchen`} className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-muted" />
               </label>
             )}
             <div className="max-h-72 overflow-y-auto">
               {!term && <button type="button" onClick={() => pick("")} className={row(!value)}>{none}<span className="flex-1">{empty}</span>{!value && <Check size={16} />}</button>}
               {list.map((o, i) => (
                 <div key={o.value}>
-                  {o.group && o.group !== list[i - 1]?.group && <p className="px-2.5 pt-2.5 pb-1 text-[11.5px] font-semibold tracking-wide text-muted uppercase">{o.group}</p>}
+                  {o.group && o.group !== list[i - 1]?.group && <p className="px-2.5 pt-2.5 pb-1 text-[12px] font-semibold tracking-wide text-muted uppercase">{o.group}</p>}
                   <button type="button" onClick={() => pick(o.value)} className={row(o.value === value)}>
                     {o.icon ?? none}
                     <span className="min-w-0 flex-1 truncate">{o.label}</span>
@@ -150,7 +150,7 @@ export function FilterSelect({ label, value, onChange, options, empty = "Alle", 
 /** Filter An/Aus im Seitenpanel */
 export function FilterToggle({ label, on, onChange }: { label: string; on: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)} className="flex w-full items-center justify-between gap-3 py-1 text-left text-[14.5px] font-medium">
+    <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)} className="flex w-full items-center justify-between gap-3 py-1 text-left text-[15px] font-medium">
       {label}
       <span className={`relative h-6 w-10 shrink-0 rounded-full transition ${on ? "bg-fg" : "bg-surface-3 ring-1 ring-card-line"}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${on ? "left-[1.125rem]" : "left-0.5"}`} /></span>
     </button>
@@ -189,12 +189,12 @@ export function FilterBar({ q, onQ, placeholder, children, actions, activeCount,
           {children && (
             <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-[14px] font-semibold ${activeCount ? "border-fg bg-fg text-canvas" : "border-card-line bg-surface text-fg hover:bg-surface-2"}`}>
               <SlidersHorizontal size={16} /> Filter
-              {activeCount > 0 && <span className="tnum grid h-5 min-w-5 place-items-center rounded-full bg-canvas px-1.5 text-[11.5px] font-bold text-fg">{activeCount}</span>}
+              {activeCount > 0 && <span className="tnum grid h-5 min-w-5 place-items-center rounded-full bg-canvas px-1.5 text-[12px] font-bold text-fg">{activeCount}</span>}
             </button>
           )}
         </div>
       </div>
-      {count && <p className="text-right text-[12.5px] text-muted">{count}{activeCount > 0 && <> · <button type="button" onClick={onReset} className="font-semibold text-selected">Filter zurücksetzen</button></>}</p>}
+      {count && <p className="text-right text-[13px] text-muted">{count}{activeCount > 0 && <> · <button type="button" onClick={onReset} className="font-semibold text-selected">Filter zurücksetzen</button></>}</p>}
       {/* ins body: sonst schneidet ein Elternteil mit transform/Animation das Panel ab */}
       {open && createPortal(
         <div className="fixed inset-0 z-50 bg-surface sm:bg-black/30" onClick={() => setOpen(false)}>

@@ -32,14 +32,14 @@ export function CardWallet({ title = "Karten & Ausweise", compact = false }: { t
                 <span className="pointer-events-none absolute -top-16 -right-10 h-40 w-40 rounded-full bg-white/10" />
                 <span className="relative flex items-center gap-2.5">
                   <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl bg-white"><SenderLogo domain={c.domain} sender={c.issuer} cluster={c.cluster} size={30} bare /></span>
-                  <span className="min-w-0 flex-1"><b className="block truncate text-[14px] leading-5">{c.label}</b><span className="block truncate text-[11.5px] text-white/75">{c.kind === "id" ? "Bundesrepublik Deutschland" : c.issuer ?? ""}</span></span>
+                  <span className="min-w-0 flex-1"><b className="block truncate text-[14px] leading-5">{c.label}</b><span className="block truncate text-[12px] text-white/75">{c.kind === "id" ? "Bundesrepublik Deutschland" : c.issuer ?? ""}</span></span>
                 </span>
                 <span className="tnum relative text-[17px] font-semibold tracking-[0.12em]">{c.number ?? " "}</span>
                 <span className="relative flex items-end justify-between gap-2 text-[11px]">
-                  <span className="min-w-0"><span className="block text-white/65">Inhaber</span><b className="block truncate text-[12.5px] uppercase">{c.holder ?? "–"}</b></span>
-                  {c.validDate && <span className="shrink-0 text-right"><span className="block text-white/65">gültig bis</span><b className={`tnum block text-[12.5px] ${soon ? "rounded bg-white px-1 text-[#d4143c]" : ""}`}>{fmtValid(c.validDate)}</b></span>}
+                  <span className="min-w-0"><span className="block text-white/65">Inhaber</span><b className="block truncate text-[13px] uppercase">{c.holder ?? "–"}</b></span>
+                  {c.validDate && <span className="shrink-0 text-right"><span className="block text-white/65">gültig bis</span><b className={`tnum block text-[13px] ${soon ? "rounded bg-white px-1 text-[#d4143c]" : ""}`}>{fmtValid(c.validDate)}</b></span>}
                 </span>
-                {c.check && <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[10.5px] font-semibold text-[#9a5800]"><AlertTriangle size={10} /> prüfen</span>}
+                {c.check && <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-[#9a5800]"><AlertTriangle size={10} /> prüfen</span>}
               </button>
               {c.check && (
                 <div className="mt-1.5 flex items-center gap-2 px-1 text-[12px] text-soft">

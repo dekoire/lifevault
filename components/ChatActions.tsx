@@ -53,7 +53,7 @@ function DocLine({ d }: { d: Doc }) {
   return (
     <button type="button" onClick={() => open?.({ kind: "doc", id: d.id })} className="flex w-full items-center gap-3 rounded-xl px-1 py-1 text-left hover:bg-surface-2">
       <span className="h-12 w-10 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2"><Thumb d={d} /></span>
-      <span className="min-w-0 flex-1"><b className="block truncate text-[13px]">{d.title ?? d.file_name}</b><span className="block truncate text-[11.5px] text-muted">{d.sender ?? "–"} · {fmtDate(d.doc_date ?? d.received_at)}</span></span>
+      <span className="min-w-0 flex-1"><b className="block truncate text-[13px]">{d.title ?? d.file_name}</b><span className="block truncate text-[12px] text-muted">{d.sender ?? "–"} · {fmtDate(d.doc_date ?? d.received_at)}</span></span>
     </button>
   );
 }
@@ -86,7 +86,7 @@ function ActionCard({ a, n }: { a: Action; n?: number }) {
           <button type="button" disabled={state === "busy"} onClick={() => setState("cancelled")} className="inline-flex h-9 items-center gap-1 rounded-full border border-card-line px-3.5 text-[13px] font-semibold hover:bg-surface-2"><X size={14} /> Abbrechen</button>
         </>
       )}
-      {error && <span role="alert" className="w-full text-[12.5px] text-negative-text">{error}</span>}
+      {error && <span role="alert" className="w-full text-[13px] text-negative-text">{error}</span>}
     </div>
   );
 

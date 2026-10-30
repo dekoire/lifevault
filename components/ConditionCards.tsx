@@ -51,21 +51,21 @@ export function ConditionsWidget({ body }: { body: string }) {
             {d && (x.zitat || x.seite) ? <p className="-mt-1.5 px-4 pb-2 text-[12px] text-muted">Steht so im Vertrag <Cite {...citeOf(x, d.id)} /></p> : null}
             {facts.length > 0 && (
               <div className="grid grid-cols-2 gap-px border-t border-line bg-line">
-                {facts.map(([l, v], j) => <div key={l} className={`min-w-0 bg-surface px-4 py-2.5 ${facts.length % 2 && j === facts.length - 1 ? "col-span-2" : ""}`}><span className="block text-[11.5px] text-muted">{l}</span><b className="tnum block text-[14px] leading-5 break-words">{v}</b></div>)}
+                {facts.map(([l, v], j) => <div key={l} className={`min-w-0 bg-surface px-4 py-2.5 ${facts.length % 2 && j === facts.length - 1 ? "col-span-2" : ""}`}><span className="block text-[12px] text-muted">{l}</span><b className="tnum block text-[14px] leading-5 break-words">{v}</b></div>)}
               </div>
             )}
-            {until && <p className="flex items-center gap-2 border-t border-line bg-amber/5 px-4 py-2 text-[12.5px]"><CalendarClock size={14} className="shrink-0 text-amber" /> Kündbar bis <b className="tnum">{fmtDate(until)}</b></p>}
+            {until && <p className="flex items-center gap-2 border-t border-line bg-amber/5 px-4 py-2 text-[13px]"><CalendarClock size={14} className="shrink-0 text-amber" /> Kündbar bis <b className="tnum">{fmtDate(until)}</b></p>}
             {leistungen.length > 0 && (
               <div className="border-t border-line px-4 py-3">
-                <p className="mb-1.5 text-[11.5px] font-semibold tracking-wide text-muted uppercase">Abgedeckt</p>
-                <ul className="space-y-1 text-[13.5px] leading-5">{leistungen.map((l) => <li key={l} className="flex gap-2"><CheckCircle2 size={15} className="mt-0.5 shrink-0 text-positive-text" />{l}</li>)}</ul>
+                <p className="mb-1.5 text-[12px] font-semibold tracking-wide text-muted uppercase">Abgedeckt</p>
+                <ul className="space-y-1 text-[14px] leading-5">{leistungen.map((l) => <li key={l} className="flex gap-2"><CheckCircle2 size={15} className="mt-0.5 shrink-0 text-positive-text" />{l}</li>)}</ul>
               </div>
             )}
-            {str(x.fehlt) && <p className="flex items-start gap-2 border-t border-line bg-surface-2/60 px-4 py-2.5 text-[12.5px] leading-[18px] text-soft"><CircleHelp size={14} className="mt-0.5 shrink-0 text-muted" /><span><b className="font-semibold text-fg">Nicht in deinen Unterlagen:</b> {str(x.fehlt, 240)}</span></p>}
+            {str(x.fehlt) && <p className="flex items-start gap-2 border-t border-line bg-surface-2/60 px-4 py-2.5 text-[13px] leading-[18px] text-soft"><CircleHelp size={14} className="mt-0.5 shrink-0 text-muted" /><span><b className="font-semibold text-fg">Nicht in deinen Unterlagen:</b> {str(x.fehlt, 240)}</span></p>}
             {aus.length > 0 && (
               <div className="border-t border-line px-4 py-3">
-                <p className="mb-1.5 text-[11.5px] font-semibold tracking-wide text-muted uppercase">Nicht abgedeckt</p>
-                <ul className="space-y-1 text-[13.5px] leading-5">{aus.map((l) => <li key={l} className="flex gap-2"><XCircle size={15} className="mt-0.5 shrink-0 text-negative-text" />{l}</li>)}</ul>
+                <p className="mb-1.5 text-[12px] font-semibold tracking-wide text-muted uppercase">Nicht abgedeckt</p>
+                <ul className="space-y-1 text-[14px] leading-5">{aus.map((l) => <li key={l} className="flex gap-2"><XCircle size={15} className="mt-0.5 shrink-0 text-negative-text" />{l}</li>)}</ul>
               </div>
             )}
           </article>
@@ -100,18 +100,18 @@ export function CoverageWidget({ body }: { body: string }) {
       {(d || str(x.vertrag)) && <DocHead d={d} title={d?.title ?? str(x.vertrag, 80)} sub={d?.sender ?? undefined} />}
       {gruende.length > 0 && (
         <div className="border-t border-line px-4 py-3">
-          <p className="mb-1.5 text-[11.5px] font-semibold tracking-wide text-muted uppercase">Warum</p>
-          <ul className="space-y-1 text-[13.5px] leading-5">{gruende.map((g) => <li key={g} className="flex gap-2"><span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />{g}</li>)}</ul>
+          <p className="mb-1.5 text-[12px] font-semibold tracking-wide text-muted uppercase">Warum</p>
+          <ul className="space-y-1 text-[14px] leading-5">{gruende.map((g) => <li key={g} className="flex gap-2"><span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />{g}</li>)}</ul>
         </div>
       )}
       {bed.length > 0 && (
         <div className="border-t border-line px-4 py-3">
-          <p className="mb-1.5 text-[11.5px] font-semibold tracking-wide text-muted uppercase">Bedingungen</p>
-          <ul className="space-y-1 text-[13.5px] leading-5">{bed.map((b) => <li key={b} className="flex gap-2"><AlertCircle size={14} className="mt-0.5 shrink-0 text-amber" />{b}</li>)}</ul>
+          <p className="mb-1.5 text-[12px] font-semibold tracking-wide text-muted uppercase">Bedingungen</p>
+          <ul className="space-y-1 text-[14px] leading-5">{bed.map((b) => <li key={b} className="flex gap-2"><AlertCircle size={14} className="mt-0.5 shrink-0 text-amber" />{b}</li>)}</ul>
         </div>
       )}
       {(str(x.quelle) || str(x.naechster)) && (
-        <div className="space-y-1 border-t border-line px-4 py-3 text-[12.5px]">
+        <div className="space-y-1 border-t border-line px-4 py-3 text-[13px]">
           {(str(x.quelle) || x.zitat || x.seite) ? <p className="flex items-center gap-1.5 text-muted"><FileText size={13} className="shrink-0" /> {str(x.quelle)}{d && (x.zitat || x.seite) ? <Cite {...citeOf(x, d.id)} /> : null}</p> : null}
           {str(x.naechster) && <p className="font-semibold">→ {str(x.naechster)}</p>}
         </div>
@@ -141,7 +141,7 @@ export function RulesWidget({ body }: { body: string }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
       {d ? <DocHead d={d} title={str(x.titel, 100) || d.title || "Dein Vertrag"} sub={[d.sender, fmtDate(d.doc_date ?? d.received_at)].filter(Boolean).join(" · ")} /> : str(x.titel) && <p className="px-4 pt-3.5 pb-3 text-[15px] font-semibold">{str(x.titel, 100)}</p>}
-      {str(x.fazit) && <p className="border-t border-line bg-surface-2/60 px-4 py-2.5 text-[13.5px] leading-5"><b>Kurz:</b> {str(x.fazit, 300)}</p>}
+      {str(x.fazit) && <p className="border-t border-line bg-surface-2/60 px-4 py-2.5 text-[14px] leading-5"><b>Kurz:</b> {str(x.fazit, 300)}</p>}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-px border-t border-line bg-line sm:grid-cols-2">
         {punkte.map((p, i) => {
           const t = TON[(str(p.ton, 10).toLowerCase() as keyof typeof TON)] ?? TON.neutral;
@@ -151,9 +151,9 @@ export function RulesWidget({ body }: { body: string }) {
           return (
             <div key={i} role={c.id ? "button" : undefined} tabIndex={c.id ? 0 : undefined} onClick={go} onKeyDown={(e) => e.key === "Enter" && go()} className={`relative min-w-0 bg-surface px-4 py-3 ${c.id ? "cursor-pointer hover:bg-surface-2/60" : ""} ${punkte.length % 2 && i === punkte.length - 1 ? "sm:col-span-2" : ""}`}>
               <span className={`absolute inset-y-3 left-0 w-[3px] rounded-r ${t.bar}`} aria-hidden />
-              <span className="flex items-center gap-1.5 text-[11.5px] font-semibold tracking-wide text-muted uppercase"><Icon size={13} className={`shrink-0 ${t.cls}`} />{str(p.thema, 60)}</span>
+              <span className="flex items-center gap-1.5 text-[12px] font-semibold tracking-wide text-muted uppercase"><Icon size={13} className={`shrink-0 ${t.cls}`} />{str(p.thema, 60)}</span>
               <p className="mt-1 text-[14px] leading-5 font-semibold">{str(p.regelung, 220)}{c.id && (c.page || c.quote) ? <Cite {...c} /> : null}</p>
-              {str(p.details) && <p className="mt-0.5 text-[12.5px] leading-[18px] text-soft">{str(p.details, 260)}</p>}
+              {str(p.details) && <p className="mt-0.5 text-[13px] leading-[18px] text-soft">{str(p.details, 260)}</p>}
             </div>
           );
         })}

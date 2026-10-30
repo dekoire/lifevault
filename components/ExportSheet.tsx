@@ -75,11 +75,11 @@ export function ExportSheet({ onClose }: { onClose: () => void }) {
           {lockedN > 0 && <div className="mb-3"><VaultUnlock compact title={`${lockedN} verschlüsselte ${lockedN === 1 ? "Datei" : "Dateien"} dabei`} text="Zum Mitexportieren Tresor entsperren – sie werden nur im Browser entschlüsselt." /></div>}
           {sel.size > 0 && (
             <div className="mb-2">
-              <span className="mb-1.5 block text-[12.5px] font-semibold text-soft">Wie sollen die Dateien raus?</span>
+              <span className="mb-1.5 block text-[13px] font-semibold text-soft">Wie sollen die Dateien raus?</span>
               <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                 {EXPORT_FORMATS.map((f) => (
                   <button key={f.id} type="button" onClick={() => setFormat(f.id)} aria-pressed={format === f.id} title={f.hint} className={`rounded-xl border px-2.5 py-2 text-left transition-colors ${format === f.id ? "border-brand-500 bg-brand-500/[0.07]" : "border-card-line hover:bg-surface-2"}`}>
-                    <b className="block text-[12.5px] leading-4">{f.label}</b>
+                    <b className="block text-[13px] leading-4">{f.label}</b>
                     <span className="mt-0.5 block text-[11px] leading-[14px] text-muted">{f.hint}</span>
                   </button>
                 ))}
@@ -90,14 +90,14 @@ export function ExportSheet({ onClose }: { onClose: () => void }) {
             <div className="mb-3 rounded-2xl bg-surface-2 px-3.5 py-2.5">
               <div className="flex items-center gap-3">
                 <span className="min-w-0 flex-1">
-                  <b className="block text-[13.5px]">Mit Passwort schützen</b>
+                  <b className="block text-[14px]">Mit Passwort schützen</b>
                   <span className="block text-[12px] text-muted">{withVault ? "Pflicht, weil Tresor-Dokumente dabei sind" : "ZIP verschlüsselt (AES-256)"}</span>
                 </span>
                 <button type="button" role="switch" aria-checked={locked} disabled={withVault} onClick={() => setProtect(!protect)} className={`relative h-6 w-10 shrink-0 rounded-full transition disabled:opacity-60 ${locked ? "bg-brand-500" : "bg-surface-3 ring-1 ring-card-line"}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${locked ? "left-[1.125rem]" : "left-0.5"}`} /></button>
               </div>
               {locked && (
                 <div className="mt-2 flex items-center gap-2">
-                  <code className="tnum min-w-0 flex-1 truncate rounded-full border border-card-line bg-surface px-3 py-1.5 text-[13.5px] font-semibold tracking-wide">{pw}</code>
+                  <code className="tnum min-w-0 flex-1 truncate rounded-full border border-card-line bg-surface px-3 py-1.5 text-[14px] font-semibold tracking-wide">{pw}</code>
                   <button type="button" onClick={() => void navigator.clipboard?.writeText(pw)} aria-label="Passwort kopieren" title="Kopieren" className="grid h-8 w-8 place-items-center rounded-full bg-surface hover:bg-surface-3"><Copy size={14} /></button>
                   <button type="button" onClick={() => setPw(newPassword())} aria-label="Neues Passwort" title="Neues Passwort" className="grid h-8 w-8 place-items-center rounded-full bg-surface hover:bg-surface-3"><RefreshCw size={14} /></button>
                 </div>
@@ -151,7 +151,7 @@ function Areas({ docs, sel, setMany }: { docs: Doc[] } & SelProps) {
                 <Box state={st} />
                 <ClusterIcon id={c.id} size={34} />
                 <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{c.label}</span>
-                <span className="tnum text-[12.5px] text-muted">{ids.filter((id) => sel.has(id)).length ? `${ids.filter((id) => sel.has(id)).length} / ` : ""}{ids.length}</span>
+                <span className="tnum text-[13px] text-muted">{ids.filter((id) => sel.has(id)).length ? `${ids.filter((id) => sel.has(id)).length} / ` : ""}{ids.length}</span>
               </button>
               {topics.length > 1 && <button type="button" onClick={() => setOpen(open === c.id ? undefined : c.id)} aria-expanded={open === c.id} aria-label="Themen zeigen" className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-surface-2"><ChevronDown size={17} className={`transition-transform ${open === c.id ? "rotate-180" : ""}`} /></button>}
             </div>
@@ -161,7 +161,7 @@ function Areas({ docs, sel, setMany }: { docs: Doc[] } & SelProps) {
                   <button key={t} type="button" onClick={() => setMany(tids, stateOf(tids, sel) !== "on")} className="flex w-full items-center gap-3 py-2 pr-6 pl-14 text-left text-[14px] hover:bg-surface-3">
                     <Box state={stateOf(tids, sel)} />
                     <span className="min-w-0 flex-1 truncate">{t}</span>
-                    <span className="tnum text-[12.5px] text-muted">{tids.length}</span>
+                    <span className="tnum text-[13px] text-muted">{tids.length}</span>
                   </button>
                 ))}
               </div>
@@ -174,7 +174,7 @@ function Areas({ docs, sel, setMany }: { docs: Doc[] } & SelProps) {
           <span className="mb-2 block text-[13px] font-semibold text-soft">Nach Tags</span>
           {LABEL_GROUPS.map((g) => { const tags = tagged.filter(([t]) => groupOf(t)?.id === g.id); return tags.length ? (
             <div key={g.id} className="mb-2 flex flex-wrap items-center gap-1.5">
-              <span className="mr-0.5 inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-muted"><span className="h-2 w-2 rounded-full" style={{ background: g.color }} />{g.label}</span>
+              <span className="mr-0.5 inline-flex items-center gap-1.5 text-[12px] font-semibold text-muted"><span className="h-2 w-2 rounded-full" style={{ background: g.color }} />{g.label}</span>
               {tags.map(([t, ids]) => <LabelChip key={t} tag={`${t}`} on={stateOf(ids, sel) === "on"} onClick={() => setMany(ids, stateOf(ids, sel) !== "on")} />)}
             </div>
           ) : null; })}
@@ -191,7 +191,7 @@ function DocLine({ d, on, onToggle }: { d: Doc; on: boolean; onToggle: () => voi
       <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={32} />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5"><span className="truncate text-[14px] font-semibold">{d.title ?? d.file_name}</span>{d.encrypted && <Lock size={12} className="shrink-0 text-brand-500" />}</span>
-        <span className="block truncate text-[12.5px] text-muted">{[d.sender, clusterOf(d.cluster).label, fmtDate(dateOf(d))].filter(Boolean).join(" · ")}</span>
+        <span className="block truncate text-[13px] text-muted">{[d.sender, clusterOf(d.cluster).label, fmtDate(dateOf(d))].filter(Boolean).join(" · ")}</span>
       </span>
     </button>
   );
@@ -208,7 +208,7 @@ function Docs({ docs, sel, setMany }: { docs: Doc[] } & SelProps) {
       <div className="sticky top-0 z-10 space-y-2 bg-surface px-6 pt-3 pb-2">
         <label className="flex h-10 items-center gap-2 rounded-full border border-card-line px-3.5">
           <Search size={16} className="text-muted" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Titel, Absender, Thema …" className="min-w-0 flex-1 bg-transparent text-[14.5px] outline-none placeholder:text-muted" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Titel, Absender, Thema …" className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted" />
           {q && <button type="button" onClick={() => setQ("")} aria-label="Suche leeren" className="text-muted"><X size={15} /></button>}
         </label>
         <div className="flex items-center gap-3 text-[13px]">
@@ -249,14 +249,14 @@ function AiSearch({ byId, sel, setMany }: { byId: Map<string, Doc> } & SelProps)
         <input data-own-focus value={q} onChange={(e) => setQ(e.target.value)} placeholder="z. B. alle Dokumente zu meiner Krankenkasse" className="h-9 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted" />
         <button type="submit" disabled={!q.trim() || busy} aria-label="Suchen" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-500 text-white disabled:bg-surface-3 disabled:text-muted">{busy ? <Loader2 size={16} className="animate-spin" /> : <ArrowUp size={17} strokeWidth={2.4} />}</button>
       </form>
-      {rounds.length === 0 && <p className="mt-4 text-center text-[13.5px] text-muted">Beschreib, was du brauchst – die Treffer kommen direkt in die Auswahl. Weitere Fragen ergänzen sie, einzelne Treffer kannst du wieder abwählen.</p>}
+      {rounds.length === 0 && <p className="mt-4 text-center text-[14px] text-muted">Beschreib, was du brauchst – die Treffer kommen direkt in die Auswahl. Weitere Fragen ergänzen sie, einzelne Treffer kannst du wieder abwählen.</p>}
       <div className="mt-4 space-y-4">
         {rounds.map((r, i) => (
           <section key={`${r.q}-${rounds.length - i}`} className="overflow-hidden rounded-2xl border border-card-line">
             <div className="flex items-center gap-2 bg-surface-2 px-4 py-2.5">
               <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">„{r.q}“</span>
               {r.busy ? <Loader2 size={15} className="animate-spin text-muted" /> : r.ids.length > 0 && (
-                <button type="button" onClick={() => setMany(r.ids, stateOf(r.ids, sel) !== "on")} className="text-[12.5px] font-semibold text-selected">{stateOf(r.ids, sel) === "on" ? "Alle abwählen" : "Alle wählen"}</button>
+                <button type="button" onClick={() => setMany(r.ids, stateOf(r.ids, sel) !== "on")} className="text-[13px] font-semibold text-selected">{stateOf(r.ids, sel) === "on" ? "Alle abwählen" : "Alle wählen"}</button>
               )}
             </div>
             {r.error ? <p className="px-4 py-3 text-[13px] text-negative-text">{r.error}</p>

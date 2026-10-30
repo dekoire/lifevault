@@ -64,8 +64,8 @@ function Row({ label, value, shown }: { label: string; value: string; shown?: st
   return (
     <div className="flex items-center gap-2 px-4 py-2">
       <span className="min-w-0 flex-1">
-        <span className="block text-[11.5px] text-muted">{label}</span>
-        <span className="tnum block text-[13.5px] font-semibold [overflow-wrap:anywhere]">{shown ?? value}</span>
+        <span className="block text-[12px] text-muted">{label}</span>
+        <span className="tnum block text-[14px] font-semibold [overflow-wrap:anywhere]">{shown ?? value}</span>
       </span>
       <CopyBtn value={value} label={label} />
     </div>
@@ -112,8 +112,8 @@ function PaymentWidget({ body }: { body: string }) {
                 <button type="button" onClick={() => setSel(on ? sel.filter((i) => i !== x.d.id) : [...sel, x.d.id])} className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-surface-2">
                   <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 ${on ? "border-fg bg-fg text-canvas" : "border-line-strong"}`}>{on && <Check size={12} strokeWidth={3} />}</span>
                   <SenderLogo domain={x.d.sender_domain} sender={x.d.sender} cluster={x.d.cluster} size={30} />
-                  <span className="min-w-0 flex-1"><b className="block truncate text-[13.5px]">{x.d.title ?? x.d.file_name}</b><span className="block truncate text-[12px] text-muted">{fmtDate(dateOf(x.d))}{x.todo && <> · <span className={`font-semibold ${x.todo.days < 0 ? "text-negative-text" : ""}`}>{dueLabel(x.todo.days)}</span></>}</span></span>
-                  <b className="tnum shrink-0 text-[13.5px]">{amountOf(x) !== undefined ? fmtMoney(amountOf(x)!) : "–"}</b>
+                  <span className="min-w-0 flex-1"><b className="block truncate text-[14px]">{x.d.title ?? x.d.file_name}</b><span className="block truncate text-[12px] text-muted">{fmtDate(dateOf(x.d))}{x.todo && <> · <span className={`font-semibold ${x.todo.days < 0 ? "text-negative-text" : ""}`}>{dueLabel(x.todo.days)}</span></>}</span></span>
+                  <b className="tnum shrink-0 text-[14px]">{amountOf(x) !== undefined ? fmtMoney(amountOf(x)!) : "–"}</b>
                 </button>
               </li>
             ); })}
@@ -142,7 +142,7 @@ function PaymentWidget({ body }: { body: string }) {
               </div>
               <CaseDocs d={x.d} rel={x.rel} />
               {x.from && (
-                <p className="border-t border-line bg-[#fff7e6] px-4 py-2.5 text-[12.5px] text-[#7a4a00] dark:bg-[#3a2a0a] dark:text-[#f5c46b]">
+                <p className="border-t border-line bg-[#fff7e6] px-4 py-2.5 text-[13px] text-[#7a4a00] dark:bg-[#3a2a0a] dark:text-[#f5c46b]">
                   In diesem Schreiben steht keine IBAN. Das ist die zuletzt verwendete – aus{" "}
                   <button type="button" onClick={() => open?.({ kind: "doc", id: x.from!.id })} className="font-semibold underline">{x.from.title ?? x.from.file_name}</button> vom {fmtDate(dateOf(x.from))}{x.lastRef ? <> (Verwendungszweck damals: „{x.lastRef}“)</> : null}. Bitte kurz prüfen.
                 </p>
@@ -162,7 +162,7 @@ function PaymentWidget({ body }: { body: string }) {
                   </label>
                   <Row label={x.purpose.note ? `Verwendungszweck (${x.purpose.note})` : x.purpose.given ? "Verwendungszweck" : "Verwendungszweck (Vorschlag)"} value={x.purpose.text} />
                 </div>
-              ) : <p className="border-t border-line px-4 py-3 text-[12.5px] text-muted">Keine Bankverbindung im Schreiben – vermutlich Lastschrift oder Zahlung im Kundenkonto.</p>}
+              ) : <p className="border-t border-line px-4 py-3 text-[13px] text-muted">Keine Bankverbindung im Schreiben – vermutlich Lastschrift oder Zahlung im Kundenkonto.</p>}
               <div className="flex items-center gap-3 border-t border-line p-3">
                 {x.p && <Qr text={epcPayload({ ...x.p, amount, reference: x.purpose.text })} size={84} />}
                 <span className="min-w-0 flex-1 space-y-2 text-[12px] text-muted">
@@ -205,12 +205,12 @@ function PartnerWidget({ body }: { body: string }) {
               {phone && <a href={`tel:${phone.replace(/[^\d+]/g, "")}`} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-surface-2"><Phone size={15} className="shrink-0 text-muted" /><span className="tnum flex-1 font-semibold">{phone}</span></a>}
               {mail && <a href={`mailto:${mail}`} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-surface-2"><Mail size={15} className="shrink-0 text-muted" /><span className="min-w-0 flex-1 truncate font-semibold">{mail}</span></a>}
               {kennungen.map((k) => <div key={k.label + k.value} className="flex items-center gap-2 px-4 py-2"><span className="w-28 shrink-0 truncate text-[12px] text-muted">{k.label}</span><span className="tnum min-w-0 flex-1 truncate font-semibold">{k.value}</span><CopyBtn value={k.value} label={k.label} /></div>)}
-              {f.banks[0] && <div className="flex items-center gap-2 px-4 py-2"><Landmark size={14} className="shrink-0 text-muted" /><span className="tnum min-w-0 flex-1 truncate text-[12.5px] font-semibold">{fmtIban(f.banks[0].iban)}</span><CopyBtn value={f.banks[0].iban} label="IBAN" /></div>}
+              {f.banks[0] && <div className="flex items-center gap-2 px-4 py-2"><Landmark size={14} className="shrink-0 text-muted" /><span className="tnum min-w-0 flex-1 truncate text-[13px] font-semibold">{fmtIban(f.banks[0].iban)}</span><CopyBtn value={f.banks[0].iban} label="IBAN" /></div>}
             </div>
             <div className="flex gap-2 border-t border-line p-3">
-              {phone && <a href={`tel:${phone.replace(/[^\d+]/g, "")}`} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[12.5px] font-semibold text-canvas"><Phone size={13} /> Anrufen</a>}
-              {addr && <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${p!.name}, ${addr}`)}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center gap-1.5 rounded-full border border-card-line px-3.5 text-[12.5px] font-semibold hover:bg-surface-2"><MapPin size={13} /> Route</a>}
-              <Link href={`/partner/${p!.key}`} className="inline-flex h-9 items-center gap-1 rounded-full border border-card-line px-3.5 text-[12.5px] font-semibold hover:bg-surface-2">Alles zu {p!.name.split(" ")[0]} <ChevronRight size={13} /></Link>
+              {phone && <a href={`tel:${phone.replace(/[^\d+]/g, "")}`} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[13px] font-semibold text-canvas"><Phone size={13} /> Anrufen</a>}
+              {addr && <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${p!.name}, ${addr}`)}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center gap-1.5 rounded-full border border-card-line px-3.5 text-[13px] font-semibold hover:bg-surface-2"><MapPin size={13} /> Route</a>}
+              <Link href={`/partner/${p!.key}`} className="inline-flex h-9 items-center gap-1 rounded-full border border-card-line px-3.5 text-[13px] font-semibold hover:bg-surface-2">Alles zu {p!.name.split(" ")[0]} <ChevronRight size={13} /></Link>
             </div>
           </article>
         );
@@ -257,7 +257,7 @@ function DocsWidget({ body }: { body: string }) {
           <div key={d.id} role="button" tabIndex={0} onClick={() => open?.({ kind: "doc", id: d.id })} onKeyDown={(e) => e.key === "Enter" && open?.({ kind: "doc", id: d.id })} className={`relative w-40 shrink-0 cursor-pointer snap-start overflow-hidden rounded-2xl border bg-surface text-left shadow-card hover:border-brand-500/40 ${edit === d.id ? "border-brand-500" : "border-card-line"}`}>
             {/* Nummer, damit man sagen kann „verbinde 1 und 2“ */}
             <span className="relative block h-28 overflow-hidden"><Thumb d={d} /><span className="absolute top-2 left-2"><SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={26} /></span>{list.length > 1 && <span className="tnum absolute top-2 right-2 grid h-6 min-w-6 place-items-center rounded-full bg-fg px-1.5 text-[12px] font-bold text-canvas">{i + 1}</span>}</span>
-            <span className="block p-2.5 pr-9"><b className="line-clamp-2 text-[12.5px] leading-4">{d.title ?? d.file_name}</b><span className="mt-1 block truncate text-[11px] text-muted">{d.doc_type ?? "Dokument"} · {fmtDate(dateOf(d))}</span></span>
+            <span className="block p-2.5 pr-9"><b className="line-clamp-2 text-[13px] leading-4">{d.title ?? d.file_name}</b><span className="mt-1 block truncate text-[11px] text-muted">{d.doc_type ?? "Dokument"} · {fmtDate(dateOf(d))}</span></span>
             {/* Stift: Titel, Absender, Datum direkt hier ändern */}
             <button type="button" aria-label="Bearbeiten" title="Bearbeiten" onClick={(e) => { e.stopPropagation(); setEdit(edit === d.id ? undefined : d.id); }} className="absolute right-2 bottom-2 grid h-7 w-7 place-items-center rounded-full border border-card-line bg-surface text-muted hover:text-fg"><Pencil size={13} /></button>
           </div>
@@ -283,7 +283,7 @@ function DocEditor({ d, onClose }: { d: Doc; onClose: () => void }) {
     setState(error ? "edit" : "saved");
   };
   const undo = async () => { await supabase.from("documents").update(old).eq("id", d.id); await refresh(); onClose(); };
-  const field = "h-9 w-full rounded-lg border border-card-line bg-surface px-2.5 text-[13.5px] outline-none focus:border-fg";
+  const field = "h-9 w-full rounded-lg border border-card-line bg-surface px-2.5 text-[14px] outline-none focus:border-fg";
   return (
     <div className="rounded-2xl border border-brand-500/40 bg-surface p-3.5 shadow-card">
       <p className="mb-2 flex items-center gap-2 text-[12px] font-semibold tracking-wide text-muted uppercase"><Pencil size={13} /> Bearbeiten<button type="button" onClick={onClose} aria-label="Schließen" className="ml-auto grid h-7 w-7 place-items-center rounded-full hover:bg-surface-2"><X size={14} /></button></p>
@@ -359,16 +359,16 @@ function GroupsWidget({ body }: { body: string }) {
     <div className="space-y-3">
       {[...groups.entries()].sort((a, b) => b[1].length - a[1].length).map(([g, ds]) => (
         <section key={g} className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
-          <h4 className="flex items-center gap-2.5 px-4 pt-3.5 pb-2.5 text-[15px] font-bold"><span className="h-4 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />{g}<span className="tnum ml-auto rounded-full border border-card-line px-2 text-[11.5px] font-semibold text-soft">{ds.length}</span></h4>
+          <h4 className="flex items-center gap-2.5 px-4 pt-3.5 pb-2.5 text-[15px] font-bold"><span className="h-4 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />{g}<span className="tnum ml-auto rounded-full border border-card-line px-2 text-[12px] font-semibold text-soft">{ds.length}</span></h4>
           <ul className="divide-y divide-line border-t border-line">
             {ds.sort((a, b) => dateOf(b).localeCompare(dateOf(a))).map((d) => (
               <li key={d.id}>
                 <button type="button" onClick={() => open?.({ kind: "doc", id: d.id })} className="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-surface-2">
                   <span className="h-12 w-9 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2"><Thumb d={d} /></span>
                   <span className="min-w-0 flex-1">
-                    <b className="line-clamp-2 text-[13.5px] leading-[18px]">{d.title ?? d.file_name}</b>
-                    {gist(d) && <span className="mt-0.5 line-clamp-2 block text-[12.5px] leading-[17px] text-soft">{gist(d)}</span>}
-                    <span className="mt-1 flex min-w-0 items-center gap-1.5 text-[11.5px] text-muted"><KindTag d={d} /><span className="truncate">{[d.sender, fmtDate(dateOf(d))].filter(Boolean).join(" · ")}</span></span>
+                    <b className="line-clamp-2 text-[14px] leading-[18px]">{d.title ?? d.file_name}</b>
+                    {gist(d) && <span className="mt-0.5 line-clamp-2 block text-[13px] leading-[17px] text-soft">{gist(d)}</span>}
+                    <span className="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] text-muted"><KindTag d={d} /><span className="truncate">{[d.sender, fmtDate(dateOf(d))].filter(Boolean).join(" · ")}</span></span>
                   </span>
                   <ChevronRight size={15} className="mt-1 shrink-0 text-muted" />
                 </button>
@@ -407,16 +407,16 @@ function HistoryWidget({ body }: { body: string }) {
                 <span className="tnum w-[4.6rem] shrink-0 pt-0.5 text-[12px] font-semibold text-muted">{fmtDate(dateOf(d))}</span>
                 <span className="h-12 w-9 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2"><Thumb d={d} /></span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5"><KindTag d={d} /><b className="truncate text-[13.5px]">{d.title ?? d.file_name}</b></span>
-                  {gist(d) && <span className="mt-0.5 line-clamp-2 block text-[12.5px] leading-[17px] text-soft">{gist(d)}</span>}
+                  <span className="flex items-center gap-1.5"><KindTag d={d} /><b className="truncate text-[14px]">{d.title ?? d.file_name}</b></span>
+                  {gist(d) && <span className="mt-0.5 line-clamp-2 block text-[13px] leading-[17px] text-soft">{gist(d)}</span>}
                 </span>
-                {a && <span className="tnum shrink-0 rounded-md bg-brand-500/10 px-1.5 py-px text-[12.5px] font-semibold">{fmtMoney(a.value, a.currency)}</span>}
+                {a && <span className="tnum shrink-0 rounded-md bg-brand-500/10 px-1.5 py-px text-[13px] font-semibold">{fmtMoney(a.value, a.currency)}</span>}
               </button>
             </li>
           );
         })}
       </ol>
-      <Link href={`/partner/${p.key}`} className="flex items-center justify-center gap-1 border-t border-line px-4 py-2.5 text-[12.5px] font-semibold text-selected hover:bg-surface-2">Alles zu {p.name} <ChevronRight size={13} /></Link>
+      <Link href={`/partner/${p.key}`} className="flex items-center justify-center gap-1 border-t border-line px-4 py-2.5 text-[13px] font-semibold text-selected hover:bg-surface-2">Alles zu {p.name} <ChevronRight size={13} /></Link>
     </div>
   );
 }
@@ -432,7 +432,7 @@ function TodosWidget({ body }: { body: string }) {
   useEffect(() => { try { setDone(JSON.parse(localStorage.getItem(DONE) ?? "[]")); } catch { /* egal */ } }, []);
   const list = todos(allDocs, today).filter((t) => !want.length || want.includes(t.doc.id));
   const toggle = (k: string) => setDone((cur) => { const n = cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]; try { localStorage.setItem(DONE, JSON.stringify(n)); } catch { /* egal */ } return n; });
-  if (!list.length) return <p className="rounded-2xl border border-card-line bg-surface px-4 py-3 text-[13.5px]">Nichts offen. 🎉</p>;
+  if (!list.length) return <p className="rounded-2xl border border-card-line bg-surface px-4 py-3 text-[14px]">Nichts offen. 🎉</p>;
   const openCount = list.filter((t) => !done.includes(`${t.doc.id}|${t.date}`)).length;
   return (
     <div className="overflow-hidden rounded-2xl border border-card-line bg-surface">
@@ -446,8 +446,8 @@ function TodosWidget({ body }: { body: string }) {
               <button type="button" onClick={() => toggle(k)} aria-label="Erledigt" className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 ${isDone ? "border-positive bg-positive text-white" : "border-line-strong hover:border-fg"}`}>{isDone && <Check size={13} strokeWidth={3} />}</button>
               <button type="button" onClick={() => open?.({ kind: "doc", id: t.doc.id })} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
                 <SenderLogo domain={t.doc.sender_domain} sender={t.doc.sender} cluster={t.doc.cluster} size={30} />
-                <span className="min-w-0 flex-1"><b className={`block truncate text-[13.5px] ${isDone ? "line-through" : ""}`}>{t.what}</b><span className="flex items-center gap-1 text-[11.5px] text-muted"><K.icon size={11} /> {K.label} · {t.doc.sender}</span></span>
-                <span className="shrink-0 text-right">{amt !== undefined && <b className="tnum block text-[13px]">{fmtMoney(amt)}</b>}<span className={`text-[11.5px] font-semibold ${t.days < 0 && !isDone ? "text-negative-text" : "text-muted"}`}>{dueLabel(t.days)}</span></span>
+                <span className="min-w-0 flex-1"><b className={`block truncate text-[14px] ${isDone ? "line-through" : ""}`}>{t.what}</b><span className="flex items-center gap-1 text-[12px] text-muted"><K.icon size={11} /> {K.label} · {t.doc.sender}</span></span>
+                <span className="shrink-0 text-right">{amt !== undefined && <b className="tnum block text-[13px]">{fmtMoney(amt)}</b>}<span className={`text-[12px] font-semibold ${t.days < 0 && !isDone ? "text-negative-text" : "text-muted"}`}>{dueLabel(t.days)}</span></span>
               </button>
             </li>
           );
@@ -479,7 +479,7 @@ function OverviewWidget() {
         {tiles.map((t) => <div key={t.label} className="rounded-2xl px-3.5 py-3 text-white shadow-card" style={{ background: t.bg }}><span className="block text-[12px] text-white/80">{t.label}</span><b className="tnum block text-[24px] leading-8">{t.value}</b>{t.sub && <span className="block text-[11px] text-white/85">{t.sub}</span>}</div>)}
       </div>
       <figure className="rounded-2xl border border-card-line bg-surface p-4">
-        <figcaption className="mb-3 text-[13.5px] font-semibold">Dokumente je Bereich</figcaption>
+        <figcaption className="mb-3 text-[14px] font-semibold">Dokumente je Bereich</figcaption>
         <ul className="space-y-2">
           {byCluster.map((x, i) => (
             <li key={x.c.id} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)] items-center gap-3 text-[13px]">
@@ -513,7 +513,7 @@ function SalaryWidget({ body }: { body: string }) {
         <div className="rounded-2xl border border-card-line bg-surface p-4">
           <p className="mb-2 text-[13px] font-semibold">Vom Brutto bleiben {Math.round((last.netto / last.brutto) * 100)} %</p>
           <div className="flex h-3 overflow-hidden rounded-full"><span style={{ width: `${(last.netto / last.brutto) * 100}%`, background: "#1f9688" }} /><span className="flex-1" style={{ background: "#d07a12" }} /></div>
-          <p className="mt-1.5 flex justify-between text-[11.5px] text-muted"><span>Netto {fmtMoney(last.netto)}</span><span>Steuern & Abgaben {fmtMoney(abz!)}</span></p>
+          <p className="mt-1.5 flex justify-between text-[12px] text-muted"><span>Netto {fmtMoney(last.netto)}</span><span>Steuern & Abgaben {fmtMoney(abz!)}</span></p>
         </div>
       )}
       {rows.length > 1 && (
@@ -526,7 +526,7 @@ function SalaryWidget({ body }: { body: string }) {
                   {r.brutto && <span className="w-2.5 rounded-t" style={{ height: `${(r.brutto / max) * 100}%`, background: "#1b2130" }} title={`Brutto ${fmtMoney(r.brutto)}`} />}
                   {r.netto && <span className="w-2.5 rounded-t" style={{ height: `${(r.netto / max) * 100}%`, background: "#1f9688" }} title={`Netto ${fmtMoney(r.netto)}`} />}
                 </div>
-                <span className="text-[10.5px] text-muted">{month(r.d)}</span>
+                <span className="text-[11px] text-muted">{month(r.d)}</span>
               </div>
             ))}
           </div>
@@ -565,11 +565,11 @@ function CaseDocs({ d, rel }: { d: Doc; rel: Doc[] }) {
   return (
     <div className="border-t border-line">
       {newer.length > 0 && (
-        <button type="button" onClick={() => open?.({ kind: "doc", id: newer[0].id })} className="flex w-full items-center gap-2 bg-[#eef3ff] px-4 py-2 text-left text-[12.5px] font-semibold text-[#2443a8] hover:underline dark:bg-[#1c2540] dark:text-[#9fb6ff]">
+        <button type="button" onClick={() => open?.({ kind: "doc", id: newer[0].id })} className="flex w-full items-center gap-2 bg-[#eef3ff] px-4 py-2 text-left text-[13px] font-semibold text-[#2443a8] hover:underline dark:bg-[#1c2540] dark:text-[#9fb6ff]">
           <FileText size={14} className="shrink-0" /> Neueres Schreiben vom {fmtDate(dateOf(newer[0]))}: {newer[0].title ?? newer[0].file_name}
         </button>
       )}
-      <button type="button" aria-expanded={show} onClick={() => setShow(!show)} className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[12.5px] font-semibold text-soft hover:bg-surface-2">
+      <button type="button" aria-expanded={show} onClick={() => setShow(!show)} className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] font-semibold text-soft hover:bg-surface-2">
         <FileText size={14} className="shrink-0" /><span className="flex-1">{all.length === 1 ? "Das Schreiben dazu" : `${all.length} Schreiben zu diesem Vorgang`}</span>
         <ChevronRight size={15} className={`shrink-0 transition-transform ${show ? "rotate-90" : ""}`} />
       </button>
@@ -581,7 +581,7 @@ function CaseDocs({ d, rel }: { d: Doc; rel: Doc[] }) {
                 <span className="h-10 w-8 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2"><Thumb d={x} /></span>
                 <span className="min-w-0 flex-1">
                   <b className="block truncate text-[13px] font-semibold">{x.title ?? x.file_name}</b>
-                  <span className="block text-[11.5px] text-muted">{fmtDate(dateOf(x))}{x.id === d.id ? " · hier gezeigt" : dateOf(x) > dateOf(d) ? " · neuer" : " · älter"}</span>
+                  <span className="block text-[12px] text-muted">{fmtDate(dateOf(x))}{x.id === d.id ? " · hier gezeigt" : dateOf(x) > dateOf(d) ? " · neuer" : " · älter"}</span>
                 </span>
                 <ChevronRight size={14} className="shrink-0 text-muted" />
               </button>

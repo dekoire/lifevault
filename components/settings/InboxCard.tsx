@@ -53,7 +53,7 @@ export function InboxCard({ mode, from, to }: { mode: "since" | "range"; from: s
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-500 text-white"><AtSign size={20} /></span>
         <span className="min-w-0 flex-1">
           <b className="block text-[16px]">Deine Lifevault-Adresse</b>
-          <span className="text-[12.5px] text-muted">Mails mit Anhang hierhin weiterleiten oder schicken lassen</span>
+          <span className="text-[13px] text-muted">Mails mit Anhang hierhin weiterleiten oder schicken lassen</span>
         </span>
       </div>
       <div className="mx-5 flex items-center gap-2 rounded-2xl bg-surface-2 py-2 pr-2 pl-4">
@@ -69,7 +69,7 @@ export function InboxCard({ mode, from, to }: { mode: "since" | "range"; from: s
 
       <div className="mt-4 border-t border-line p-5">
         <b className="flex items-center gap-1.5 text-[14px]"><ShieldCheck size={15} /> Erlaubte Absender</b>
-        <span className="block text-[12.5px] text-muted">Nur Mails von diesen Adressen werden übernommen – und nur, wenn der Absender echt ist (SPF/DKIM). Leitest du aus deinem Postfach weiter – von Hand oder automatisch per Filter –, trag dessen Adresse ein.</span>
+        <span className="block text-[13px] text-muted">Nur Mails von diesen Adressen werden übernommen – und nur, wenn der Absender echt ist (SPF/DKIM). Leitest du aus deinem Postfach weiter – von Hand oder automatisch per Filter –, trag dessen Adresse ein.</span>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {inbox.allowed.map((a) => (
             <span key={a} className="inline-flex h-8 items-center gap-1 rounded-full border border-card-line pr-1 pl-3 text-[13px] font-semibold">
@@ -93,20 +93,20 @@ export function InboxCard({ mode, from, to }: { mode: "since" | "range"; from: s
           <div className="mt-2.5 inline-flex flex-wrap gap-1 rounded-full bg-surface-2 p-1">
             {MAIL_MODES.map((m) => <button key={m.id} type="button" onClick={() => void save({ mode: m.id })} aria-pressed={inbox.mode === m.id} className={`h-9 rounded-full px-3.5 text-[13px] font-semibold ${inbox.mode === m.id ? "bg-surface text-fg shadow-sm" : "text-soft hover:text-fg"}`}>{m.label}</button>)}
           </div>
-          <p className="mt-2 text-[12.5px] text-muted">{MAIL_MODES.find((m) => m.id === inbox.mode)?.hint} Die KI entscheidet, was relevant ist; Werbung und Versandinfos ohne Preis werden nicht abgelegt.</p>
+          <p className="mt-2 text-[13px] text-muted">{MAIL_MODES.find((m) => m.id === inbox.mode)?.hint} Die KI entscheidet, was relevant ist; Werbung und Versandinfos ohne Preis werden nicht abgelegt.</p>
         </div>
       )}
       <KeepRulesSection value={normalizeKeep(inbox.keep_rules)} onChange={(r) => void save({ keep_rules: r })} />
       <div className="flex flex-wrap items-center gap-4 border-t border-line p-5">
         <span className="min-w-0 flex-1">
           <b className="block text-[14px]">Automatisch abrufen</b>
-          <span className="text-[12.5px] text-muted">Alle 15 Minuten auf dem Server, auch wenn die App zu ist – nur, was seit dem letzten Abruf neu ist. Zuletzt: {inbox.last_sync_at ? new Date(inbox.last_sync_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }) : "noch nie"}</span>
+          <span className="text-[13px] text-muted">Alle 15 Minuten auf dem Server, auch wenn die App zu ist – nur, was seit dem letzten Abruf neu ist. Zuletzt: {inbox.last_sync_at ? new Date(inbox.last_sync_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }) : "noch nie"}</span>
         </span>
         <Switch on={inbox.auto_sync} onChange={(v) => void save({ auto_sync: v })} label="Automatisch abrufen" />
       </div>
       <div className="flex flex-wrap items-center gap-3 border-t border-line p-5">
         <button type="button" disabled={!!step} onClick={() => void run()} className="inline-flex h-10 items-center gap-2 rounded-full bg-fg px-4 text-[14px] font-semibold text-canvas disabled:opacity-50">{step ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />} {mode === "range" ? "Zeitraum jetzt importieren" : "Jetzt abrufen"}</button>
-        <span className="text-[12.5px] text-muted">{step ?? (mode === "range" ? `Komplett-Import ${from} bis ${to} (Zeitraum oben)` : "Seit letztem Abruf (Zeitraum oben umstellbar)")}</span>
+        <span className="text-[13px] text-muted">{step ?? (mode === "range" ? `Komplett-Import ${from} bis ${to} (Zeitraum oben)` : "Seit letztem Abruf (Zeitraum oben umstellbar)")}</span>
       </div>
       {(result || error) && (
         <div className="border-t border-line px-5 py-4 text-[13px]">
@@ -115,7 +115,7 @@ export function InboxCard({ mode, from, to }: { mode: "since" | "range"; from: s
             <>
               <p className="font-semibold">{result.imported ? `${result.files} ${result.files === 1 ? "Dokument" : "Dokumente"} aus ${result.imported} ${result.imported === 1 ? "Mail" : "Mails"} übernommen.` : "Nichts Neues."}{result.known ? ` ${result.known} schon bekannt.` : ""}{result.withoutDocs ? ` ${result.withoutDocs} ohne Dokument.` : ""}</p>
               {result.rejected.length > 0 && (
-                <ul className="mt-2 space-y-1 text-[12.5px] text-muted">
+                <ul className="mt-2 space-y-1 text-[13px] text-muted">
                   {result.rejected.slice(0, 5).map((r, i) => <li key={i}>Ignoriert: „{r.subject || "ohne Betreff"}“ – {r.reason}</li>)}
                 </ul>
               )}
@@ -136,11 +136,11 @@ function KeepRulesSection({ value, onChange }: { value: KeepRules; onChange: (r:
         <b className="block text-[14px]">Was behalten wird</b>
         {!isDefault && <button type="button" onClick={() => onChange(DEFAULT_KEEP)} className="text-[13px] font-semibold text-soft hover:text-fg">Standard</button>}
       </div>
-      <span className="block text-[12.5px] text-muted">Nach dem Auslesen entscheidet Lifevault nach Art. Was du abwählst, wird nicht gespeichert.</span>
+      <span className="block text-[13px] text-muted">Nach dem Auslesen entscheidet Lifevault nach Art. Was du abwählst, wird nicht gespeichert.</span>
       <ul className="mt-2 divide-y divide-line">
         {KEEP_ROWS.map((r) => (
           <li key={r.id} className="flex items-center gap-4 py-2.5">
-            <span className="min-w-0 flex-1"><b className="block text-[13.5px]">{r.label}</b><span className="block text-[12px] text-muted">{r.hint}</span></span>
+            <span className="min-w-0 flex-1"><b className="block text-[14px]">{r.label}</b><span className="block text-[12px] text-muted">{r.hint}</span></span>
             <Switch on={value[r.id]} onChange={(v) => onChange({ ...value, [r.id]: v })} label={r.label} />
           </li>
         ))}

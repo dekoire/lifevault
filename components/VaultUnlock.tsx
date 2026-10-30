@@ -29,13 +29,13 @@ export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib de
   );
   // rundes Häkchen: weißer Kreis, lila Haken
   const keepBox = (
-    <label className="inline-flex cursor-pointer items-center gap-2 text-[12.5px] text-muted">
+    <label className="inline-flex cursor-pointer items-center gap-2 text-[13px] text-muted">
       <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} className="peer sr-only" />
       <span className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border border-card-line bg-white peer-focus-visible:ring-2 peer-focus-visible:ring-white/60">{keep && <Check size={12} strokeWidth={3.2} className="text-brand-600" />}</span>
       {REMEMBER_MIN} Min. entsperrt lassen
     </label>
   );
-  const button = <button type="submit" disabled={busy || !pw} className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-brand-500 px-4 text-[13.5px] font-semibold text-white disabled:opacity-50">{busy && <Loader2 size={14} className="animate-spin" />} Entsperren</button>;
+  const button = <button type="submit" disabled={busy || !pw} className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-brand-500 px-4 text-[14px] font-semibold text-white disabled:opacity-50">{busy && <Loader2 size={14} className="animate-spin" />} Entsperren</button>;
 
   // kompakt: lila Karte mit Frage, Feld und Häkchen – die Knöpfe stehen darunter, außerhalb der Karte
   const card = (inner?: React.ReactNode) => (
@@ -43,7 +43,7 @@ export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib de
       <div className="flex items-start gap-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 text-white"><LockKeyhole size={16} /></span>
         <span className="min-w-0 flex-1 pt-0.5">
-          <b className="block text-[13.5px] leading-5">{vault ? title : "Noch kein Tresor"}</b>
+          <b className="block text-[14px] leading-5">{vault ? title : "Noch kein Tresor"}</b>
           <span className="block text-[12px] leading-4 text-white/75">{vault ? text : "Lege einen Tresor an, um Dokumente zu verschlüsseln."}</span>
         </span>
         {onClose && <button type="button" onClick={onClose} aria-label="Schließen" className="-mt-1 -mr-1.5 grid h-8 w-8 shrink-0 place-items-center rounded-full text-white/75 hover:bg-white/10 hover:text-white"><X size={16} /></button>}
@@ -59,7 +59,7 @@ export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib de
       </>)}
       <div className="mt-2.5 flex gap-2 [&>*]:h-10 [&>*]:flex-1">
         {footer}
-        <button type="submit" disabled={busy || !pw} className="inline-flex items-center justify-center gap-1.5 rounded-full bg-fg px-4 text-[13.5px] font-semibold text-canvas disabled:opacity-40">{busy && <Loader2 size={14} className="animate-spin" />} Entsperren</button>
+        <button type="submit" disabled={busy || !pw} className="inline-flex items-center justify-center gap-1.5 rounded-full bg-fg px-4 text-[14px] font-semibold text-canvas disabled:opacity-40">{busy && <Loader2 size={14} className="animate-spin" />} Entsperren</button>
       </div>
     </form>
   ) : card(<Link href="/einstellungen/tresor" className="mt-2.5 inline-flex h-9 items-center rounded-full bg-white px-4 text-[13px] font-semibold text-brand-600">Tresor einrichten</Link>);
@@ -74,8 +74,8 @@ export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib de
           {field("")}
           <button type="submit" disabled={busy || !pw} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-brand-500 text-[14px] font-semibold text-white disabled:opacity-50">{busy && <Loader2 size={15} className="animate-spin" />} Entsperren</button>
           <div>{keepBox}</div>
-          {error && <p className="text-[12.5px] text-negative-text" role="alert">{error}</p>}
-          <p className="text-[11.5px] text-muted">Das Passwort verlässt dein Gerät nicht.</p>
+          {error && <p className="text-[13px] text-negative-text" role="alert">{error}</p>}
+          <p className="text-[12px] text-muted">Das Passwort verlässt dein Gerät nicht.</p>
         </form>
       ) : (
         <Link href="/einstellungen/tresor" className="mt-4 inline-flex h-10 items-center rounded-full bg-brand-500 px-5 text-[14px] font-semibold text-white">Tresor einrichten</Link>

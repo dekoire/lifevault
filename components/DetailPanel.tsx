@@ -109,7 +109,7 @@ function DocDetail({ id, page, quote, open, close, back = false }: { id: string;
       <DocAdvice id={doc.id} />
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="mr-1 text-[12px] font-semibold text-muted">Schreiben</span>
-        {suggestedPurposes(doc).slice(0, 4).map((p) => <button key={p} type="button" onClick={() => openDraft(doc, p)} className="inline-flex h-8 items-center gap-1 rounded-full border border-card-line px-3 text-[12.5px] font-semibold hover:bg-surface-2"><PenLine size={12} /> {DRAFT_PURPOSES.find((x) => x.id === p)!.label}</button>)}
+        {suggestedPurposes(doc).slice(0, 4).map((p) => <button key={p} type="button" onClick={() => openDraft(doc, p)} className="inline-flex h-8 items-center gap-1 rounded-full border border-card-line px-3 text-[13px] font-semibold hover:bg-surface-2"><PenLine size={12} /> {DRAFT_PURPOSES.find((x) => x.id === p)!.label}</button>)}
       </div>
       {!doc.encrypted && <DocActions doc={doc} url={url} fullText={doc.full_text} related={related} />}
       <div className="flex gap-2">
@@ -122,8 +122,8 @@ function DocDetail({ id, page, quote, open, close, back = false }: { id: string;
         <>
           {(quote || page) && (
             <figure className="rounded-xl border-l-[3px] border-brand-500 bg-brand-500/[.06] px-3 py-2.5">
-              <figcaption className="flex items-center gap-1.5 text-[11.5px] font-semibold tracking-wide text-brand-600 uppercase"><Quote size={12} /> Fundstelle{page ? ` · Seite ${page}` : ""}</figcaption>
-              {quote && <blockquote className="mt-1 text-[13.5px] leading-5">„{quote}“</blockquote>}
+              <figcaption className="flex items-center gap-1.5 text-[12px] font-semibold tracking-wide text-brand-600 uppercase"><Quote size={12} /> Fundstelle{page ? ` · Seite ${page}` : ""}</figcaption>
+              {quote && <blockquote className="mt-1 text-[14px] leading-5">„{quote}“</blockquote>}
             </figure>
           )}
           {doc.summary && !(quote || page) && <Clamp lines={3} className="text-[14px] leading-6 text-soft">{doc.summary}</Clamp>}
@@ -147,7 +147,7 @@ function DocDetail({ id, page, quote, open, close, back = false }: { id: string;
         </>
       )}
       {/* Einordnung, Wichtigkeit, Tags: selten gebraucht – ganz unten */}
-      <dl className="divide-y divide-line rounded-xl border border-card-line text-[12.5px]">
+      <dl className="divide-y divide-line rounded-xl border border-card-line text-[13px]">
         <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-2 px-3 py-2"><dt className="text-muted">Einordnung</dt><dd className="min-w-0"><Classify doc={doc} onChange={(d) => setDoc(d)} /></dd></div>
         {doc.importance !== undefined && doc.status === "ready" && <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-2 px-3 py-2"><dt className="pt-1.5 text-muted">Wichtigkeit</dt><dd className="min-w-0"><DocImportance doc={doc} onChange={(d) => setDoc(d)} /></dd></div>}
         <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-2 px-3 py-2"><dt className="pt-1.5 text-muted">Tags</dt><dd className="flex min-w-0 flex-wrap items-center gap-1.5"><DocLabels inline doc={doc} onChange={(d) => setDoc(d)} /></dd></div>
@@ -206,7 +206,7 @@ function Classify({ doc, onChange }: { doc: Doc; onChange: (d: Doc) => void }) {
     void refresh();
   };
   // runde Pills auch in Safari: eigene Optik (appearance-none) mit Pfeil
-  const sel = "h-8 w-full min-w-0 appearance-none truncate rounded-full border border-card-line bg-surface pr-7 pl-3 text-[12.5px] font-semibold text-fg";
+  const sel = "h-8 w-full min-w-0 appearance-none truncate rounded-full border border-card-line bg-surface pr-7 pl-3 text-[13px] font-semibold text-fg";
   const Pick = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => <span className={`relative inline-flex min-w-0 ${className}`}>{children}<ChevronDown size={13} className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-muted" /></span>;
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-1.5">

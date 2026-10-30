@@ -80,11 +80,11 @@ export function WebSourceCard({ doc, onChanged }: { doc: Doc; onChanged?: () => 
       <div className="flex flex-wrap items-center gap-3 px-4 py-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2"><Globe size={17} /></span>
         <span className="min-w-0 flex-1 text-[13px]">
-          <b className="block text-[13.5px]">Aus dem Internet · zuletzt geprüft {fmtDate(ws.checked_at)}</b>
+          <b className="block text-[14px]">Aus dem Internet · zuletzt geprüft {fmtDate(ws.checked_at)}</b>
           {next && <span className={`flex items-center gap-1 ${due ? "font-semibold text-negative-text" : "text-muted"}`}><CalendarClock size={12} /> {due ? "Prüfung fällig" : "Nächste Prüfung"}: {fmtDate(next.date)} · {next.reason}</span>}
         </span>
-        {ws.url && <a href={ws.url} target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center gap-1 rounded-full border border-card-line px-3 text-[12.5px] font-semibold hover:bg-surface-2">Quelle <ExternalLink size={12} /></a>}
-        <button type="button" disabled={!!busy} onClick={() => void check()} className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-semibold disabled:opacity-60 ${due ? "bg-fg text-canvas" : "border border-card-line hover:bg-surface-2"}`}>{busy === "prüft" ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Jetzt prüfen</button>
+        {ws.url && <a href={ws.url} target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center gap-1 rounded-full border border-card-line px-3 text-[13px] font-semibold hover:bg-surface-2">Quelle <ExternalLink size={12} /></a>}
+        <button type="button" disabled={!!busy} onClick={() => void check()} className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold disabled:opacity-60 ${due ? "bg-fg text-canvas" : "border border-card-line hover:bg-surface-2"}`}>{busy === "prüft" ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Jetzt prüfen</button>
       </div>
       {(res || error) && (
         <div className="border-t border-line px-4 py-3 text-[13px]">
@@ -94,8 +94,8 @@ export function WebSourceCard({ doc, onChanged }: { doc: Doc; onChanged?: () => 
               <p className={`mb-2 font-semibold ${res.status === "neuer" ? "text-negative-text" : res.status === "aktuell" ? "text-positive-text" : ""}`}>{res.status === "aktuell" ? "✓ Noch aktuell – Prüfdatum aktualisiert." : res.status === "neuer" ? "Es gibt eine neuere Fassung." : "Nicht eindeutig – bitte selbst kurz ansehen."}</p>
               <div className="max-h-64 overflow-y-auto"><Markdown text={res.answer} /></div>
               <div className="mt-3 flex flex-wrap gap-2">
-                {res.status !== "aktuell" && res.document && <button type="button" disabled={!!busy} onClick={() => void saveNew()} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[12.5px] font-semibold text-canvas disabled:opacity-60">{busy === "legt ab" && <Loader2 size={13} className="animate-spin" />} Neue Fassung ablegen (alte archivieren)</button>}
-                {res.status !== "aktuell" && <button type="button" onClick={() => { void setSource({}); setRes(undefined); }} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-card-line px-3.5 text-[12.5px] font-semibold hover:bg-surface-2"><Check size={13} /> Als geprüft markieren</button>}
+                {res.status !== "aktuell" && res.document && <button type="button" disabled={!!busy} onClick={() => void saveNew()} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[13px] font-semibold text-canvas disabled:opacity-60">{busy === "legt ab" && <Loader2 size={13} className="animate-spin" />} Neue Fassung ablegen (alte archivieren)</button>}
+                {res.status !== "aktuell" && <button type="button" onClick={() => { void setSource({}); setRes(undefined); }} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-card-line px-3.5 text-[13px] font-semibold hover:bg-surface-2"><Check size={13} /> Als geprüft markieren</button>}
               </div>
             </>
           )}

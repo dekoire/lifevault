@@ -18,7 +18,7 @@ export function Clamp({ children, lines = 2, className = "" }: { children: React
   return (
     <span className={`block ${className}`}>
       <span ref={ref} className="block overflow-hidden" style={open ? undefined : { display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical" }}>{children}</span>
-      {(more || open) && <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(!open); }} className="mt-0.5 text-[12.5px] font-semibold text-selected hover:underline">{open ? "Weniger anzeigen" : "Mehr anzeigen"}</button>}
+      {(more || open) && <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(!open); }} className="mt-0.5 text-[13px] font-semibold text-selected hover:underline">{open ? "Weniger anzeigen" : "Mehr anzeigen"}</button>}
     </span>
   );
 }

@@ -115,10 +115,10 @@ export function PdfPages({ url, card = false, compact = false, bare = false, foc
             <button type="button" onClick={() => setZoom(i)} className={`flex w-full items-center justify-center ${bare ? `bg-surface-2 px-4 py-4 ${compact ? "h-72" : "h-[60vh]"}` : ""}`} aria-label={`${label(i)} groß ansehen`}>
               <img src={u} alt={label(i)} className={bare ? "block max-h-full max-w-full rounded-[3px] bg-white object-contain shadow-[0_1px_3px_rgba(16,24,40,.12),0_8px_24px_rgba(16,24,40,.10)]" : `mx-auto block w-full object-contain ${compact ? "h-64" : "h-[55vh]"}`} />
             </button>
-            {total > 1 && <figcaption className={`px-2.5 py-1 text-[11.5px] font-semibold text-soft ${bare ? "bg-surface-2 pb-2 text-center" : "border-t border-line bg-surface"}`}>{label(i)}</figcaption>}
+            {total > 1 && <figcaption className={`px-2.5 py-1 text-[12px] font-semibold text-soft ${bare ? "bg-surface-2 pb-2 text-center" : "border-t border-line bg-surface"}`}>{label(i)}</figcaption>}
           </figure>
         ))}
-        {loading && <p className={`flex w-full shrink-0 items-center justify-center gap-2 text-[12.5px] text-muted ${compact ? "h-64" : "h-[55vh]"}`}><Loader2 size={14} className="animate-spin" /> {total ? `Seite ${pages.length + 1} von ${total} …` : "Lade Seiten …"}</p>}
+        {loading && <p className={`flex w-full shrink-0 items-center justify-center gap-2 text-[13px] text-muted ${compact ? "h-64" : "h-[55vh]"}`}><Loader2 size={14} className="animate-spin" /> {total ? `Seite ${pages.length + 1} von ${total} …` : "Lade Seiten …"}</p>}
       </div>
       {total > 1 && (
         <p className={`flex items-center justify-center gap-1.5 ${bare ? "py-2.5" : "mt-2"}`}>

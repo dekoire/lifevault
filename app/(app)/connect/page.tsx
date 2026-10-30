@@ -116,7 +116,7 @@ export default function ConnectPage() {
         <h1 className="text-[22px] leading-7 font-[650] tracking-tight"><b>{app!.name}</b> möchte sich mit deinem Lifevault verbinden</h1>
         {app!.description && <p className="max-w-md text-[14px] text-muted">{app!.description}</p>}
         {app!.homepage && <a href={app!.homepage} target="_blank" rel="noreferrer noopener" className="text-[13px] font-semibold text-selected hover:underline">{new URL(app!.homepage).host}</a>}
-        {grant && <span className="inline-flex items-center gap-1.5 rounded-full bg-positive/10 px-3 py-1 text-[12.5px] font-semibold text-positive-text"><Check size={14} /> Schon verbunden – du kannst die Freigabe hier anpassen</span>}
+        {grant && <span className="inline-flex items-center gap-1.5 rounded-full bg-positive/10 px-3 py-1 text-[13px] font-semibold text-positive-text"><Check size={14} /> Schon verbunden – du kannst die Freigabe hier anpassen</span>}
       </div>
 
       <section className={`${CARD} divide-y divide-line px-5`}>
@@ -156,7 +156,7 @@ export default function ConnectPage() {
       <section className={`${CARD} divide-y divide-line px-5`}>
         <label className={row}><span><b>Persönliche Daten</b><span className="block text-[12px] text-muted">Name, Adresse, IBAN, Kunden- und Versichertennummern. Aus: werden entfernt.</span></span><Switch on={personal} onChange={setPersonal} label="Persönliche Daten" /></label>
         <label className={row}><span><b>Gesundheit</b><span className="block text-[12px] text-muted">Arztbriefe, Befunde, Rezepte. Aus: für die App unsichtbar.</span></span><Switch on={health} onChange={setHealth} label="Gesundheit" /></label>
-        <p className="flex items-start gap-2 py-3 text-[12.5px] text-muted"><ShieldCheck size={15} className="mt-0.5 shrink-0 text-positive" /> Tresor-Dokumente sind Ende-zu-Ende verschlüsselt und für keine App lesbar. {app!.name} sieht nie dein Passwort. Jeder Zugriff wird protokolliert, und du kannst die Verbindung unter Einstellungen › Verbundene Apps jederzeit trennen.</p>
+        <p className="flex items-start gap-2 py-3 text-[13px] text-muted"><ShieldCheck size={15} className="mt-0.5 shrink-0 text-positive" /> Tresor-Dokumente sind Ende-zu-Ende verschlüsselt und für keine App lesbar. {app!.name} sieht nie dein Passwort. Jeder Zugriff wird protokolliert, und du kannst die Verbindung unter Einstellungen › Verbundene Apps jederzeit trennen.</p>
       </section>
 
       {error && <p role="alert" className="rounded-xl bg-negative/10 px-3.5 py-2.5 text-sm text-negative-text">{error}</p>}

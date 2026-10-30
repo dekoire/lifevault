@@ -62,7 +62,7 @@ function DetailRow({ icon, label, children }: { icon: React.ReactNode; label: st
   );
 }
 
-const Stand = ({ e }: { e: { date: string; title: string } }) => <span className="block text-[11.5px] font-normal text-muted">Stand {fmtDate(e.date)} · aus „{e.title}“</span>;
+const Stand = ({ e }: { e: { date: string; title: string } }) => <span className="block text-[12px] font-normal text-muted">Stand {fmtDate(e.date)} · aus „{e.title}“</span>;
 
 /** Neuester Wert + aufklappbarer Verlauf älterer Werte */
 function HistoryValue({ list, render, copy = true }: { list: Entry[]; render?: (e: Entry) => React.ReactNode; copy?: boolean }) {
@@ -72,19 +72,19 @@ function HistoryValue({ list, render, copy = true }: { list: Entry[]; render?: (
   return (
     <span className="block">
       <span className="flex items-start gap-1">
-        <span className="min-w-0 flex-1 pt-1">{show(first)}{first.label && <span className="block text-[11.5px] font-normal text-soft">{first.label}</span>}<Stand e={first} /></span>
+        <span className="min-w-0 flex-1 pt-1">{show(first)}{first.label && <span className="block text-[12px] font-normal text-soft">{first.label}</span>}<Stand e={first} /></span>
         {copy && <CopyBtn value={first.v} />}
       </span>
       {older.length > 0 && (
         <>
-          <button type="button" onClick={() => setOpen(!open)} className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-card-line px-2.5 py-0.5 text-[11.5px] font-semibold text-soft hover:text-fg">
+          <button type="button" onClick={() => setOpen(!open)} className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-card-line px-2.5 py-0.5 text-[12px] font-semibold text-soft hover:text-fg">
             Früher ({older.length}) <ChevronDown size={12} className={`transition-transform ${open ? "rotate-180" : ""}`} />
           </button>
           {open && (
             <span className="mt-2 block space-y-2 border-l-2 border-line pl-3">
               {older.map((e) => (
                 <span key={e.v} className="flex items-start gap-1">
-                  <span className="min-w-0 flex-1 text-soft">{e.v}{e.label && <span className="block text-[11.5px] font-normal text-muted">{e.label}</span>}<Stand e={e} /></span>
+                  <span className="min-w-0 flex-1 text-soft">{e.v}{e.label && <span className="block text-[12px] font-normal text-muted">{e.label}</span>}<Stand e={e} /></span>
                   {copy && <CopyBtn value={e.v} />}
                 </span>
               ))}
@@ -132,9 +132,9 @@ export function PartnerFacts({ p }: { p: Partner }) {
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2"><Landmark size={16} /></span>
                   <span className="min-w-0 flex-1">
                     <b className="block truncate text-[14px]">{b.bank ?? b.recipient ?? "Bankverbindung"}</b>
-                    <span className="block truncate text-[11.5px] text-muted">Stand {fmtDate(b.date)} · aus „{b.title}“</span>
+                    <span className="block truncate text-[12px] text-muted">Stand {fmtDate(b.date)} · aus „{b.title}“</span>
                   </span>
-                  <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11.5px] font-semibold ${n === 0 ? "border-fg text-fg" : "border-card-line text-muted"}`}>{n === 0 ? "zuletzt genannt" : "älter"}</span>
+                  <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[12px] font-semibold ${n === 0 ? "border-fg text-fg" : "border-card-line text-muted"}`}>{n === 0 ? "zuletzt genannt" : "älter"}</span>
                 </div>
                 {b.recipient && <DetailRow icon={<UserRound size={16} />} label="Empfänger"><span className="flex items-center gap-1"><span className="min-w-0 flex-1">{b.recipient}</span><CopyBtn value={b.recipient} /></span></DetailRow>}
                 <DetailRow icon={<Landmark size={16} />} label="IBAN"><span className="flex items-center gap-1"><span className="tnum min-w-0 flex-1">{fmtIban(b.iban)}</span><CopyBtn value={b.iban} /></span></DetailRow>
@@ -154,7 +154,7 @@ export function PartnerFacts({ p }: { p: Partner }) {
           </div>
         </>
       )}
-      {!hasContact && !banks.length && !ids.length && <p className="rounded-2xl border border-card-line bg-surface p-5 text-center text-[13.5px] text-muted">In den Dokumenten stehen keine Kontaktdaten.</p>}
+      {!hasContact && !banks.length && !ids.length && <p className="rounded-2xl border border-card-line bg-surface p-5 text-center text-[14px] text-muted">In den Dokumenten stehen keine Kontaktdaten.</p>}
     </div>
   );
 }

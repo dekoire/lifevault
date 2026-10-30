@@ -75,7 +75,7 @@ export function MergeSuggestions({ intro, empty }: { intro?: React.ReactNode; em
     <section className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
       <div className="px-4 pt-4 pb-3">
         <h2 className="flex items-center gap-2 text-[16px] font-semibold"><Combine size={18} className="shrink-0" /> Gehören zusammen? <span className="tnum text-[13px] font-semibold text-fg">{groups.length}</span></h2>
-        <p className="mt-0.5 text-[12.5px] text-muted">Kurz nacheinander hochgeladen – sieht nach einem Dokument aus</p>
+        <p className="mt-0.5 text-[13px] text-muted">Kurz nacheinander hochgeladen – sieht nach einem Dokument aus</p>
       </div>
       <ul className="divide-y divide-line border-t border-line">
         {groups.map((g) => {
@@ -91,8 +91,8 @@ export function MergeSuggestions({ intro, empty }: { intro?: React.ReactNode; em
                 <span className="line-clamp-2 block text-[12px] text-muted">{g.docs.length} Teile · {g.reason}</span>
               </span>
               <span className="flex shrink-0 gap-2">
-                <button type="button" onClick={() => dismiss(g)} className="inline-flex h-9 items-center gap-1 rounded-full border border-card-line px-3 text-[12.5px] font-semibold hover:bg-surface-2"><X size={13} /> Nein</button>
-                <button type="button" onClick={() => setOpen(g)} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[12.5px] font-semibold text-canvas"><Combine size={13} /> Ansehen & prüfen</button>
+                <button type="button" onClick={() => dismiss(g)} className="inline-flex h-9 items-center gap-1 rounded-full border border-card-line px-3 text-[13px] font-semibold hover:bg-surface-2"><X size={13} /> Nein</button>
+                <button type="button" onClick={() => setOpen(g)} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[13px] font-semibold text-canvas"><Combine size={13} /> Ansehen & prüfen</button>
               </span>
             </li>
           );
