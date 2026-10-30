@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { ArrowRight, Building2, Check, Combine, Loader2, PencilLine, RotateCcw, X } from "lucide-react";
+import { ArrowRight, Building2, CalendarDays, Check, Combine, Loader2, PencilLine, RotateCcw, X } from "lucide-react";
+import { partnerKey } from "@/lib/partners";
 import { Thumb } from "@/components/ChatWidgets";
 import { useDetail } from "@/components/DetailPanel";
 import { MergeReview } from "@/components/MergeReview";
@@ -11,12 +12,14 @@ import type { Doc } from "@/lib/types";
 
 /**
  * Aktionen aus dem Chat – die KI schlägt vor, du bestätigst jede einzeln:
- * umbenennen, Absender ändern (z. B. „polygo“ → „VVS“), zusammenführen (Vorder-/Rückseite, mehrere Seiten).
+ * umbenennen, Absender ändern (z. B. „polygo“ → „VVS“), Partner umbenennen (alle seine Dokumente), Datum korrigieren,
+ * zusammenführen (Vorder-/Rückseite, mehrere Seiten).
  * Format im Baustein ```aktion: eine JSON-Zeile je Aktion.
  */
 type Action =
   | { typ: "umbenennen"; id: string; titel: string }
-  | { typ: "absender"; ids: string[]; absender: string; domain?: string }
+  | { typ: "absender"; ids: string[]; absender: string; domain?: string; key?: string }
+  | { typ: "datum"; id: string; datum: string }
   | { typ: "zusammenfuehren"; ids: string[]; titel: string; grund?: string };
 
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -28,6 +31,9 @@ export function parseActions(body: string): Action[] {
     const ids = (Array.isArray(a.ids) ? a.ids : a.id ? [a.id] : []).filter((x): x is string => typeof x === "string" && UUID.test(x));
     if (a.typ === "umbenennen" && ids[0] && typeof a.titel === "string") out.push({ typ: "umbenennen", id: ids[0], titel: a.titel.slice(0, 200) });
     if (a.typ === "absender" && ids.length && typeof a.absender === "string") out.push({ typ: "absender", ids, absender: a.absender.slice(0, 120), domain: typeof a.domain === "string" ? a.domain.slice(0, 120) : undefined });
+    // Partner umbenennen: alle Dokumente des Partners (KEY aus der Partnerliste)
+    if (a.typ === "partner" && typeof a.key === "string" && typeof a.name === "string") out.push({ typ: "absender", ids: [], key: a.key.slice(0, 120), absender: a.name.slice(0, 120), domain: typeof a.domain === "string" ? a.domain.slice(0, 120) : undefined });
+    if (a.typ === "datum" && ids[0] && typeof a.datum === "string" && /^\d{4}-\d{2}-\d{2}$/.test(a.datum)) out.push({ typ: "datum", id: ids[0], datum: a.datum });
     if (a.typ === "zusammenfuehren" && ids.length >= 2) out.push({ typ: "zusammenfuehren", ids, titel: typeof a.titel === "string" ? a.titel.slice(0, 160) : "Zusammengeführtes Dokument", grund: typeof a.grund === "string" ? a.grund.slice(0, 200) : undefined });
   }
   return out;
@@ -57,7 +63,9 @@ function ActionCard({ a, n }: { a: Action; n?: number }) {
   const [state, setState] = useState<"ask" | "busy" | "done" | "cancelled">("ask");
   const [undo, setUndo] = useState<(() => Promise<void>) | null>(null);
   const [error, setError] = useState<string>();
-  const docs = (a.typ === "umbenennen" ? [a.id] : a.ids).map((id) => allDocs.find((d) => d.id === id)).filter((d): d is Doc => !!d);
+  const docs = a.typ === "absender" && a.key
+    ? allDocs.filter((d) => d.sender && partnerKey(d.sender) === a.key)
+    : (a.typ === "umbenennen" || a.typ === "datum" ? [a.id] : a.ids).map((id) => allDocs.find((d) => d.id === id)).filter((d): d is Doc => !!d);
   const box = "overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card";
 
   const run = async (fn: () => Promise<(() => Promise<void>) | null>) => {
@@ -104,11 +112,30 @@ function ActionCard({ a, n }: { a: Action; n?: number }) {
     );
   }
 
+  if (a.typ === "datum") {
+    const d = docs[0];
+    return (
+      <div className={box}>
+        <Head icon={CalendarDays} title="Datum korrigieren" n={n} />
+        <div className="space-y-2 px-4 py-3">
+          <DocLine d={d} />
+          <p className="flex flex-wrap items-center gap-2 text-[13px]"><span className="text-muted line-through">{fmtDate(d.doc_date) || "kein Datum"}</span><ArrowRight size={14} className="text-muted" /><b>{fmtDate(a.datum)}</b></p>
+        </div>
+        {buttons("Datum ändern", async () => {
+          const old = d.doc_date;
+          const { error } = await supabase.from("documents").update({ doc_date: a.datum }).eq("id", d.id);
+          if (error) throw new Error("Ändern hat nicht geklappt.");
+          return async () => { await supabase.from("documents").update({ doc_date: old }).eq("id", d.id); };
+        })}
+      </div>
+    );
+  }
+
   if (a.typ === "absender") {
     const already = docs.every((d) => d.sender === a.absender) && state === "ask";
     return (
       <div className={box}>
-        <Head icon={Building2} title="Absender ändern" n={n} />
+        <Head icon={Building2} title={a.key ? "Partner umbenennen" : "Absender ändern"} n={n} />
         <div className="space-y-2 px-4 py-3">
           {docs.slice(0, 4).map((d) => <DocLine key={d.id} d={d} />)}
           {docs.length > 4 && <p className="text-[12px] text-muted">+ {docs.length - 4} weitere</p>}
