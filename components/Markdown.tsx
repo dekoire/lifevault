@@ -84,7 +84,7 @@ function Chart({ body }: { body: string }) {
 export function Markdown({ text, widget }: { text: string; widget?: (kind: string, body: string) => React.ReactNode }) {
   // Infografik-Blöcke herauslösen, Rest normal darstellen
   // Infografiken (kpi, chart) und Bausteine aus dem Chat (zahlung, partner, dokumente, aufgaben, uebersicht, gehalt, aktion)
-  const parts = text.replace(/\r/g, "").split(/```(kpi|chart|zahlung|partner|dokumente|aufgaben|uebersicht|gehalt|aktion|verlauf)\n?([\s\S]*?)(?:```|$)/);
+  const parts = text.replace(/\r/g, "").split(/```(kpi|chart|zahlung|partner|dokumente|aufgaben|uebersicht|gehalt|aktion|verlauf|partnerliste|gruppen)\n?([\s\S]*?)(?:```|$)/);
   if (parts.length > 1) {
     const out: React.ReactNode[] = [];
     for (let i = 0; i < parts.length; i += 3) {
@@ -96,6 +96,11 @@ export function Markdown({ text, widget }: { text: string; widget?: (kind: strin
     return <div className="space-y-3">{out}</div>;
   }
   return <MarkdownText text={text} />;
+}
+
+/** Abschnitts-Überschrift wie in Finastry: lila Balken links, kräftig – gliedert lange Antworten auf einen Blick */
+function Heading({ children }: { children: React.ReactNode }) {
+  return <h3 className="mt-5 mb-1 flex items-center gap-2.5 text-[17px] leading-7 font-bold tracking-tight first:mt-0"><span className="h-5 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />{children}</h3>;
 }
 
 function MarkdownText({ text }: { text: string }) {
@@ -117,21 +122,25 @@ function MarkdownText({ text }: { text: string }) {
         if (lines.length >= 2 && lines.every((l) => l.trim().startsWith("|")) && /^\s*\|?\s*:?-{2,}/.test(lines[1])) {
           const cells = (l: string) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
           const head = cells(lines[0]);
+          // Tabelle als Kachel (wie in Finastry): erste Spalte fett, Zahlen rechtsbündig
+          const numeric = (c: string) => /^[−+-]?[\d.]+(,\d+)?\s?(€|%|EUR)?$/.test(c.replace(/\*\*/g, "").trim());
           return (
-            <div key={bi} className="no-scrollbar -mx-1 overflow-x-auto px-1">
-              <table className="w-full min-w-max overflow-hidden rounded-2xl border border-card-line text-[14px]">
-                <thead className="bg-surface-2"><tr>{head.map((c, ci) => <th key={ci} className="px-3 py-2 text-left font-semibold">{inline(c, `${bi}-h${ci}`)}</th>)}</tr></thead>
-                <tbody className="divide-y divide-line">{lines.slice(2).map((l, ri) => <tr key={ri}>{cells(l).map((c, ci) => <td key={ci} className="px-3 py-2 align-top">{inline(c, `${bi}-${ri}-${ci}`)}</td>)}</tr>)}</tbody>
-              </table>
+            <div key={bi} className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
+              <div className="no-scrollbar overflow-x-auto">
+                <table className="w-full text-[14px]">
+                  <thead className="bg-surface-2/70 text-[12px] tracking-wide text-muted uppercase"><tr>{head.map((c, ci) => <th key={ci} className="px-3.5 py-2.5 text-left font-semibold whitespace-nowrap">{inline(c, `${bi}-h${ci}`)}</th>)}</tr></thead>
+                  <tbody className="divide-y divide-line">{lines.slice(2).map((l, ri) => <tr key={ri} className="hover:bg-surface-2/50">{cells(l).map((c, ci) => <td key={ci} className={`px-3.5 py-2.5 align-top ${ci === 0 ? "font-semibold" : ""} ${numeric(c) ? "tnum text-right whitespace-nowrap" : ""}`}>{inline(c, `${bi}-${ri}-${ci}`)}</td>)}</tr>)}</tbody>
+                </table>
+              </div>
             </div>
           );
         }
         // Überschrift mit folgendem Inhalt im selben Block
         if (/^#{1,4}\s+/.test(lines[0] ?? "") && lines.length > 1) {
-          return <div key={bi} className="space-y-2"><h3 className="pt-1 text-[16px] font-semibold">{inline(lines[0].replace(/^#{1,4}\s+/, ""), `${bi}-h`)}</h3><Markdown text={lines.slice(1).join("\n")} /></div>;
+          return <div key={bi} className="space-y-2"><Heading>{inline(lines[0].replace(/^#{1,4}\s+/, ""), `${bi}-h`)}</Heading><Markdown text={lines.slice(1).join("\n")} /></div>;
         }
         const h = /^#{1,4}\s+(.*)$/.exec(b.trim());
-        if (h && lines.length === 1) return <h3 key={bi} className="pt-1 text-[16px] font-semibold">{inline(h[1], `${bi}`)}</h3>;
+        if (h && lines.length === 1) return <Heading key={bi}>{inline(h[1], `${bi}`)}</Heading>;
         return <p key={bi}>{lines.map((l, li) => <Fragment key={li}>{li > 0 && <br />}{inline(l.replace(/^#{1,4}\s+/, ""), `${bi}-${li}`)}</Fragment>)}</p>;
       })}
     </div>
