@@ -7,7 +7,7 @@ import type { Doc } from "@/lib/types";
  * Einmal im Browser verkleinert (Foto direkt, PDF = erste Seite), als JPG im eigenen Ordner abgelegt
  * (<user>/thumbs/<id>-<breite>.jpg) und danach nur noch das kleine Bild geladen. Verschlüsseltes bekommt keine Vorschau.
  */
-export const SMALL = 320, MEDIUM = 900;
+export const SMALL = 320, MEDIUM = 900, LARGE = 1800; // LARGE: zum Zoomen im Vollbild
 const mem = new Map<string, Promise<string | undefined>>();
 
 // höchstens 2 gleichzeitig erzeugen, damit das Handy nicht hängt
@@ -68,5 +68,5 @@ export function thumbUrl(d: Doc, w = SMALL): Promise<string | undefined> {
 
 /** beim Löschen eines Dokuments die Vorschaubilder mit entfernen */
 export async function removeThumbs(d: Pick<Doc, "id" | "file_path">) {
-  await supabase.storage.from("documents").remove([thumbPath(d, SMALL), thumbPath(d, MEDIUM)]).catch(() => undefined);
+  await supabase.storage.from("documents").remove([thumbPath(d, SMALL), thumbPath(d, MEDIUM), thumbPath(d, LARGE)]).catch(() => undefined);
 }
