@@ -3,6 +3,7 @@ import { useState } from "react";
 import { AtSign, Check, Copy, Loader2, Plus, RefreshCw, RotateCcw, ShieldCheck, X } from "lucide-react";
 import { CARD, Switch } from "@/components/ui";
 import { useDocs } from "@/lib/docs";
+import { ForwardGuide } from "@/components/settings/ForwardGuide";
 import { importInbox, inboxAddress, MAIL_MODES, useInbox, type InboxResult } from "@/lib/inbox";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -67,7 +68,7 @@ export function InboxCard({ mode, from, to }: { mode: "since" | "range"; from: s
 
       <div className="mt-4 border-t border-line p-5">
         <b className="flex items-center gap-1.5 text-[14px]"><ShieldCheck size={15} /> Erlaubte Absender</b>
-        <span className="block text-[12.5px] text-muted">Nur Mails von diesen Adressen werden übernommen – und nur, wenn der Absender echt ist (SPF/DKIM). Leitest du aus deinem Postfach weiter, trag dessen Adresse ein.</span>
+        <span className="block text-[12.5px] text-muted">Nur Mails von diesen Adressen werden übernommen – und nur, wenn der Absender echt ist (SPF/DKIM). Leitest du aus deinem Postfach weiter – von Hand oder automatisch per Filter –, trag dessen Adresse ein.</span>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {inbox.allowed.map((a) => (
             <span key={a} className="inline-flex h-8 items-center gap-1 rounded-full border border-card-line pr-1 pl-3 text-[13px] font-semibold">
@@ -82,6 +83,8 @@ export function InboxCard({ mode, from, to }: { mode: "since" | "range"; from: s
           <button type="submit" disabled={!EMAIL.test(add.trim())} className="inline-flex h-10 items-center gap-1.5 rounded-full border border-card-line px-4 text-[13px] font-semibold disabled:opacity-40"><Plus size={14} /> Hinzufügen</button>
         </form>
       </div>
+
+      <ForwardGuide address={address} allowed={inbox.allowed} />
 
       {inbox.mode && (
         <div className="border-t border-line p-5">
