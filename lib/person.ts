@@ -62,12 +62,28 @@ export function buildPerson(docs: Doc[]): PersonField[] {
     // einzigen Absender vorkommt, ist meist dessen Nummer/Konto (Vermieter, Firma, andere Person)
     if (f.multi) {
       const senders = new Map<string, Set<string>>();
+      const labels = new Map<string, string[]>();
       for (const d of ready) for (const k of d.key_facts ?? []) {
         if (!f.re.test(k.label.trim()) || !k.value?.trim()) continue;
         const key = norm(k.value);
         senders.set(key, (senders.get(key) ?? new Set()).add((d.sender ?? d.id).toLowerCase()));
+        labels.set(key, [...(labels.get(key) ?? []), k.label]);
       }
-      for (let i = vals.length - 1; i >= 0; i--) if ((senders.get(norm(vals[i].value))?.size ?? 0) < 2) vals.splice(i, 1);
+      // alle Bezeichnungen eines Werts zusammen ansehen: einmal „Empfänger“, „Studio“, „Versicherer“ oder ein Firmenname
+      // dabei → gehört dem Gegenüber; deins heißt schlicht „IBAN“/„E-Mail“ oder „Lastschriftkonto“, „Kontoinhaber“, „Empfänger der Mail“ …
+      const ownOf = (key: string) => {
+        const ls = labels.get(key) ?? [];
+        const rest = (l: string) => l.toLowerCase().replace(f.re, " ").replace(/[()\-:/]/g, " ").replace(/\b(des|der|die|das|dem|den|von|für|adresse|teilweise|maskiert|angegebenen?)\b/g, " ").replace(/\s+/g, " ").trim();
+        const MINE = /^(|lastschrift(konto)?|einzug(skonto)?|einzug kontoinhaber|kontoinhaber|beitragszahler|zahler|kunden?|kundin|versicherten?|mitarbeiters? signatur(vermerk)?|mitarbeiters?|empfängers?( der (mail|bestellung))?|e ?mail empfängers?( der bestellung)?|weiterleitung|konto( einzugskonto)?|bankverbindung|deine?|ihre?|eigene?)$/;
+        const THEIRS = /zahlungsempf|gl(ä|ae)ubiger|beg(ü|ue)nstigt|kreditor|stadtkasse|studio|versicherer|vertragspartner|absender|anbieter|unternehmen|händler|service|praxis|klinik|widerruf|datenschutz|arbeitgeber|verantwortlich|vorstand|kundendienst|rücksend|allgemein|entschädigung|bank|kasse|\bag\b|gmbh|\beg\b/;
+        if (ls.some((l) => THEIRS.test(l.toLowerCase()) && !(f.id === "email" && /empf(ä|ae)nger/i.test(l) && !/zahlungsempf/i.test(l)))) return false;
+        if (f.id === "iban" && ls.some((l) => /empf(ä|ae)nger/i.test(l))) return false;
+        return ls.some((l) => MINE.test(rest(l)));
+      };
+      for (let i = vals.length - 1; i >= 0; i--) {
+        const key = norm(vals[i].value);
+        if ((senders.get(key)?.size ?? 0) < 2 || !ownOf(key)) vals.splice(i, 1);
+      }
     }
     if (!vals.length) continue;
     vals.sort((a, b) => b.date.localeCompare(a.date));
