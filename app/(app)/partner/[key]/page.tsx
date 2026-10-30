@@ -80,8 +80,8 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
   // Anstehendes (Kündigungsfrist, Zahlung …) ganz oben links, direkt unter dem Hauptdokument
   const upcoming = deadlines.length > 0 && (
             <section className={CARD}>
-              <h2 className="flex items-center gap-2 px-5 pt-4 pb-2 text-[16px] font-semibold"><CalendarClock size={17} /> Anstehend <span className="text-[13px] font-normal text-muted">– Fristen, Kündigung, Zahlungen</span></h2>
-              <ul className="grid gap-2.5 px-4 pb-4 sm:grid-cols-2">{deadlines.map((x, i) => { const days = Math.round((Date.parse(x.date) - Date.now()) / 86_400_000); return (
+              <h2 className="flex items-center gap-2 px-4 pt-5 pb-2 md:px-6 text-[18px] leading-[26px] font-semibold"><CalendarClock size={17} /> Anstehend <span className="text-[13px] font-normal text-muted">– Fristen, Kündigung, Zahlungen</span></h2>
+              <ul className="grid gap-2.5 px-4 pb-4 md:px-6 sm:grid-cols-2">{deadlines.map((x, i) => { const days = Math.round((Date.parse(x.date) - Date.now()) / 86_400_000); return (
                 <li key={i}><Link href={`/d/${x.d.id}`} className="flex h-full flex-col gap-1.5 rounded-xl bg-surface-2 p-3.5 transition-colors hover:bg-surface-3">
                   <span className="flex items-baseline justify-between gap-2"><b className="tnum text-[17px]">{fmtDate(x.date)}</b><span className={`text-[12px] font-semibold ${days < 0 ? "text-negative-text" : days <= 30 ? "text-amber" : "text-muted"}`}>{days < 0 ? `seit ${-days} Tagen` : days === 0 ? "heute" : days < 60 ? `in ${days} Tagen` : `in ${Math.round(days / 30)} Monaten`}</span></span>
                   <span className="line-clamp-2 text-[14px] leading-5 text-soft">{x.what}</span>
@@ -124,15 +124,15 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
             </section>
           ) : null}
           <section className={CARD}>
-            <h2 className="flex items-center gap-2 px-5 pt-4 pb-2 text-[16px] font-semibold"><Hash size={17} /> Kennungen & Nummern</h2>
+            <h2 className="flex items-center gap-2 px-4 pt-5 pb-2 md:px-6 text-[18px] leading-[26px] font-semibold"><Hash size={17} /> Kennungen & Nummern</h2>
             {p.ids.length ? (
               <>
-                <p className="px-5 pb-2 text-[13px] text-muted">Antippen zeigt links die Dokumente mit dieser Nummer.</p>
+                <p className="px-4 pb-2 text-[13px] md:px-6 text-muted">Antippen zeigt links die Dokumente mit dieser Nummer.</p>
                 {/* Themen zum Auf-/Zuklappen – immer nur eins offen, anfangs alle zu */}
                 {topics.map((topic) => { const isOpen = shownTopic === topic; const n = p.ids.filter((i) => i.topic === topic).length; return (
                   <div key={topic}>
                     <h3 className="border-t border-line">
-                      <button type="button" aria-expanded={isOpen} onClick={() => setOpenTopic(isOpen ? null : topic)} className="flex w-full items-center gap-2 bg-surface-2/60 px-5 py-3.5 text-left text-[15px] font-semibold transition-colors hover:bg-surface-2">
+                      <button type="button" aria-expanded={isOpen} onClick={() => setOpenTopic(isOpen ? null : topic)} className="flex w-full items-center gap-2 px-4 py-3.5 md:px-6 text-left text-[15px] font-semibold transition-colors hover:bg-surface-2">
                         <span className="min-w-0 flex-1">{topic}</span>
                         <span className="tnum rounded-full bg-surface px-2 py-px text-[12px] font-semibold text-soft">{n}</span>
                         <ChevronDown size={17} className={`shrink-0 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
@@ -145,7 +145,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
                         return (
                           <li key={`${i.label}|${i.value}|${i.docId}`} role="button" tabIndex={0} aria-pressed={on}
                             onClick={() => setPick(on ? null : i)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPick(on ? null : i); } }}
-                            className={`grid cursor-pointer grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 px-5 py-2.5 text-[14px] transition-colors ${on ? "bg-lavender shadow-[inset_3px_0_0_var(--color-brand-500)]" : "hover:bg-surface-2/70"} ${old && !on ? "opacity-55" : ""}`}>
+                            className={`grid cursor-pointer grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 px-4 py-3 md:px-6 text-[14px] transition-colors ${on ? "bg-lavender shadow-[inset_3px_0_0_var(--color-brand-500)]" : "hover:bg-canvas"} ${old && !on ? "opacity-55" : ""}`}>
                             <span className="min-w-0 break-words hyphens-auto text-muted" lang="de">{i.label}{old && <span className="ml-1.5 rounded-full border border-card-line px-1.5 text-[10px]">früher</span>}</span>
                             <span className="min-w-0">
                               <CopyValue value={i.value} />
@@ -158,7 +158,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
                   </div>
                 ); })}
               </>
-            ) : <p className="px-5 pb-4 text-[13px] text-muted">Keine Nummern gefunden. Neu ausgelesene Dokumente sammeln Kunden-, Vertrags- und Versicherungsnummern automatisch.</p>}
+            ) : <p className="px-4 pb-4 text-[13px] md:px-6 text-muted">Keine Nummern gefunden. Neu ausgelesene Dokumente sammeln Kunden-, Vertrags- und Versicherungsnummern automatisch.</p>}
           </section>
           <MergeHistory pkey={p.key} compact />
         </div>

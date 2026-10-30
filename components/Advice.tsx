@@ -17,7 +17,7 @@ import { secureGet, secureSet } from "@/lib/devicekey";
 export type AdviceItem = { title: string; why: string; kind: string; saving: number | null; effort: string; steps: string[]; doc_ids: string[]; draft: string | null };
 const KEY = "lifevault:advice";
 const GRID = "md:grid md:grid-cols-[minmax(0,1fr)_10rem_7rem_7rem_1rem] md:items-center md:gap-4";
-const HEAD = "text-[12px] font-semibold tracking-wide text-muted uppercase";
+const HEAD = "text-[12px] font-semibold text-muted";
 const DAYS = 3;
 const KINDS: Record<string, { label: string; icon: typeof Coins; color: string }> = {
   geld: { label: "Geld", icon: Coins, color: "#16a34a" },
@@ -63,15 +63,15 @@ export function AdviceList() {
   return (
     <section className={`${CARD} overflow-hidden`}>
       {/* Kopf wie „Zuletzt hinzugefügt“: schlichte Überschrift, darunter Spaltenköpfe und Zeilen */}
-      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+      <div className="flex items-center gap-3 px-4 pt-5 pb-3 md:px-6">
         <span className="min-w-0 flex-1">
-          <h2 className="text-[16px] font-semibold">Handlungsempfehlungen</h2>
+          <h2 className="text-[18px] leading-[26px] font-semibold">Handlungsempfehlungen</h2>
           <span className="block text-[13px] text-muted">{total > 0 ? `Bis zu ${Math.round(total).toLocaleString("de-DE")} € im Jahr möglich · nach Nutzen und Aufwand sortiert` : "Nach Nutzen und Aufwand sortiert"}</span>
         </span>
         <button type="button" onClick={() => void load()} disabled={busy} title="Neu bewerten" aria-label="Neu bewerten" className="grid h-9 w-9 place-items-center rounded-full text-soft hover:bg-surface-2 disabled:opacity-50">{busy ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}</button>
       </div>
       {error && <p className="mx-4 mb-3 rounded-xl bg-negative/10 px-3 py-2 text-[13px] text-negative-text">{error}</p>}
-      <div className={`hidden border-y border-line bg-surface-2/60 px-4 py-3.5 ${GRID}`} role="row">
+      <div className={`hidden border-b border-line px-4 py-3.5 md:px-6 ${GRID}`} role="row">
         <span className={HEAD}>Empfehlung</span><span className={HEAD}>Art</span><span className={HEAD}>Aufwand</span><span className={`${HEAD} text-right`}>Ersparnis</span><span />
       </div>
       <div className="divide-y divide-line border-t border-line md:border-t-0">
@@ -82,7 +82,7 @@ export function AdviceList() {
           const isOpen = open === i;
           return (
             <div key={i}>
-              <button type="button" onClick={() => setOpen(isOpen ? null : i)} aria-expanded={isOpen} className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-2/70 ${GRID}`}>
+              <button type="button" onClick={() => setOpen(isOpen ? null : i)} aria-expanded={isOpen} className={`flex w-full items-center gap-3 px-4 py-3.5 md:px-6 text-left transition-colors hover:bg-canvas ${GRID}`}>
                 <span className="min-w-0 flex-1">
                   <b className="block truncate text-[15px] font-semibold">{it.title}</b>
                   <span className="block truncate text-[12px] text-muted md:hidden">{k.label} · Aufwand {it.effort}{it.saving ? ` · ca. ${Math.round(it.saving).toLocaleString("de-DE")} €/Jahr` : ""}</span>
@@ -93,7 +93,7 @@ export function AdviceList() {
                 <ChevronDown size={16} className={`shrink-0 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
               </button>
               {isOpen && (
-                <div className="space-y-3 px-4 pb-4">
+                <div className="space-y-3 px-4 pb-4 md:px-6">
                   <p className="text-[14px] text-soft">{it.why}</p>
                   <ol className="space-y-1.5">{it.steps.map((s, j) => <li key={j} className="flex gap-2 text-[14px]"><span className="tnum grid h-5 w-5 shrink-0 place-items-center rounded-full bg-surface-3 text-[11px] font-bold">{j + 1}</span>{s}</li>)}</ol>
                   <div className="flex flex-wrap items-center gap-2">

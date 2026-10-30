@@ -25,10 +25,10 @@ export function SortHeader<K extends string>({ cols, sort, onSort, grid }: { col
   const Arrow = ({ k }: { k: K }) => sort.key !== k ? <ArrowUpDown size={13} className="text-muted/70" /> : sort.dir === "asc" ? <ArrowUp size={13} /> : <ArrowDown size={13} />;
   return (
     <>
-      <div className={`hidden border-b border-line bg-surface-2/60 px-4 py-3.5 md:grid ${grid}`} role="row">
+      <div className={`hidden border-b border-line px-4 py-3.5 md:px-6 md:grid ${grid}`} role="row">
         {cols.map((c) => (
           <button key={c.key} type="button" role="columnheader" aria-sort={sort.key === c.key ? (sort.dir === "asc" ? "ascending" : "descending") : "none"} onClick={() => onSort(nextSort(sort, c))}
-            className={`inline-flex min-w-0 items-center gap-1 text-left text-[12px] font-semibold tracking-wide uppercase ${sort.key === c.key ? "text-fg" : "text-muted hover:text-fg"} ${c.className ?? ""}`}>
+            className={`inline-flex min-w-0 items-center gap-1 text-left text-[12px] font-semibold ${sort.key === c.key ? "text-fg" : "text-muted hover:text-fg"} ${c.className ?? ""}`}>
             <span className="truncate">{c.label}</span> <Arrow k={c.key} />
           </button>
         ))}
@@ -129,7 +129,7 @@ export function FilterSelect({ label, value, onChange, options, empty = "Alle", 
               {!term && <button type="button" onClick={() => pick("")} className={row(!value)}>{none}<span className="flex-1">{empty}</span>{!value && <Check size={16} />}</button>}
               {list.map((o, i) => (
                 <div key={o.value}>
-                  {o.group && o.group !== list[i - 1]?.group && <p className="px-2.5 pt-2.5 pb-1 text-[12px] font-semibold tracking-wide text-muted uppercase">{o.group}</p>}
+                  {o.group && o.group !== list[i - 1]?.group && <p className="px-2.5 pt-2.5 pb-1 text-[12px] font-semibold text-muted">{o.group}</p>}
                   <button type="button" onClick={() => pick(o.value)} className={row(o.value === value)}>
                     {o.icon ?? none}
                     <span className="min-w-0 flex-1 truncate">{o.label}</span>

@@ -59,13 +59,13 @@ export function TodoList({ docs }: { docs: Doc[] }) {
   const shown = current.slice(0, all ? 50 : 6);
 
   const GRID = "md:grid md:grid-cols-[1.75rem_minmax(0,1fr)_8.5rem_6.5rem_10.5rem_2rem] md:items-center md:gap-4";
-  const HEAD = "text-[12px] font-semibold tracking-wide text-muted uppercase";
+  const HEAD = "text-[12px] font-semibold text-muted";
 
   return (
     <section className={`${CARD} overflow-hidden`}>
       {/* Kopf: Titel + Zähler links, Auswahlfelder rechtsbündig in einer Zeile; mobil darunter je 50 % */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 px-4 pt-4 pb-3">
-        <h2 className="flex min-w-0 flex-1 items-center gap-2 text-[16px] font-semibold"><ListTodo size={18} className="shrink-0" /> Zu erledigen
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 px-4 pt-5 pb-3 md:px-6">
+        <h2 className="flex min-w-0 flex-1 items-center gap-2 text-[18px] leading-[26px] font-semibold"><ListTodo size={18} className="shrink-0" /> Zu erledigen
           {openList.length > 0 && (late > 0
             ? <span className="tnum text-[13px] font-semibold text-fg" title={`${late} von ${openList.length} überfällig`}>{late} von {openList.length}</span>
             : <span className="tnum rounded-full bg-surface-2 px-2 py-px text-[12px] font-bold">{openList.length}</span>)}
@@ -78,9 +78,9 @@ export function TodoList({ docs }: { docs: Doc[] }) {
           {(kinds_.length > 0 || status.join() !== "late,soon,later") && <button type="button" onClick={() => { setKinds([]); setStatus(["late", "soon", "later"]); }} className="col-span-2 text-[13px] font-semibold text-selected sm:col-span-1">Zurücksetzen</button>}
         </div>
       </div>
-      {current.length === 0 && <p className="border-t border-line px-4 py-4 text-[14px] text-muted">{status.length === 1 && status[0] === "done" ? "Noch nichts abgehakt." : openList.length === 0 ? "Alles erledigt. 🎉" : "Nichts in dieser Auswahl."}</p>}
+      {current.length === 0 && <p className="border-t border-line px-4 py-4 text-[14px] md:px-6 text-muted">{status.length === 1 && status[0] === "done" ? "Noch nichts abgehakt." : openList.length === 0 ? "Alles erledigt. 🎉" : "Nichts in dieser Auswahl."}</p>}
       {current.length > 0 && (
-        <div className={`hidden border-t border-b border-line bg-surface-2/60 px-4 py-3.5 ${GRID}`} role="row">
+        <div className={`hidden border-b border-line px-4 py-3.5 md:px-6 ${GRID}`} role="row">
           <span />
           <span className={HEAD}>Aufgabe</span>
           <span className={HEAD}>Art</span>
@@ -102,7 +102,7 @@ export function TodoList({ docs }: { docs: Doc[] }) {
           const amt = t.total ?? t.payment?.amount;
           const amount = amt !== undefined ? fmtMoney(amt, t.payment?.currency ?? "EUR") : null;
           return (
-            <li key={k} className={`flex items-center gap-3 px-4 py-3 ${GRID} ${isDone ? "opacity-50" : ""}`}>
+            <li key={k} className={`flex items-center gap-3 px-4 py-3.5 md:px-6 ${GRID} ${isDone ? "opacity-50" : ""}`}>
               <button type="button" onClick={() => toggle(k)} aria-label={isDone ? "Wieder offen" : "Als erledigt markieren"} title={isDone ? "Wieder offen" : "Erledigt"} className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 ${isDone ? "border-positive bg-positive text-white" : "border-line-strong hover:border-fg"}`}>{isDone && <Check size={13} strokeWidth={3} />}</button>
               <button type="button" onClick={() => open?.({ kind: "doc", id: t.doc.id })} className="flex min-w-0 flex-1 items-center gap-3 text-left md:contents">
                 <span className="flex min-w-0 flex-1 items-center gap-3">

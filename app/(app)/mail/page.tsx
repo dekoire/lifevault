@@ -197,7 +197,7 @@ export default function MailPage() {
           <div className="flex items-center gap-3">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface-2"><Mail size={20} /></span>
             <div className="min-w-0 flex-1">
-              <h2 className="text-[16px] font-semibold">Gmail</h2>
+              <h2 className="text-[18px] leading-[26px] font-semibold">Gmail</h2>
               <p className="truncate text-[13px] text-muted">{gmail ? `${gmail.source.slice(6)} · zuletzt ${lastSync(gmail)?.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }) ?? "–"}` : "Noch nicht abgerufen"}</p>
             </div>
           </div>
@@ -214,7 +214,7 @@ export default function MailPage() {
           <div className="flex items-center gap-3">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface-2"><Inbox size={20} /></span>
             <div className="min-w-0 flex-1">
-              <h2 className="text-[16px] font-semibold">Proton Mail & andere</h2>
+              <h2 className="text-[18px] leading-[26px] font-semibold">Proton Mail & andere</h2>
               <p className="text-[13px] text-muted">Mail-Dateien (.eml, .mbox) importieren</p>
             </div>
           </div>
@@ -255,7 +255,7 @@ export default function MailPage() {
 
       {rows.length > 0 && (
         <section className={`${CARD} mt-4 overflow-hidden`}>
-          <h2 className="flex items-center gap-2 px-5 pt-4 pb-3 text-[16px] font-semibold"><Sparkles size={17} className="text-brand-500" /> Relevant <span className="tnum rounded-full border border-card-line px-2 py-px text-[12px]">{relevant.length}</span></h2>
+          <h2 className="flex items-center gap-2 px-4 pt-5 pb-3 md:px-6 text-[18px] leading-[26px] font-semibold"><Sparkles size={17} className="text-brand-500" /> Relevant <span className="tnum rounded-full border border-card-line px-2 py-px text-[12px]">{relevant.length}</span></h2>
           <ul className="divide-y divide-line border-t border-line">
             {relevant.map((r) => <MailRow key={r.m.id} r={r} />)}
             {!relevant.length && <li className="px-5 py-4 text-[14px] text-muted">Nichts Relevantes gefunden.</li>}
@@ -273,7 +273,7 @@ export default function MailPage() {
 
       {!rows.length && recent.length > 0 && (
         <section className={`${CARD} mt-4 overflow-hidden`}>
-          <h2 className="px-5 pt-4 pb-3 text-[16px] font-semibold">Zuletzt aus Mails importiert</h2>
+          <h2 className="px-4 pt-5 pb-3 md:px-6 text-[18px] leading-[26px] font-semibold">Zuletzt aus Mails importiert</h2>
           <ul className="divide-y divide-line border-t border-line">
             {recent.map((s) => (
               <li key={s.msg_id} className="flex items-center gap-3 px-5 py-3">
