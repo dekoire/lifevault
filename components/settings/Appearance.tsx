@@ -7,9 +7,9 @@ import { CARD } from "@/components/ui";
 const KEY = "lifevault:theme";
 type Theme = "light" | "dark" | "system";
 const OPTIONS: { id: Theme; title: string; icon: typeof Sun; preview: { bg: string; card: string; line: string; text: string } }[] = [
-  { id: "light", title: "Hell", icon: Sun, preview: { bg: "#f3f4f6", card: "#ffffff", line: "#dcdfe5", text: "#111111" } },
+  { id: "light", title: "Hell", icon: Sun, preview: { bg: "#f7f7f8", card: "#ffffff", line: "#e6e8ec", text: "#111111" } },
   { id: "dark", title: "Dunkel", icon: Moon, preview: { bg: "#0b0b0e", card: "#17171c", line: "#2a2a32", text: "#f4f4f6" } },
-  { id: "system", title: "Wie das Gerät", icon: Monitor, preview: { bg: "linear-gradient(90deg,#f3f4f6 50%,#0b0b0e 50%)", card: "linear-gradient(90deg,#ffffff 50%,#17171c 50%)", line: "#8a8a94", text: "#777" } },
+  { id: "system", title: "Wie das Gerät", icon: Monitor, preview: { bg: "linear-gradient(90deg,#f7f7f8 50%,#0b0b0e 50%)", card: "linear-gradient(90deg,#ffffff 50%,#17171c 50%)", line: "#8a8a94", text: "#777" } },
 ];
 
 export function applyTheme(t: Theme) {
