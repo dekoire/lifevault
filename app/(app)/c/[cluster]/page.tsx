@@ -4,7 +4,7 @@ import { Archive, GalleryHorizontal, List } from "lucide-react";
 import { GroupedDocs } from "@/components/GroupedDocs";
 import { ClusterIcon } from "@/components/ClusterIcon";
 import { CARD, DocRow } from "@/components/DocRow";
-import { BackLink, PageHeader } from "@/components/ui";
+import { BackLink, PageHeader, Segmented } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
 import { useDocs } from "@/lib/docs";
 
@@ -20,13 +20,9 @@ export default function ClusterPage({ params }: { params: Promise<{ cluster: str
   const archived = all.filter((d) => d.archived);
   return (
     <div className="space-y-5">
-      <BackLink href="/" label="Start" />
-      <PageHeader icon={<ClusterIcon id={c.id} size={52} />} title={c.label} subtitle={`${list.length} ${list.length === 1 ? "Dokument" : "Dokumente"} · ${c.hint}`}
-        action={list.length > 0 && (
-          <span className="inline-flex rounded-full bg-surface-3 p-1">
-            {([["cards", "Karten", GalleryHorizontal], ["list", "Liste", List]] as const).map(([k, l, Icon]) => <button key={k} type="button" onClick={() => setView(k)} aria-pressed={view === k} className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold ${view === k ? "bg-surface text-fg shadow-card" : "text-soft"}`}><Icon size={15} /> {l}</button>)}
-          </span>
-        )} />
+      {/* Zurück und Ansicht in einer Zeile – spart oben eine Zeile */}
+      <BackLink href="/" label="Start" aside={list.length > 0 && <Segmented value={view} onChange={setView} options={[{ id: "cards", label: "Karten", icon: <GalleryHorizontal size={15} /> }, { id: "list", label: "Liste", icon: <List size={15} /> }]} />} />
+      <PageHeader icon={<ClusterIcon id={c.id} size={52} />} title={c.label} subtitle={`${list.length} ${list.length === 1 ? "Dokument" : "Dokumente"} · ${c.hint}`} />
       <GroupedDocs cluster={c.id} view={view} />
       {archived.length > 0 && (
         <section className={CARD}>

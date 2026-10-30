@@ -77,6 +77,17 @@ export function Switch({ on, onChange, label, disabled }: { on: boolean; onChang
   );
 }
 
-export function BackLink({ href, label }: { href: string; label: string }) {
-  return <Link href={href} className="mb-4 inline-flex h-10 items-center gap-2 rounded-full border border-card-line bg-surface pr-5 pl-4 text-sm font-semibold text-fg hover:bg-surface-2">‹ {label}</Link>;
+/** Zurück-Knopf; `aside` (z. B. Ansicht-Umschalter) steht in derselben Zeile rechts */
+export function BackLink({ href, label, aside }: { href: string; label: string; aside?: React.ReactNode }) {
+  const link = <Link href={href} className={`${aside ? "" : "mb-4 "}inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-card-line bg-surface pr-5 pl-4 text-sm font-semibold text-fg hover:bg-surface-2`}>‹ {label}</Link>;
+  return aside ? <div className="mb-4 flex items-center justify-between gap-3">{link}{aside}</div> : link;
+}
+
+/** Umschalter mit zwei bis vier Optionen: heller Rahmen, gewählte Option dunkel gefüllt */
+export function Segmented<T extends string>({ value, onChange, options, full }: { value: T; onChange: (v: T) => void; options: { id: T; label: string; icon?: React.ReactNode }[]; full?: boolean }) {
+  return (
+    <span className={`${full ? "flex" : "inline-flex"} gap-0.5 rounded-full border border-line-strong bg-surface p-1`}>
+      {options.map((o) => <button key={o.id} type="button" onClick={() => onChange(o.id)} aria-pressed={value === o.id} className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition-colors ${full ? "flex-1 px-2" : ""} ${value === o.id ? "bg-fg text-canvas" : "text-soft hover:text-fg"}`}>{o.icon}{o.label}</button>)}
+    </span>
+  );
 }
