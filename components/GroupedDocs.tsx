@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, ArrowDownAZ, Building2, CalendarDays, CalendarRange, Check, ChevronDown, CircleAlert, CircleCheck, Clock, Download, Hash, History, Info, Rows3, Search, Shapes, Star, Tag, Users, X, type LucideIcon } from "lucide-react";
 import { DocCarousel } from "@/components/DocCarousel";
-import { DocRow } from "@/components/DocRow";
+import { DocRow, DocRowHead } from "@/components/DocRow";
 import { Box, stateOf } from "@/components/ExportSheet";
 import { FilterBar, FilterSelect, FilterToggle, IconAvatar } from "@/components/ListControls";
 import { KindAvatar } from "@/components/KindTag";
@@ -128,7 +128,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
         </div>
       ))}</div>
     : view === "list"
-    ? <div className="divide-y divide-line">{ds.map((d) => <DocRow key={d.id} d={d} />)}</div>
+    ? <><DocRowHead /><div className="divide-y divide-line">{ds.map((d) => <DocRow key={d.id} d={d} />)}</div></>
     : <DocCarousel docs={ds} grid />;
   // Liste in einer Kachel, Karten frei im Raster
   const block = (ds: Doc[]) => (picking || view === "list" ? <div className={`${CARD} overflow-hidden`}>{rows(ds)}</div> : rows(ds));

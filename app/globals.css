@@ -162,17 +162,15 @@ a, button, [role="button"], summary, input, select, textarea {
 input:is([type="text"], [type="email"], [type="password"], [type="search"], [type="number"], [type="tel"], [type="url"], [type="date"], [type="time"], [type="datetime-local"], [type="month"], :not([type])) {
   border-radius: 9999px !important;
 }
-/* Gefüllte Knöpfe schweben – Schatten jeweils in ihrer eigenen Farbe (lila, schwarz, rot, weiß); nicht im Menü, nicht in Umschaltern */
+/* Gefüllte Knöpfe schweben – Schatten in ihrer Farbe – nur lila und rot, schwarze und weiße Knöpfe ohne; nicht im Menü, nicht in Umschaltern */
 :is(button, a):is(.bg-brand-500, .bg-brand-600):not(nav *):not([aria-pressed]):not([aria-current]):not(:disabled) { --glow: 109 74 255; --glow-a: 0.45; }
-:is(button, a):is(.bg-fg):not(nav *):not([aria-pressed]):not([aria-current]):not(:disabled) { --glow: 17 24 39; --glow-a: 0.32; }
 :is(button, a):is(.bg-urgent, .bg-negative):not(nav *):not([aria-pressed]):not([aria-current]):not(:disabled) { --glow: 180 35 24; --glow-a: 0.4; }
-:is(button, a):is(.bg-surface):is(.border, [class*="border-card-line"]):not(nav *):not([aria-pressed]):not([aria-current]):not(:disabled):not(.shadow-card) { --glow: 16 24 40; --glow-a: 0.1; }
-:is(button, a):is(.bg-brand-500, .bg-brand-600, .bg-fg, .bg-urgent, .bg-negative, .bg-surface):not(nav *):not([aria-pressed]):not([aria-current]):not(:disabled):not(.shadow-card) {
+:is(button, a):is(.bg-brand-500, .bg-brand-600, .bg-urgent, .bg-negative):not(nav *):not([aria-pressed]):not([aria-current]):not(:disabled):not(.shadow-card) {
   box-shadow: 0 6px 16px -4px rgb(var(--glow, 0 0 0) / var(--glow-a, 0)), 0 2px 4px -1px rgb(var(--glow, 0 0 0) / calc(var(--glow-a, 0) * 0.55)), inset 0 1px 0 rgb(255 255 255 / 0.16);
   transition: box-shadow 0.15s ease-out, transform 0.15s ease-out, background-color 0.15s ease-out;
 }
 @media (hover: hover) {
-  :is(button, a):is(.bg-brand-500, .bg-brand-600, .bg-fg, .bg-urgent, .bg-negative, .bg-surface):not(nav *):not([aria-pressed]):not([aria-current]):not(:disabled):not(.shadow-card):hover {
+  :is(button, a):is(.bg-brand-500, .bg-brand-600, .bg-urgent, .bg-negative):not(nav *):not([aria-pressed]):not([aria-current]):not(:disabled):not(.shadow-card):hover {
     box-shadow: 0 10px 24px -6px rgb(var(--glow, 0 0 0) / calc(var(--glow-a, 0) * 1.2)), 0 3px 6px -2px rgb(var(--glow, 0 0 0) / calc(var(--glow-a, 0) * 0.65)), inset 0 1px 0 rgb(255 255 255 / 0.16);
   }
 }

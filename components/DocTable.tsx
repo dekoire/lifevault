@@ -95,7 +95,7 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
           {shown.map((d) => <Row key={d.id} d={d} grid={grid} cluster={cluster} sender={sender} />)}
         </div>
       )}
-      {limit && list.length > limit && <button type="button" onClick={() => setShowAll(!showAll)} className="w-full border-t border-line bg-surface-2 px-4 py-2.5 text-center text-[13px] font-semibold text-fg transition-colors hover:bg-surface-3">{showAll ? "Weniger anzeigen" : `Alle ${list.length} anzeigen`}</button>}
+      {limit && list.length > limit && <button type="button" onClick={() => setShowAll(!showAll)} className="w-full bg-surface border-t border-line px-4 py-5 text-center text-[14px] font-semibold text-fg transition-colors hover:bg-canvas">{showAll ? "Weniger anzeigen" : `Alle ${list.length} anzeigen`}</button>}
     </>
   );
   if (title) return (
@@ -121,7 +121,7 @@ function Row({ d, grid, cluster, sender }: { d: Doc; grid: string; cluster: bool
   const processing = d.status === "processing";
   const title = processing ? d.file_name : d.title ?? d.file_name;
   return (
-    <Link href={`/d/${d.id}`} role="row" className={`flex items-center gap-3 px-4 py-3.5 md:px-6 transition-colors hover:bg-canvas md:grid md:items-center ${grid} ${d.archived ? "opacity-60" : ""}`}>
+    <Link href={`/d/${d.id}`} role="row" className={`flex items-center gap-3 px-4 py-[18px] md:px-6 transition-colors hover:bg-canvas md:grid md:items-center ${grid} ${d.archived ? "opacity-60" : ""}`}>
       <span className="flex min-w-0 flex-1 items-center gap-3">
         <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} urgent={isUrgent(d)} size={36} />
         <span className="min-w-0 flex-1">

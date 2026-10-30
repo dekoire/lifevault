@@ -9,11 +9,20 @@ import type { Doc } from "@/lib/types";
 
 export { CARD } from "@/components/ui";
 
+/** Kopfzeile über DocRow-Listen, gleiche Ränder wie die Zeilen */
+export function DocRowHead() {
+  return (
+    <div className="flex items-center gap-3 border-b border-line px-4 py-[18px] text-[12px] font-semibold text-muted md:px-6" role="row">
+      <span className="w-10 shrink-0" /><span className="flex-1">Dokument</span><span className="hidden w-[52px] sm:block">Wichtig</span><span className="w-4 shrink-0" />
+    </div>
+  );
+}
+
 /** Eine Zeile: Logo bzw. Bereichs-Symbol, Titel, Absender · Datum, Kennzeichen (verschlüsselt, archiviert, Grundlage), Wichtigkeit */
 export function DocRow({ d }: { d: Doc }) {
   const processing = d.status === "processing";
   return (
-    <Link href={`/d/${d.id}`} className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2/70 active:bg-surface-2 ${d.archived ? "opacity-60" : ""}`}>
+    <Link href={`/d/${d.id}`} className={`flex items-center gap-3 px-4 py-[18px] transition-colors hover:bg-canvas active:bg-surface-2 md:px-6 ${d.archived ? "opacity-60" : ""}`}>
       {processing ? (
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] bg-brand-500"><span className="flex gap-0.5">{[0, 1, 2].map((i) => <span key={i} className="typing-dot h-1.5 w-1.5 rounded-full bg-canvas" style={{ animationDelay: `${i * 0.15}s` }} />)}</span></span>
       ) : <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} urgent={isUrgent(d)} />}

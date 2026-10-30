@@ -75,7 +75,7 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
     </div>
   );
   const Row = ({ d, note, dim }: { d: Doc; note?: string | null; dim?: boolean }) => (
-    <Link href={`/d/${d.id}`} className={`flex items-center gap-3 px-4 py-4 hover:bg-canvas md:px-6 ${GRID} ${dim ? "opacity-70" : ""}`}>
+    <Link href={`/d/${d.id}`} className={`flex items-center gap-3 px-4 py-[18px] hover:bg-canvas md:px-6 ${GRID} ${dim ? "opacity-70" : ""}`}>
       <span className="flex min-w-0 flex-1 items-center gap-3">
         <span className="relative h-11 w-9 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2"><Thumb d={d} /></span>
         <span className="min-w-0">
@@ -121,7 +121,7 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
             return <Row key={d.id} d={d} note={d.doc_type} dim={b === "erledigt" || b === "doppelt"} />;
           })}
         </div>
-        {byDate.length > 5 && <button type="button" onClick={() => setAll(!all)} className="w-full border-t border-line py-3.5 text-[13px] font-semibold text-selected hover:bg-canvas">{all ? "Weniger anzeigen" : `Alle ${byDate.length} anzeigen`}</button>}
+        {byDate.length > 5 && <button type="button" onClick={() => setAll(!all)} className="w-full bg-surface border-t border-line py-5 text-[14px] font-semibold text-selected hover:bg-canvas">{all ? "Weniger anzeigen" : `Alle ${byDate.length} anzeigen`}</button>}
       </section>
       {BUCKETS.map((b) => {
         const list = of(b.id).filter((d) => d.id !== main?.id);
