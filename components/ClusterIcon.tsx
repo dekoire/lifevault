@@ -20,6 +20,20 @@ export function ClusterTag({ id, className = "" }: { id?: string | null; classNa
   return <span className={`inline-flex min-w-0 items-center gap-1.5 ${className}`}><Icon size={14} strokeWidth={2} className="shrink-0 text-fg" /><span className="truncate">{c.label}</span></span>;
 }
 
+/** Heller Farbverlauf aus einer Farbe – wie die Kategorie-Kacheln in Finastry */
+export const tintGradient = (color: string) => `linear-gradient(135deg, color-mix(in srgb, ${color} 20%, transparent) 0%, color-mix(in srgb, ${color} 6%, transparent) 100%)`;
+
+/** Kachel ohne Logo, wie in Finastry: abgerundetes Quadrat, Farbverlauf und Symbol in der Farbe des Bereichs */
+export function ClusterTile({ id, size = 40 }: { id?: string | null; size?: number }) {
+  const c = clusterOf(id);
+  const Icon = ICONS[c.id] ?? Folder;
+  return (
+    <span className="grid shrink-0 place-items-center" style={{ width: size, height: size, borderRadius: Math.round(size * 0.26), color: c.color, background: tintGradient(c.color) }}>
+      <Icon size={Math.round(size * 0.45)} strokeWidth={1.75} />
+    </span>
+  );
+}
+
 /** Bereichs-Symbol als runder Avatar */
 export function ClusterIcon({ id, size = 40, tone = "solid" }: { id?: string | null; size?: number; tone?: keyof typeof TONES }) {
   const c = clusterOf(id);
