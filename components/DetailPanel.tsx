@@ -1,4 +1,5 @@
 "use client";
+import { NotFound } from "@/components/NotFound";
 import { DocLabels } from "@/components/Labels";
 import { DocImportance } from "@/components/Importance";
 import { DocAdvice } from "@/components/Advice";
@@ -82,7 +83,7 @@ function DocDetail({ id, page, quote, open, close, back = false }: { id: string;
     if (!doc || doc.encrypted || doc.file_path.startsWith("inbox/")) return;
     void supabase.storage.from("documents").createSignedUrl(doc.file_path, 600).then(({ data }) => setUrl(data?.signedUrl));
   }, [doc]);
-  if (!doc) return <p className="p-6 text-[14px] text-muted">Dokument nicht gefunden.</p>;
+  if (!doc) return <NotFound compact title="Dokument nicht gefunden" />;
   // gesperrt: weder Titel noch Absender oder Tags zeigen – nur Entsperren, mittig
   if (doc.encrypted && !unlocked) return <div className="grid min-h-[70dvh] place-items-center p-4 pt-14"><div className="w-full"><VaultUnlock /></div></div>;
   const c = clusterOf(doc.cluster);
@@ -159,7 +160,7 @@ function DocDetail({ id, page, quote, open, close, back = false }: { id: string;
 function PartnerDetail({ pkey, open, close, back = false }: { pkey: string; open: (d: Detail) => void; close: () => void; back?: boolean }) {
   const { allDocs } = useDocs();
   const p = useMemo(() => buildPartners(allDocs).find((x) => x.key === pkey), [allDocs, pkey]);
-  if (!p) return <p className="p-6 text-[14px] text-muted">Partner nicht gefunden.</p>;
+  if (!p) return <NotFound compact title="Partner nicht gefunden" />;
   const today = new Date().toISOString().slice(0, 10);
   const deadlines = p.docs.flatMap((d) => (d.deadlines ?? []).filter((x) => x.date >= today).map((x) => ({ ...x, d }))).sort((a, b) => a.date.localeCompare(b.date));
   return (

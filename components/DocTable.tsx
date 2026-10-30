@@ -101,7 +101,7 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
   if (title) return (
     <section className={`${CARD} overflow-hidden`}>
       <div className="space-y-3 px-4 pt-5 pb-3 md:px-6">
-        <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">{title}<span className="tnum rounded-full bg-surface-2 px-2 py-px text-[12px] font-bold">{list.length}</span></h2>
+        <h2 className="flex items-center gap-2 text-[18px] leading-[26px] font-semibold">{title}<span className="tnum rounded-full border border-card-line px-2 py-px text-[12px] font-semibold text-soft">{list.length}</span></h2>
         {bar}
         {chip}
       </div>

@@ -28,9 +28,9 @@ export function PageHeader({ title, subtitle, action, icon }: { title: React.Rea
 export function Section({ title, icon, count, open, onToggle, children }: { title: string; icon?: React.ReactNode; count?: number; open: boolean; onToggle: () => void; children: React.ReactNode }) {
   return (
     <section className={CARD}>
-      <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-2.5 px-4 py-3.5 text-left">
-        {icon && <span className="text-muted">{icon}</span>}
-        <span className="flex-1 text-[15px] font-semibold">{title}</span>
+      <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-2.5 px-5 py-4 text-left">
+        {icon && <span className="text-fg">{icon}</span>}
+        <span className="flex-1 text-[18px] leading-[26px] font-semibold">{title}</span>
         {count !== undefined && <span className="tnum rounded-full border border-card-line px-2 py-0.5 text-[12px] font-semibold text-soft">{count}</span>}
         <ChevronDown size={18} className={`text-muted transition ${open ? "rotate-180" : ""}`} />
       </button>
@@ -44,7 +44,7 @@ export function KeyValueTable({ rows }: { rows: { label: string; value: React.Re
   return (
     <dl className="divide-y divide-line">
       {rows.map((r, i) => (
-        <div key={i} className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 px-4 py-2.5 text-[14px]">
+        <div key={i} className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 px-5 py-3 text-[14px]">
           <dt className="min-w-0 break-words hyphens-auto text-muted" lang="de">{r.label}</dt>
           <dd className="font-medium break-words">{r.value}</dd>
         </div>

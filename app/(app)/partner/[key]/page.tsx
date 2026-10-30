@@ -1,4 +1,5 @@
 "use client";
+import { NotFound } from "@/components/NotFound";
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 import { ArrowRight, CalendarClock, ExternalLink, GitBranch, Hash, History, MessageSquare, PanelRight, PencilLine, ShoppingBag, X, Loader2, ChevronDown, Sparkles, Check } from "lucide-react";
@@ -49,7 +50,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
     return { label: `${pick.label}: ${pick.value}`, ids };
   }, [pick, p]);
   const today = new Date().toISOString().slice(0, 10);
-  if (!p) return <p className="py-20 text-center text-muted">{loading ? "Lädt …" : "Nicht gefunden."}</p>;
+  if (!p) return loading ? <p className="py-20 text-center text-muted">Lädt …</p> : <NotFound title="Partner nicht gefunden" text="Den Partner gibt es nicht mehr – vielleicht wurde er umbenannt oder mit einem anderen zusammengeführt." />;
 
   // gleiche Bezeichnung mit anderem Wert in älterem Dokument → „früher“
   const topics = [...new Set(p.ids.map((i) => i.topic))];
