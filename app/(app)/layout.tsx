@@ -80,6 +80,17 @@ function QueueSync() {
   return <><NotifySync docs={allDocs} /><InboxAutoSync /></>;
 }
 
+/**
+ * Ziehen zum Neuladen auf jeder Seite (auch im Chat); werden Dokumente ausgelesen, steht derselbe Kreis oben und zeigt
+ * in der Mitte, wie viele noch laufen.
+ */
+function PullWithDocs() {
+  const { allDocs } = useDocs();
+  const router = useRouter();
+  const running = allDocs.filter((d) => d.status === "processing").length;
+  return <PullToRefresh color="#6d4aff" activity={running} activityLabel="Dokumente werden ausgelesen" onActivity={() => router.push("/")} />;
+}
+
 function Shell({ email, children }: { email: string; children: React.ReactNode }) {
   const path = usePathname();
   const { isAdmin } = useMe();
@@ -105,7 +116,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
     <div className="min-h-dvh bg-page">
       {inputs}
       {exporting && <ExportSheet onClose={() => setExporting(false)} />}
-      {!chat && <PullToRefresh color="#6d4aff" />}
+      <PullWithDocs />
       <KeyboardWatch />
       <UploadProgress />
       <JobToasts />
