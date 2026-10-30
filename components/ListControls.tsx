@@ -84,18 +84,66 @@ export function SortMenu<K extends string>({ cols, sort, onSort }: { cols: Col<K
 }
 
 /** Filter-Auswahl im Seitenpanel: Überschrift + Auswahlfeld (nativ, am Handy gut bedienbar) */
-export function FilterSelect({ label, value, onChange, options, empty = "Alle" }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; empty?: string }) {
+export type FilterOption = { value: string; label: string; icon?: React.ReactNode; n?: number; group?: string };
+
+/** Runder Avatar mit Symbol: ohne Farbe schwarz/weiß, mit Farbe zart getönt */
+export function IconAvatar({ icon: Icon, color, size = 30, text }: { icon?: LucideIcon; color?: string; size?: number; text?: string }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-[13px] font-semibold text-soft">{label}</span>
-      <span className="relative block">
-        <select value={value} onChange={(e) => onChange(e.target.value)} className={`h-11 w-full appearance-none rounded-xl border bg-surface pr-9 pl-3.5 text-[14.5px] ${value ? "border-fg font-semibold" : "border-card-line"}`}>
-          <option value="">{empty}</option>
-          {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <ChevronDown size={16} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted" />
-      </span>
-    </label>
+    <span className={`grid shrink-0 place-items-center rounded-full ${color ? "" : "bg-fg text-canvas"}`} style={{ width: size, height: size, ...(color ? { background: `${color}1f`, color } : {}) }}>
+      {Icon ? <Icon size={Math.round(size * 0.5)} strokeWidth={2} /> : <b className="tnum text-[11px]">{text}</b>}
+    </span>
+  );
+}
+
+/**
+ * Auswahlfeld im Filterpanel: zugeklappt die Wahl mit Avatar, aufgeklappt eine Liste mit Avatar je Option,
+ * Anzahl rechts, Häkchen an der gewählten; ab 9 Optionen mit Suche, `group` setzt Zwischenüberschriften.
+ */
+export function FilterSelect({ label, value, onChange, options, empty = "Alle", icon = SlidersHorizontal }: { label: string; value: string; onChange: (v: string) => void; options: FilterOption[]; empty?: string; icon?: LucideIcon }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const cur = options.find((o) => o.value === value);
+  const term = q.trim().toLowerCase();
+  const list = options.filter((o) => !term || o.label.toLowerCase().includes(term));
+  const pick = (v: string) => { onChange(v); setOpen(false); setQ(""); };
+  const none = <IconAvatar icon={icon} />;
+  const row = (sel: boolean) => `flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-[14px] hover:bg-surface-2 ${sel ? "bg-surface-2 font-semibold" : ""}`;
+  return (
+    <div>
+      <span className="mb-2 block text-[13px] font-semibold text-soft">{label}</span>
+      <div className={`overflow-hidden rounded-2xl border ${value ? "border-fg" : "border-card-line"} bg-surface`}>
+        <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-3 py-2.5 text-left">
+          {cur?.icon ?? none}
+          <span className="min-w-0 flex-1 truncate text-[14.5px] font-semibold">{cur?.label ?? empty}</span>
+          <ChevronDown size={17} className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && (
+          <div className="border-t border-line p-1.5">
+            {options.length > 8 && (
+              <label className="mb-1 flex h-9 items-center gap-2 rounded-full bg-surface-2 px-3">
+                <Search size={14} className="text-muted" />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`${label} suchen`} className="min-w-0 flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-muted" />
+              </label>
+            )}
+            <div className="max-h-72 overflow-y-auto">
+              {!term && <button type="button" onClick={() => pick("")} className={row(!value)}>{none}<span className="flex-1">{empty}</span>{!value && <Check size={16} />}</button>}
+              {list.map((o, i) => (
+                <div key={o.value}>
+                  {o.group && o.group !== list[i - 1]?.group && <p className="px-2.5 pt-2.5 pb-1 text-[11.5px] font-semibold tracking-wide text-muted uppercase">{o.group}</p>}
+                  <button type="button" onClick={() => pick(o.value)} className={row(o.value === value)}>
+                    {o.icon ?? none}
+                    <span className="min-w-0 flex-1 truncate">{o.label}</span>
+                    {o.n != null && <span className="tnum text-[12px] text-muted">{o.n}</span>}
+                    {o.value === value && <Check size={16} />}
+                  </button>
+                </div>
+              ))}
+              {!list.length && <p className="px-3 py-2 text-[13px] text-muted">Nichts gefunden.</p>}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -149,8 +197,8 @@ export function FilterBar({ q, onQ, placeholder, children, actions, activeCount,
       {count && <p className="text-right text-[12.5px] text-muted">{count}{activeCount > 0 && <> · <button type="button" onClick={onReset} className="font-semibold text-selected">Filter zurücksetzen</button></>}</p>}
       {/* ins body: sonst schneidet ein Elternteil mit transform/Animation das Panel ab */}
       {open && createPortal(
-        <div className="fixed inset-0 z-50 bg-black/30" onClick={() => setOpen(false)}>
-          <aside role="dialog" aria-label="Filter" onClick={(e) => e.stopPropagation()} className="panel-in pt-safe absolute inset-y-0 right-0 flex h-dvh w-full max-w-sm flex-col bg-surface shadow-[-12px_0_32px_rgba(16,24,40,.12)]">
+        <div className="fixed inset-0 z-50 bg-surface sm:bg-black/30" onClick={() => setOpen(false)}>
+          <aside role="dialog" aria-label="Filter" onClick={(e) => e.stopPropagation()} className="panel-in pt-safe absolute inset-y-0 right-0 flex h-dvh w-full flex-col bg-surface sm:max-w-sm sm:shadow-[-12px_0_32px_rgba(16,24,40,.12)]">
             <div className="flex items-center justify-between border-b border-line px-5 py-4">
               <span className="flex items-center gap-2 text-[17px] font-semibold"><SlidersHorizontal size={18} /> Filter</span>
               <button type="button" onClick={() => setOpen(false)} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3"><X size={17} /></button>

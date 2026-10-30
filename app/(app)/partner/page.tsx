@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
-import { Building2, CalendarDays, FileText, Hash, LayoutGrid } from "lucide-react";
+import { Building2, CalendarDays, FileSignature, FileText, Hash, LayoutGrid, Shapes, ShoppingBag } from "lucide-react";
 import { useMemo, useState } from "react";
-import { ClusterTag } from "@/components/ClusterIcon";
-import { compare, FilterBar, FilterSelect, FilterToggle, SortHeader, SortMenu, type Col, type Sort } from "@/components/ListControls";
+import { ClusterIcon, ClusterTag } from "@/components/ClusterIcon";
+import { compare, FilterBar, FilterSelect, IconAvatar, FilterToggle, SortHeader, SortMenu, type Col, type Sort } from "@/components/ListControls";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD, PageHeader } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
@@ -20,7 +20,7 @@ const COLS: Col<Key>[] = [
   { key: "last", label: "Zuletzt", icon: CalendarDays, className: "justify-end", defaultDir: "desc" },
 ];
 const GRID = "grid-cols-[minmax(0,1fr)_11rem_7.5rem_7.5rem_6.5rem] gap-4";
-const KINDS = [{ value: "vertrag", label: "Verträge & Dienstleister" }, { value: "shop", label: "Händler & Einkäufe" }];
+const KINDS = [{ value: "vertrag", label: "Verträge & Dienstleister", icon: <IconAvatar icon={FileSignature} /> }, { value: "shop", label: "Händler & Einkäufe", icon: <IconAvatar icon={ShoppingBag} /> }];
 const kindOf = (p: Partner) => (p.isShop ? "shop" : "vertrag");
 
 /** Alle Vertragspartner, Dienstleister und Händler aus deinen Dokumenten – sortier- und filterbar */
@@ -36,7 +36,7 @@ export default function PartnersPage() {
   const [onlyIds, setOnlyIds] = useState(false);
   const [withFormer, setWithFormer] = useState(false);
 
-  const clusters = useMemo(() => [...new Set(all.map((p) => clusterOf(p.cluster).id))].map((id) => ({ value: id, label: clusterOf(id).label })).sort((a, b) => a.label.localeCompare(b.label, "de")), [all]);
+  const clusters = useMemo(() => [...new Set(all.map((p) => clusterOf(p.cluster).id))].map((id) => ({ value: id, label: clusterOf(id).label, n: all.filter((p) => clusterOf(p.cluster).id === id).length, icon: <ClusterIcon id={id} size={30} /> })).sort((a, b) => a.label.localeCompare(b.label, "de")), [all]);
   const hasFormer = all.some((p) => !p.active);
   const term = q.trim().toLowerCase();
   const list = all
@@ -57,8 +57,8 @@ export default function PartnersPage() {
       <PageHeader title="Partner" subtitle={loading ? " " : `${all.length} Firmen und Stellen aus deinen Unterlagen – mit allen Kunden-, Vertrags- und Versicherungsnummern`} />
       <div className="space-y-3">
         <FilterBar q={q} onQ={setQ} placeholder="Suchen: Firma oder Nummer, z. B. O2 oder Kundennummer" actions={<SortMenu cols={COLS} sort={sort} onSort={setSort} />} activeCount={[fCluster, fKind, onlyIds, withFormer].filter(Boolean).length} onReset={reset} count={`${list.length} von ${all.length}`}>
-          {clusters.length > 1 && <FilterSelect label="Bereich" value={fCluster} onChange={setFCluster} options={clusters} />}
-          <FilterSelect label="Art" value={fKind} onChange={setFKind} options={KINDS} />
+          {clusters.length > 1 && <FilterSelect label="Bereich" icon={LayoutGrid} value={fCluster} onChange={setFCluster} options={clusters} />}
+          <FilterSelect label="Art" icon={Shapes} value={fKind} onChange={setFKind} options={KINDS} />
           <FilterToggle label="Mit Kennungen" on={onlyIds} onChange={setOnlyIds} />
           {hasFormer && <FilterToggle label="Auch frühere" on={withFormer} onChange={setWithFormer} />}
         </FilterBar>

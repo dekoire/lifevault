@@ -1,10 +1,10 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlertCircle, Archive, Building2, CalendarDays, FileText, Hash, LayoutGrid, Lock, X } from "lucide-react";
-import { ClusterTag } from "@/components/ClusterIcon";
-import { compare, FilterBar, FilterSelect, FilterToggle, SortHeader, SortMenu, type Col, type Sort } from "@/components/ListControls";
-import { KindTag } from "@/components/KindTag";
+import { AlertCircle, Archive, Building2, CalendarDays, FileText, Hash, LayoutGrid, Lock, Shapes, Users, X } from "lucide-react";
+import { ClusterIcon, ClusterTag } from "@/components/ClusterIcon";
+import { compare, FilterBar, FilterSelect, IconAvatar, FilterToggle, SortHeader, SortMenu, type Col, type Sort } from "@/components/ListControls";
+import { KindAvatar, KindTag } from "@/components/KindTag";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CARD } from "@/components/ui";
 import { clusterOf } from "@/lib/clusters";
@@ -40,12 +40,12 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
   const grid = cluster && sender ? "grid-cols-[minmax(0,1fr)_11rem_12rem_6.5rem] gap-4" : cluster || sender ? "grid-cols-[minmax(0,1fr)_12rem_6.5rem] gap-4" : "grid-cols-[minmax(0,1fr)_6.5rem] gap-4";
 
   const opts = useMemo(() => {
-    const clusters = [...new Set(docs.map((d) => clusterOf(d.cluster).id))].map((id) => ({ value: id, label: clusterOf(id).label })).sort((a, b) => a.label.localeCompare(b.label, "de"));
-    const senders = [...new Set(docs.map((d) => d.sender).filter((s): s is string => !!s))].sort((a, b) => a.localeCompare(b, "de")).map((s) => ({ value: s, label: s }));
-    const years = [...new Set(docs.map((d) => dateOf(d).slice(0, 4)))].sort().reverse().map((y) => ({ value: y, label: y }));
+    const clusters = [...new Set(docs.map((d) => clusterOf(d.cluster).id))].map((id) => ({ value: id, label: clusterOf(id).label, icon: <ClusterIcon id={id} size={30} /> })).sort((a, b) => a.label.localeCompare(b.label, "de"));
+    const senders = [...new Set(docs.map((d) => d.sender).filter((s): s is string => !!s))].sort((a, b) => a.localeCompare(b, "de")).map((s) => { const d = docs.find((x) => x.sender === s); return { value: s, label: s, n: docs.filter((x) => x.sender === s).length, icon: <SenderLogo domain={d?.sender_domain} sender={s} cluster={d?.cluster} size={30} /> }; });
+    const years = [...new Set(docs.map((d) => dateOf(d).slice(0, 4)))].sort().reverse().map((y) => ({ value: y, label: y, n: docs.filter((d) => dateOf(d).startsWith(y)).length, icon: <IconAvatar text={`’${y.slice(2)}`} /> }));
     const kindN = new Map<string, number>();
     for (const d of docs) kindN.set(kindOf(d).id, (kindN.get(kindOf(d).id) ?? 0) + 1);
-    const kinds = KINDS.filter((k) => kindN.get(k.id)).map((k) => ({ value: k.id, label: `${k.label} (${kindN.get(k.id)})` }));
+    const kinds = KINDS.filter((k) => kindN.get(k.id)).map((k) => ({ value: k.id, label: k.label, n: kindN.get(k.id), icon: <KindAvatar id={k.id} /> }));
     return { clusters, senders, years, kinds };
   }, [docs]);
   const hasArchive = archiveToggle && docs.some((d) => d.archived);
@@ -70,10 +70,10 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
   const shown = limit && !showAll ? list.slice(0, limit) : list;
   const bar = (
     <FilterBar q={q} onQ={setQ} placeholder="In dieser Liste suchen" actions={<SortMenu cols={cols} sort={sort} onSort={setSort} />} activeCount={[fCluster, fSender, fYear, fKind, withArchive].filter(Boolean).length} onReset={reset} count={title ? undefined : `${list.length} ${list.length === 1 ? "Dokument" : "Dokumente"}`}>
-      {opts.kinds.length > 1 && <FilterSelect label="Art" value={fKind} onChange={setFKind} options={opts.kinds} />}
-      {cluster && opts.clusters.length > 1 && <FilterSelect label="Bereich" value={fCluster} onChange={setFCluster} options={opts.clusters} />}
-      {sender && opts.senders.length > 1 && <FilterSelect label="Absender" value={fSender} onChange={setFSender} options={opts.senders} />}
-      {opts.years.length > 1 && <FilterSelect label="Jahr" value={fYear} onChange={setFYear} options={opts.years} />}
+      {opts.kinds.length > 1 && <FilterSelect label="Art" icon={Shapes} value={fKind} onChange={setFKind} options={opts.kinds} />}
+      {cluster && opts.clusters.length > 1 && <FilterSelect label="Bereich" icon={LayoutGrid} value={fCluster} onChange={setFCluster} options={opts.clusters} />}
+      {sender && opts.senders.length > 1 && <FilterSelect label="Absender" icon={Users} value={fSender} onChange={setFSender} options={opts.senders} />}
+      {opts.years.length > 1 && <FilterSelect label="Jahr" icon={CalendarDays} value={fYear} onChange={setFYear} options={opts.years} />}
       {hasArchive && <FilterToggle label="Mit Archiv" on={withArchive} onChange={setWithArchive} />}
     </FilterBar>
   );
