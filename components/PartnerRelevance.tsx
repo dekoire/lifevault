@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Archive, ChevronDown, Copy, FileText, Info, Receipt, Star } from "lucide-react";
+import { ChevronDown, CircleCheck, Copy, FileText, Files, Info, Receipt, Star } from "lucide-react";
 import { ImportanceDots } from "@/components/Importance";
 import { KindTag } from "@/components/KindTag";
 import { CARD } from "@/components/ui";
@@ -15,7 +15,7 @@ const BUCKETS: { id: Bucket; title: string; hint: string; icon: React.ReactNode;
   { id: "wichtig", title: "Das Wichtige", hint: "Hier steht, was gilt – das schaust du nach, wenn etwas ist.", icon: <Star size={16} />, open: true },
   { id: "laufend", title: "Laufend", hint: "Rechnungen, Abrechnungen und Schreiben aus dem laufenden Vertrag.", icon: <Receipt size={16} />, open: true },
   { id: "info", title: "Zur Info", hint: "Bedingungen, Infoblätter, Werbung – gut zu haben, selten gebraucht.", icon: <Info size={16} />, open: false },
-  { id: "erledigt", title: "Erledigt & veraltet", hint: "Bezahlt, überholt oder gekündigt – bleibt zum Nachweis im Archiv.", icon: <Archive size={16} />, open: false },
+  { id: "erledigt", title: "Erledigt & veraltet", hint: "Bezahlt, überholt oder gekündigt – bleibt zum Nachweis im Archiv.", icon: <CircleCheck size={16} className="text-positive-text" />, open: false },
   { id: "doppelt", title: "Doppelt", hint: "Gleicher Inhalt wie ein anderes Dokument – kann weg.", icon: <Copy size={16} />, open: false },
 ];
 const dateOf = (d: Doc) => d.doc_date ?? d.received_at.slice(0, 10);
@@ -45,12 +45,19 @@ function sortDocs(docs: Doc[]) {
  * Dokumente eines Partners nach Relevanz statt nur nach Datum: das Hauptdokument oben, darunter das Wichtige,
  * Laufendes, Infos, Erledigtes und Doppeltes – jeweils mit einem Satz, warum es dort steht.
  */
-export function PartnerRelevance({ docs }: { docs: Doc[] }) {
+/** afterMain: direkt unter dem Hauptdokument (Anstehendes – Fristen, Kündigung) */
+export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?: React.ReactNode }) {
   const sorted = useMemo(() => sortDocs(docs), [docs]);
   const [open, setOpen] = useState<Record<Bucket, boolean>>(Object.fromEntries(BUCKETS.map((b) => [b.id, b.open])) as Record<Bucket, boolean>);
   const of = (b: Bucket) => docs.filter((d) => sorted.get(d.id)?.bucket === b).sort((a, b2) => importanceOf(b2) - importanceOf(a) || dateOf(b2).localeCompare(dateOf(a)));
   // Hauptdokument: wichtigste gültige Grundlage (sonst das Wichtigste überhaupt)
   const main = of("wichtig").find((d) => d.partner_role === "grundlage") ?? of("wichtig")[0];
+  const [all, setAll] = useState(false);
+  const byDate = [...docs].sort((a, b) => dateOf(b).localeCompare(dateOf(a)));
+  const today = new Date().toISOString().slice(0, 10);
+  const due = docs.filter((d) => !d.archived && (d.deadlines ?? []).some((x) => x.date >= today)).length;
+  const count = (b: Bucket) => docs.filter((d) => sorted.get(d.id)?.bucket === b).length;
+  const first = byDate[byDate.length - 1], last = byDate[0];
   return (
     <div className="space-y-3">
       {main && (
@@ -60,6 +67,36 @@ export function PartnerRelevance({ docs }: { docs: Doc[] }) {
           <span className="mt-0.5 block text-[13px] text-white/85">{main.doc_type ?? ""}{main.doc_type ? " · " : ""}{fmtDate(dateOf(main))} · das schaust du nach, wenn etwas ist</span>
         </Link>
       )}
+      {afterMain}
+      {/* Überblick: was es hier gibt, auf einen Blick – darunter alle Dokumente kompakt */}
+      <section className={`${CARD} overflow-hidden`}>
+        <div className="px-4 pt-3.5 pb-3">
+          <span className="flex items-center gap-2 text-[15px] font-semibold"><Files size={16} className="text-muted" /> Überblick</span>
+          <p className="mt-1 text-[13px] leading-5 text-soft">{docs.length} {docs.length === 1 ? "Dokument" : "Dokumente"}{first ? ` von ${fmtDate(dateOf(first))} bis ${fmtDate(dateOf(last))}` : ""}{last ? <>, zuletzt <b className="font-semibold text-fg">{last.title ?? last.file_name}</b></> : null}.</p>
+        </div>
+        <div className="grid grid-cols-4 divide-x divide-line border-t border-line text-center">
+          {([["Wichtig", count("wichtig"), ""], ["Laufend", count("laufend"), ""], ["Offen", due, due ? "text-negative-text" : ""], ["Erledigt", count("erledigt"), "text-positive-text"]] as const).map(([l, n, c]) => (
+            <div key={l} className="px-2 py-2.5"><b className={`tnum block text-[18px] leading-6 ${n ? c : "text-muted"}`}>{n}</b><span className="text-[11.5px] text-muted">{l}</span></div>
+          ))}
+        </div>
+        <ul className="divide-y divide-line border-t border-line">
+          {(all ? byDate : byDate.slice(0, 6)).map((d) => {
+            const b = sorted.get(d.id)?.bucket;
+            const gone = b === "erledigt" || b === "doppelt";
+            return (
+              <li key={d.id}>
+                <Link href={`/d/${d.id}`} className={`flex items-center gap-2.5 px-4 py-2 text-[13.5px] hover:bg-surface-2/70 ${gone ? "text-muted" : ""}`}>
+                  {gone ? <CircleCheck size={14} className="shrink-0 text-positive-text" /> : <span className="w-[14px] shrink-0" />}
+                  <span className={`min-w-0 flex-1 truncate ${gone ? "" : "font-medium"}`}>{d.title ?? d.file_name}</span>
+                  <span className="hidden shrink-0 sm:inline"><KindTag d={d} /></span>
+                  <span className="tnum w-[4.6rem] shrink-0 text-right text-[12px] text-muted">{d.doc_date ? fmtDate(d.doc_date) : "ohne Datum"}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+        {byDate.length > 6 && <button type="button" onClick={() => setAll(!all)} className="w-full border-t border-line py-2.5 text-[13px] font-semibold text-selected hover:bg-surface-2/60">{all ? "Weniger anzeigen" : `Alle ${byDate.length} anzeigen`}</button>}
+      </section>
       {BUCKETS.map((b) => {
         const list = of(b.id).filter((d) => d.id !== main?.id);
         if (!list.length) return null;
@@ -78,6 +115,7 @@ export function PartnerRelevance({ docs }: { docs: Doc[] }) {
                 {list.map((d) => (
                   <li key={d.id}>
                     <Link href={`/d/${d.id}`} className={`flex items-start gap-3 px-4 py-3 hover:bg-surface-2/70 ${b.id === "erledigt" || b.id === "doppelt" ? "opacity-75" : ""}`}>
+                      {b.id === "erledigt" && <CircleCheck size={16} className="mt-0.5 shrink-0 text-positive-text" />}
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center gap-1.5"><KindTag d={d} /><span className="truncate text-[14px] font-semibold">{d.title ?? d.file_name}</span></span>
                         <span className="mt-0.5 block text-[12.5px] leading-5 text-soft">{sorted.get(d.id)?.why}</span>

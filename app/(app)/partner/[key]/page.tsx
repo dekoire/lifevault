@@ -4,6 +4,7 @@ import { use, useEffect, useMemo, useState } from "react";
 import { ArrowRight, CalendarClock, ExternalLink, GitBranch, Hash, History, MessageSquare, PanelRight, PencilLine, ShoppingBag, X, Loader2, ChevronDown, Sparkles, Check } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
 import { PartnerRelevance } from "@/components/PartnerRelevance";
+import { todoKey, useTodoDone } from "@/lib/todoDone";
 import { DocTable } from "@/components/DocTable";
 import { PartnerSheet } from "@/components/PartnerInfo";
 import { MergeHistory } from "@/components/PartnerDupes";
@@ -38,8 +39,9 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
   // angeklickte Kennung → rechts nur Dokumente, die sie enthalten
   const [pick, setPick] = useState<PartnerId | null>(null);
   const [info, setInfo] = useState(false);
-  const [openTopic, setOpenTopic] = useState<string | null | undefined>(undefined);
+  const [openTopic, setOpenTopic] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
+  const { done } = useTodoDone();
   const restrict = useMemo(() => {
     if (!pick || !p) return null;
     const ids = docsWithValue(p.docs, pick.value);
@@ -51,10 +53,10 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
 
   // gleiche Bezeichnung mit anderem Wert in älterem Dokument → „früher“
   const topics = [...new Set(p.ids.map((i) => i.topic))];
-  const shownTopic = openTopic === undefined ? topics[0] : openTopic;
+  const shownTopic = openTopic; // anfangs alles zugeklappt
   const latestByLabel = new Map<string, string>();
   for (const i of p.ids) if (!latestByLabel.has(i.label.toLowerCase())) latestByLabel.set(i.label.toLowerCase(), i.value);
-  const deadlines = p.docs.flatMap((d) => (d.deadlines ?? []).filter((x) => x.date >= today).map((x) => ({ ...x, d }))).sort((a, b) => a.date.localeCompare(b.date));
+  const deadlines = p.docs.flatMap((d) => (d.deadlines ?? []).filter((x) => x.date >= today && !done.includes(todoKey(d.id, x.date))).map((x) => ({ ...x, d }))).sort((a, b) => a.date.localeCompare(b.date));
   const total = p.docs.map((d) => d.amounts?.find((a) => /summe|gesamt|betrag|total/i.test(a.label)) ?? d.amounts?.[0]).filter(Boolean) as { value: number; currency: string }[];
   const spent = total.reduce((s, a) => s + a.value, 0);
 
@@ -74,6 +76,19 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
     await refresh();
     router.replace(`/partner/${partnerKey(name)}`);
   };
+
+  // Anstehendes (Kündigungsfrist, Zahlung …) ganz oben links, direkt unter dem Hauptdokument
+  const upcoming = deadlines.length > 0 && (
+            <section className={CARD}>
+              <h2 className="flex items-center gap-2 px-5 pt-4 pb-2 text-[16px] font-semibold"><CalendarClock size={17} /> Anstehend <span className="text-[12.5px] font-normal text-muted">– Fristen, Kündigung, Zahlungen</span></h2>
+              <ul className="grid gap-2.5 px-4 pb-4 sm:grid-cols-2">{deadlines.map((x, i) => { const days = Math.round((Date.parse(x.date) - Date.now()) / 86_400_000); return (
+                <li key={i}><Link href={`/d/${x.d.id}`} className="flex h-full flex-col gap-1.5 rounded-xl bg-surface-2 p-3.5 transition-colors hover:bg-surface-3">
+                  <span className="flex items-baseline justify-between gap-2"><b className="tnum text-[17px]">{fmtDate(x.date)}</b><span className={`text-[12px] font-semibold ${days < 0 ? "text-negative-text" : days <= 30 ? "text-amber" : "text-muted"}`}>{days < 0 ? `seit ${-days} Tagen` : days === 0 ? "heute" : days < 60 ? `in ${days} Tagen` : `in ${Math.round(days / 30)} Monaten`}</span></span>
+                  <span className="line-clamp-2 text-[13.5px] leading-5 text-soft">{x.what}</span>
+                </Link></li>
+              ); })}</ul>
+            </section>
+          );
 
   return (
     <div>
@@ -98,7 +113,10 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
           {(link.entry.note || link.next?.note) && <span className="basis-full text-[12.5px] text-muted">{link.next?.note ?? link.entry.note}</span>}
         </section>
       )}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
+      {/* links: worum es geht – Hauptdokument, Überblick, alle Dokumente, Gruppen; rechts: Nummern (zugeklappt) und Fristen */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-start">
+        {/* nach Relevanz gegliedert (Hauptdokument, Wichtiges, Laufendes, Info, Erledigtes, Doppeltes); Nummer angetippt → Tabelle mit Treffern */}
+        {restrict || p.isShop ? <div className="space-y-4">{upcoming}<DocTable title="Dokumente" limit={8} docs={p.docs} sender={false} archiveToggle={false} restrict={restrict} onClearRestrict={() => setPick(null)} /></div> : <PartnerRelevance docs={p.docs} afterMain={upcoming} />}
         <div className="space-y-4">
           {p.isShop ? (
             <section className={`${CARD} grid grid-cols-3 divide-x divide-line`}>
@@ -109,8 +127,8 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
             <h2 className="flex items-center gap-2 px-5 pt-4 pb-2 text-[16px] font-semibold"><Hash size={17} /> Kennungen & Nummern</h2>
             {p.ids.length ? (
               <>
-                <p className="px-5 pb-2 text-[12.5px] text-muted">Antippen zeigt rechts die Dokumente mit dieser Nummer.</p>
-                {/* Themen zum Auf-/Zuklappen – immer nur eins offen (anfangs das erste) */}
+                <p className="px-5 pb-2 text-[12.5px] text-muted">Antippen zeigt links die Dokumente mit dieser Nummer.</p>
+                {/* Themen zum Auf-/Zuklappen – immer nur eins offen, anfangs alle zu */}
                 {topics.map((topic) => { const isOpen = shownTopic === topic; const n = p.ids.filter((i) => i.topic === topic).length; return (
                   <div key={topic}>
                     <h3 className="border-t border-line">
@@ -142,21 +160,8 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
               </>
             ) : <p className="px-5 pb-4 text-[13px] text-muted">Keine Nummern gefunden. Neu ausgelesene Dokumente sammeln Kunden-, Vertrags- und Versicherungsnummern automatisch.</p>}
           </section>
-          {deadlines.length > 0 && (
-            <section className={CARD}>
-              <h2 className="flex items-center gap-2 px-5 pt-4 pb-2 text-[16px] font-semibold"><CalendarClock size={17} /> Anstehend</h2>
-              <ul className="grid gap-2.5 px-4 pb-4 sm:grid-cols-2">{deadlines.map((x, i) => { const days = Math.round((Date.parse(x.date) - Date.now()) / 86_400_000); return (
-                <li key={i}><Link href={`/d/${x.d.id}`} className="flex h-full flex-col gap-1.5 rounded-xl bg-surface-2 p-3.5 transition-colors hover:bg-surface-3">
-                  <span className="flex items-baseline justify-between gap-2"><b className="tnum text-[17px]">{fmtDate(x.date)}</b><span className={`text-[12px] font-semibold ${days < 0 ? "text-negative-text" : days <= 30 ? "text-amber" : "text-muted"}`}>{days < 0 ? `seit ${-days} Tagen` : days === 0 ? "heute" : days < 60 ? `in ${days} Tagen` : `in ${Math.round(days / 30)} Monaten`}</span></span>
-                  <span className="line-clamp-2 text-[13.5px] leading-5 text-soft">{x.what}</span>
-                </Link></li>
-              ); })}</ul>
-            </section>
-          )}
           <MergeHistory pkey={p.key} compact />
         </div>
-        {/* nach Relevanz gegliedert (Hauptdokument, Wichtiges, Laufendes, Info, Erledigtes, Doppeltes); Nummer angetippt → Tabelle mit Treffern */}
-        {restrict || p.isShop ? <DocTable title="Dokumente" limit={8} docs={p.docs} sender={false} archiveToggle={false} restrict={restrict} onClearRestrict={() => setPick(null)} /> : <PartnerRelevance docs={p.docs} />}
       </div>
       {info && <PartnerSheet p={p} onClose={() => setInfo(false)} />}
       {renaming && <RenameModal p={p} others={partners.filter((x) => x.key !== p.key).map((x) => ({ key: x.key, name: x.name, domain: x.domain, cluster: x.cluster, n: x.docs.length }))} onSave={rename} onClose={() => setRenaming(false)} />}
