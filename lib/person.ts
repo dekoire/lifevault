@@ -38,7 +38,15 @@ export function buildPerson(docs: Doc[]): PersonField[] {
       if (f.id === "taxid" && (/gläubiger|creditor|ust|umsatzsteuer/i.test(k.label) || k.value.replace(/\s/g, "").replace(/\D/g, "").length !== 11 || /[a-z]/i.test(k.value))) continue;
       // IBAN im Steckbrief nur deine eigene: Konten von Empfängern/Gläubigern gehören zum Partner, Platzhalter („noch nicht ausgefüllt“) raus
       if (f.id === "iban" && (/empf(ä|ae)nger|gl(ä|ae)ubiger|beg(ü|ue)nstigt|kreditor|stadtkasse|zahlungsziel/i.test(k.label) || !/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(k.value.replace(/\s/g, "").toUpperCase()))) continue;
-      if (f.personalOnly && !k.personal && !/persönlich|personal|mitarbeiter|versichert|patient/i.test(k.group ?? "")) continue;
+      // nur Angaben über DICH: von der KI als persönlich markiert (bzw. in der Gruppe „Persönliches“) – Kontaktdaten,
+      // Konten und Nummern von Firmen, Ämtern oder anderen Personen gehören nicht in den Steckbrief
+      const mine = k.personal === true || /^(persönlich|persönliche daten|personalien|zu deiner person|über dich)/i.test(k.group ?? "");
+      if (!mine && f.id !== "employer" && f.id !== "kk") continue;
+      if (f.personalOnly && !mine) continue;
+      // Telefon/E-Mail des Absenders (Hotline, Service-Adresse) ist nie deine
+      if (f.id === "email" && d.sender_domain && k.value.toLowerCase().includes(`@${d.sender_domain.toLowerCase().replace(/^www\./, "")}`)) continue;
+      if (f.id === "email" && /^(info|service|kundenservice|support|kontakt|noreply|no-reply|hallo|hello|post|mail|office|team)@/i.test(k.value.trim())) continue;
+      if ((f.id === "phone" || f.id === "email" || f.id === "iban") && /hotline|service|kundendienst|zentrale|fax|absender|empf(ä|ae)nger|firma|praxis|kanzlei|beh(ö|oe)rde/i.test(`${k.label} ${k.group ?? ""}`)) continue;
       if (seen.has(norm(k.value))) continue;
       seen.add(norm(k.value));
       const v = /^\d{4}-\d{2}-\d{2}$/.test(k.value.trim()) ? k.value.trim().split("-").reverse().join(".") : k.value.trim();
@@ -49,6 +57,17 @@ export function buildPerson(docs: Doc[]): PersonField[] {
       if (seen.has(norm(d.sender!))) continue;
       seen.add(norm(d.sender!));
       vals.push({ value: d.sender!, date: dateOf(d), docId: d.id, docTitle: d.title ?? d.file_name });
+    }
+    // Telefon, E-Mail, IBAN: deine eigenen stehen in Schreiben von mehreren Absendern – was nur bei einem
+    // einzigen Absender vorkommt, ist meist dessen Nummer/Konto (Vermieter, Firma, andere Person)
+    if (f.multi) {
+      const senders = new Map<string, Set<string>>();
+      for (const d of ready) for (const k of d.key_facts ?? []) {
+        if (!f.re.test(k.label.trim()) || !k.value?.trim()) continue;
+        const key = norm(k.value);
+        senders.set(key, (senders.get(key) ?? new Set()).add((d.sender ?? d.id).toLowerCase()));
+      }
+      for (let i = vals.length - 1; i >= 0; i--) if ((senders.get(norm(vals[i].value))?.size ?? 0) < 2) vals.splice(i, 1);
     }
     if (!vals.length) continue;
     vals.sort((a, b) => b.date.localeCompare(a.date));
