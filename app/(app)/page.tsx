@@ -58,16 +58,24 @@ export default function Home() {
       <div className={`grid grid-cols-1 gap-5 lg:items-start ${side ? "lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]" : ""}`}>
         <div className="stagger min-w-0 space-y-5">
           {/* Kennzahlen: was bisher gesammelt ist */}
-          <section className="relative grid grid-cols-2 overflow-hidden rounded-2xl text-white shadow-card sm:grid-cols-4 [&>div:nth-of-type(odd)]:border-r [&>div:nth-of-type(-n+2)]:border-b sm:[&>div]:border-b-0 max-sm:[&>div:nth-of-type(even)]:border-r-0 sm:[&>div:not(:last-of-type)]:border-r" style={{ background: "var(--accent-grad, linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%))" }}>
-            {/* dezenter Glanz wie bei Finastry */}
-            <span aria-hidden className="pointer-events-none absolute -top-24 -right-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-            {kpis.map(({ icon: Icon, value, label, sub }) => (
-              <div key={label} className="relative border-white/15 p-4">
-                <span className="flex items-center gap-1.5 text-[12px] font-medium text-white/75"><Icon size={14} /> {label}</span>
-                <span className="tnum mt-1 block text-[26px] leading-8 font-[650] tracking-tight">{loading ? "–" : <CountUp value={value} />}</span>
-                <span className="block text-[12px] text-white/70">{sub}</span>
-              </div>
-            ))}
+          <section className="relative overflow-hidden rounded-2xl p-4 text-white shadow-md sm:p-6" style={{ background: "var(--accent-grad, linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%))" }}>
+            {/* wie die Kachel „Kontostand“ in Finastry: Titel, darunter Glas-Kacheln */}
+            <span className="flex min-w-0 items-center gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center"><Layers size={26} /></span>
+              <h2 className="min-w-0 text-[17px] leading-6 font-semibold">Überblick</h2>
+            </span>
+            <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {kpis.map(({ icon: Icon, value, label, sub }) => (
+                <div key={label} className="min-w-0 rounded-2xl px-4 py-3.5 ring-1 ring-white/20 sm:p-4" style={{ background: "rgba(255,255,255,.14)" }}>
+                  <span className="flex min-w-0 items-center gap-2 text-[12px] font-medium opacity-85 sm:text-[14px]">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/18"><Icon size={16} /></span>
+                    <span className="truncate">{label}</span>
+                  </span>
+                  <span className="tnum mt-2 block text-[24px] leading-8 font-semibold tracking-tight">{loading ? "–" : <CountUp value={value} />}</span>
+                  <span className="mt-0.5 block truncate text-[12px] opacity-75">{sub}</span>
+                </div>
+              ))}
+            </div>
           </section>
 
 
