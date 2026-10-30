@@ -6,7 +6,6 @@ import { ClusterIcon } from "@/components/ClusterIcon";
 import { SenderLogo } from "@/components/SenderLogo";
 import { LabelChip } from "@/components/Labels";
 import { VaultUnlock } from "@/components/VaultUnlock";
-import { Segmented } from "@/components/ui";
 import { groupOf, LABEL_GROUPS } from "@/lib/labels";
 import { CLUSTERS, clusterOf } from "@/lib/clusters";
 import { fmtDate, useDocs } from "@/lib/docs";
@@ -64,7 +63,14 @@ export function ExportSheet({ onClose }: { onClose: () => void }) {
           <button type="button" onClick={onClose} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3 disabled:opacity-40"><X size={18} /></button>
         </div>
         <div className="px-6 pb-3">
-          <Segmented value={tab} onChange={setTab} options={TABS} full />
+          {/* Auswahl als Aufklappfeld – passt auch am Handy in eine Zeile */}
+          <label className="relative flex h-12 w-full items-center rounded-xl border border-card-line bg-surface pr-10 pl-4 text-[15px] font-semibold focus-within:border-brand-500">
+            <span className="truncate">{TABS.find((t) => t.id === tab)?.label}</span>
+            <ChevronDown size={18} className="pointer-events-none absolute right-3.5 text-muted" />
+            <select aria-label="Was exportieren" value={tab} onChange={(e) => setTab(e.target.value as Tab)} className="absolute inset-0 cursor-pointer opacity-0">
+              {TABS.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+            </select>
+          </label>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto border-t border-line">
           {tab === "areas" && <Areas docs={docs} sel={sel} setMany={setMany} />}
