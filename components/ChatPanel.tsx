@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { AiAvatar, type AiAvatarState } from "@/components/AiAvatar";
 import { ArrowUp, Brain, Camera, Check, ChevronDown, CornerDownRight, ExternalLink, FileDown, Globe, Loader2, Mic, Paperclip, Plus, Square, Telescope, X, Zap } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { Markdown } from "@/components/Markdown";
@@ -383,7 +384,8 @@ function VoiceWave({ level }: { level: React.RefObject<number> }) {
 }
 
 /** Eingabe wie bei Finastry: Feld oben, darunter Plus (Foto/Datei), Antworttiefe, Mikrofon und Senden */
-export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu deinen Unterlagen …", onFiles, attachments = [], onRemoveAttachment, depth, onDepth, plain = false }: {
+export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu deinen Unterlagen …", onFiles, attachments = [], onRemoveAttachment, depth, onDepth, plain = false, aiState, onTextChange }: {
+  /** was die KI gerade tut – der Avatar links zeigt es */ aiState?: AiAvatarState; /** Text vorhanden ja/nein (der große Avatar weicht beim Tippen) */ onTextChange?: (has: boolean) => void;
   busy: boolean; onSend: (q: string) => void; onStop: () => void; placeholder?: string; plain?: boolean;
   onFiles?: (files: File[]) => void; attachments?: Attachment[]; onRemoveAttachment?: (key: string) => void; depth?: Depth; onDepth?: (d: Depth) => void;
 }) {
@@ -397,7 +399,7 @@ export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu de
   const dict = useDictation(setText, setErr);
   const docOf = (a: Attachment) => (a.id ? allDocs.find((d) => d.id === a.id) : undefined);
   const pending = attachments.some((a) => !a.failed && docOf(a)?.status !== "ready" && docOf(a)?.status !== "error");
-  const send = () => { if ((text.trim() || attachments.length) && !busy && !pending) { onSend(text.trim() || "Was steht in dem Dokument, und was muss ich tun?"); if (dict.listening) dict.stop(); setText(""); } };
+  const send = () => { if ((text.trim() || attachments.length) && !busy && !pending) { onSend(text.trim() || "Was steht in dem Dokument, und was muss ich tun?"); if (dict.listening) dict.stop(); setText(""); onTextChange?.(false); } };
   const pick = (e: React.ChangeEvent<HTMLInputElement>) => { const l = [...(e.target.files ?? [])]; e.target.value = ""; if (l.length) onFiles?.(l); setMenu(""); };
   const cur = DEPTHS.find((d) => d.id === depth) ?? DEPTHS[1];
   const ready = attachments.map(docOf).find((d) => d?.status === "ready");
@@ -421,17 +423,21 @@ export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu de
           })}
         </div>
       )}
-      <textarea
-        ref={area}
-        value={text}
-        onChange={(e) => { setText(e.target.value); e.target.style.height = "auto"; e.target.style.height = `${Math.min(160, e.target.scrollHeight)}px`; }}
-        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }}
-        rows={plain ? 3 : 1}
-        maxLength={2000}
-        placeholder={dict.listening ? "Ich höre zu …" : ready ? `Frag etwas zu „${ready.title}“ …` : placeholder}
-        data-own-focus
-        className="block max-h-40 min-h-10 w-full resize-none bg-transparent px-2.5 py-2 text-[16px] leading-6 outline-none placeholder:text-muted"
-      />
+      {/* links der Avatar: schaut beim Tippen auf deinen Text, hört beim Diktieren zu, denkt und spricht bei der Antwort */}
+      <div className="flex items-start gap-1">
+        <AiAvatar size={50} className="-my-1.5 -ml-1 shrink-0" state={dict.listening ? "listen" : aiState ?? (busy ? "think" : text.trim() ? "listen" : "idle")} gaze={!aiState && !busy && text.trim() ? [0.9, 0.2] : undefined} />
+        <textarea
+          ref={area}
+          value={text}
+          onChange={(e) => { setText(e.target.value); onTextChange?.(!!e.target.value.trim()); e.target.style.height = "auto"; e.target.style.height = `${Math.min(160, e.target.scrollHeight)}px`; }}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }}
+          rows={plain ? 3 : 1}
+          maxLength={2000}
+          placeholder={dict.listening ? "Ich höre zu …" : ready ? `Frag etwas zu „${ready.title}“ …` : placeholder}
+          data-own-focus
+          className="block max-h-40 min-h-10 min-w-0 flex-1 resize-none bg-transparent px-2.5 py-2 text-[16px] leading-6 outline-none placeholder:text-muted"
+        />
+      </div>
       {err && (
         <div role="alert" className="mx-1 mb-1 flex items-start gap-2 rounded-xl bg-negative/10 px-3 py-2 text-[12.5px] text-negative-text">
           <span className="min-w-0 flex-1">{err}</span>

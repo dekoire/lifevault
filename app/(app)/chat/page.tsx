@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, FileSearch, HeartPulse, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Pencil, Pin, PinOff, Receipt, SquarePen, Star, StarOff, Trash2 } from "lucide-react";
 import { Composer, MessageList, useChat } from "@/components/ChatPanel";
-import { LogoMark } from "@/components/Logo";
+import { AiAvatar } from "@/components/AiAvatar";
 import { VaultUnlock } from "@/components/VaultUnlock";
 import { useDocs } from "@/lib/docs";
 import { supabase, useSession } from "@/lib/supabase";
@@ -65,6 +65,8 @@ function Chat() {
   const toggleList = () => (window.matchMedia("(min-width: 1024px)").matches ? toggleSide() : setDrawer((v) => !v));
   const ready = docs.filter((d) => d.status === "ready").length;
   const empty = chat.msgs.length === 0;
+  // Text im Eingabefeld: der große Avatar weicht nach oben
+  const [typing, setTyping] = useState(false);
 
   const pinned = threads.filter((t) => t.pinned);
   const rest = threads.filter((t) => !t.pinned);
@@ -111,7 +113,8 @@ function Chat() {
         <div className="mx-auto w-full max-w-3xl flex-1 px-4 pb-[calc(16rem+env(safe-area-inset-bottom))] lg:pb-48">
           {empty ? (
             <div className="flex flex-col items-center pt-[10vh] text-center">
-              <LogoMark size={52} />
+              {/* beim Tippen schwebt er nach oben weg – dann sitzt er links am Eingabefeld */}
+              <AiAvatar size={128} state="think" label="Dein Assistent" className={`-my-6 transition-all duration-500 ease-out motion-reduce:transition-none ${typing ? "-translate-y-10 scale-50 opacity-0" : ""}`} />
               <h1 className="mt-4 text-[24px] leading-8 font-[650] tracking-tight">Was möchtest du wissen?</h1>
               <p className="mt-1.5 text-[14px] text-muted">{ready ? `Ich kenne ${ready} ${ready === 1 ? "Dokument" : "Dokumente"} von dir und nenne dir immer die Quelle.` : "Lade zuerst ein paar Dokumente hoch – dann frag mich alles dazu."}</p>
               <div className="mt-6 grid w-full gap-2">
@@ -134,7 +137,7 @@ function Chat() {
                 footer={<button type="button" onClick={chat.skipGate} className="rounded-full border border-card-line bg-surface px-4 text-[13.5px] font-semibold text-fg hover:bg-surface-2">Ohne Tresor fragen</button>} />
             </div>
           )}
-          <div className={`mx-auto max-w-3xl ${chat.gate ? "hidden" : ""}`}><Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} onFiles={(f) => void chat.attach(f)} attachments={chat.attachments} onRemoveAttachment={chat.removeAttachment} depth={chat.depth} onDepth={chat.setDepth} /></div>
+          <div className={`mx-auto max-w-3xl ${chat.gate ? "hidden" : ""}`}><Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} onTextChange={setTyping} aiState={chat.busy ? (chat.msgs.at(-1)?.role === "assistant" && chat.msgs.at(-1)?.content ? "speak" : "think") : undefined} onFiles={(f) => void chat.attach(f)} attachments={chat.attachments} onRemoveAttachment={chat.removeAttachment} depth={chat.depth} onDepth={chat.setDepth} /></div>
         </div>
       </div>
 
