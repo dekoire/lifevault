@@ -242,6 +242,23 @@ export function useDocs() {
 export const fmtDate = (iso?: string | null) => (iso ? new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) : "");
 export const fmtMoney = (v: number, cur = "EUR") => { try { return v.toLocaleString("de-DE", { style: "currency", currency: cur || "EUR" }); } catch { return `${v.toLocaleString("de-DE")} ${cur}`; } };
 
+/**
+ * Datum, das man zeigen kann – nie „ohne Datum“: das Datum auf dem Dokument; fehlt es bei einem Teil einer getrennten
+ * Mappe, das Datum der Mappe (häufigstes Datum der übrigen Teile); sonst der Eingang.
+ */
+export function knownDate(d: Pick<Doc, "id" | "doc_date" | "received_at" | "split_from">, all: Pick<Doc, "id" | "doc_date" | "split_from">[] = []): { iso: string; how: "dokument" | "mappe" | "eingang" } {
+  if (d.doc_date) return { iso: d.doc_date, how: "dokument" };
+  if (d.split_from) {
+    const n = new Map<string, number>();
+    for (const x of all) if (x.id !== d.id && x.split_from === d.split_from && x.doc_date) n.set(x.doc_date, (n.get(x.doc_date) ?? 0) + 1);
+    const best = [...n.entries()].sort((a, b) => b[1] - a[1] || b[0].localeCompare(a[0]))[0]?.[0]; // Gleichstand: das neuere (meist das Datum der Mappe)
+    if (best) return { iso: best, how: "mappe" };
+  }
+  return { iso: d.received_at.slice(0, 10), how: "eingang" };
+}
+/** als Text: „16.11.2022“, „16.11.2022 · Mappe“ oder „Eingang 29.10.2026“ */
+export const knownDateLabel = (k: ReturnType<typeof knownDate>) => (k.how === "eingang" ? `Eingang ${fmtDate(k.iso)}` : k.how === "mappe" ? `${fmtDate(k.iso)} · Mappe` : fmtDate(k.iso));
+
 /** Zeitliche Reihenfolge: älteste zuerst (Dokumentdatum, sonst Eingang) */
 export const dateOf = (d: Pick<Doc, "doc_date" | "received_at">) => d.doc_date ?? d.received_at.slice(0, 10);
 export const chrono = <T extends Pick<Doc, "doc_date" | "received_at">>(list: T[]) => [...list].sort((a, b) => dateOf(a).localeCompare(dateOf(b)) || a.received_at.localeCompare(b.received_at));
