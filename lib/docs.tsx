@@ -12,7 +12,7 @@ import { LIST_COLS, type Doc } from "@/lib/types";
 import { extFor, realMime } from "@/lib/sniff";
 
 export type BatchItem = { key: string; name: string; id?: string; state: "uploading" | "saved" | "failed"; error?: string };
-type Ctx = { batch: BatchItem[]; clearBatch: () => void; docs: Doc[]; allDocs: Doc[]; partsOf: (id: string) => Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null; silent?: boolean; noSplit?: boolean }) => Promise<string[]>; pendingProtect: number; reprocess: (id: string, password?: string) => Promise<void>; splitDoc: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
+type Ctx = { batch: BatchItem[]; clearBatch: () => void; docs: Doc[]; allDocs: Doc[]; partsOf: (id: string) => Doc[]; loading: boolean; refresh: () => Promise<void>; upload: (files: File[], opts?: { encrypt?: boolean; projectId?: string | null; silent?: boolean; noSplit?: boolean; fromMail?: boolean }) => Promise<string[]>; pendingProtect: number; reprocess: (id: string, password?: string) => Promise<void>; splitDoc: (id: string) => Promise<void>; remove: (d: Doc) => Promise<void>; uploading: number };
 const DocsCtx = createContext<Ctx | null>(null);
 
 const OK = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
@@ -107,7 +107,7 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
   };
   const { current, defaultProject } = useProjects();
 
-  const upload = useCallback(async (files: File[], opts: { encrypt?: boolean; projectId?: string | null; silent?: boolean; noSplit?: boolean } = {}): Promise<string[]> => {
+  const upload = useCallback(async (files: File[], opts: { encrypt?: boolean; projectId?: string | null; silent?: boolean; noSplit?: boolean; fromMail?: boolean } = {}): Promise<string[]> => {
     const ids: string[] = [];
     const encrypt = !!opts.encrypt && !!vaultKey();
     const projectId = opts.projectId ?? (current !== "all" ? current : defaultProject?.id ?? null);
@@ -128,7 +128,7 @@ export function DocsProvider({ userId, children }: { userId: string; children: R
         const body = encrypt ? new Blob([(await sealBytes(plain)) as BlobPart], { type: "application/octet-stream" }) : file;
         const { error: upErr } = await supabase.storage.from("documents").upload(path, body, { contentType: encrypt ? "application/octet-stream" : mime });
         if (upErr) throw upErr;
-        const { data, error } = await supabase.from("documents").insert({ file_path: path, file_name: item.name.slice(0, 200), mime_type: mime, size_bytes: file.size, encrypted: encrypt, ...(projectId ? { project_id: projectId } : {}) }).select("id").single();
+        const { data, error } = await supabase.from("documents").insert({ file_path: path, file_name: item.name.slice(0, 200), mime_type: mime, size_bytes: file.size, encrypted: encrypt, ...(opts.fromMail ? { from_mail: true } : {}), ...(projectId ? { project_id: projectId } : {}) }).select("id").single();
         if (error) throw error;
         patch(item.key, { id: data.id, state: "saved" });
         ids.push(data.id);

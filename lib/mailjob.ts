@@ -118,22 +118,26 @@ async function importMail(admin: SupabaseClient, uid: string, mode: "attachments
 
   const { data: project } = await admin.from("projects").select("id").eq("user_id", uid).eq("is_default", true).maybeSingle();
   const docIds: string[] = [];
+  let dropped = 0;
   for (const f of files) {
     const mime = realMime(f.type, f.bytes);
     const ext = extFor(mime) ?? ((/\.([a-z0-9]{1,5})$/i.exec(f.name)?.[1] ?? "bin").toLowerCase());
     const path = `${uid}/${crypto.randomUUID()}.${ext}`;
     const up = await admin.storage.from("documents").upload(path, f.bytes, { contentType: mime });
     if (up.error) continue;
-    const { data: row, error } = await admin.from("documents").insert({ user_id: uid, file_path: path, file_name: f.name.slice(0, 200), mime_type: mime, size_bytes: f.bytes.length, ...(project?.id ? { project_id: project.id } : {}) }).select("id").single();
+    const { data: row, error } = await admin.from("documents").insert({ user_id: uid, file_path: path, file_name: f.name.slice(0, 200), mime_type: mime, size_bytes: f.bytes.length, from_mail: true, ...(project?.id ? { project_id: project.id } : {}) }).select("id").single();
     if (error || !row) { await admin.storage.from("documents").remove([path]); continue; }
     docIds.push(row.id);
     // auslesen; mehrere Briefe in einer PDF werden dabei getrennt – dann die Teile auslesen
     const res = await processDocument(admin, uid, { id: row.id });
-    const json = (await res.json().catch(() => ({}))) as { split?: string[] };
+    const json = (await res.json().catch(() => ({}))) as { split?: string[]; dropped?: boolean };
+    // nach den Regeln nicht behalten (z. B. bezahlter Kauf): schon wieder gelöscht
+    if (json.dropped) { docIds.pop(); dropped++; continue; }
     for (const part of json.split ?? []) await processDocument(admin, uid, { id: part, split: false });
   }
   // alles aus einer Mail gehört zusammen → gleicher Partner
   if (docIds.length > 1) await unifyMailDocs(admin, uid, { ids: docIds, subject: m.subject ?? "", from: m.from }).catch(() => undefined);
+  if (!docIds.length && dropped) return { docIds, reason: "Nicht gespeichert (deine Regeln, z. B. bezahlter Kauf)" };
   return { docIds, reason: reason || "An deine Lifevault-Adresse geschickt" };
 }
 
