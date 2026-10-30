@@ -8,7 +8,7 @@ import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { VaultUnlock } from "@/components/VaultUnlock";
 import { useMe } from "@/lib/me";
-import { ArrowLeft, CalendarClock, Download, ExternalLink, Lock, Maximize2, PenLine, Quote, X } from "lucide-react";
+import { ArrowLeft, CalendarClock, Download, ExternalLink, Lock, ChevronDown, Maximize2, PenLine, Quote, X } from "lucide-react";
 import { CopyValue } from "@/components/CopyValue";
 import { Clamp } from "@/components/Clamp";
 import { caseIds } from "@/lib/dupes";
@@ -106,9 +106,12 @@ function DocDetail({ id, page, quote, open, close, back = false }: { id: string;
           </p>
         </div>
       </div>
-      <Classify doc={doc} onChange={(d) => setDoc(d)} />
-      <DocLabels doc={doc} onChange={(d) => setDoc(d)} />
-      <DocImportance doc={doc} onChange={(d) => setDoc(d)} />
+      {/* Eigenschaften als ruhige Liste: links was, rechts der Wert – statt bunter Chip-Wolke */}
+      <dl className="divide-y divide-line rounded-xl border border-card-line text-[12.5px]">
+        <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-2 px-3 py-2"><dt className="text-muted">Einordnung</dt><dd className="min-w-0"><Classify doc={doc} onChange={(d) => setDoc(d)} /></dd></div>
+        {doc.importance !== undefined && doc.status === "ready" && <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-2 px-3 py-2"><dt className="pt-1.5 text-muted">Wichtigkeit</dt><dd className="min-w-0"><DocImportance doc={doc} onChange={(d) => setDoc(d)} /></dd></div>}
+        <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-2 px-3 py-2"><dt className="pt-1.5 text-muted">Tags</dt><dd className="flex min-w-0 flex-wrap items-center gap-1.5"><DocLabels inline doc={doc} onChange={(d) => setDoc(d)} /></dd></div>
+      </dl>
       <DocAdvice id={doc.id} />
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="mr-1 text-[12px] font-semibold text-muted">Schreiben</span>
@@ -202,17 +205,22 @@ function Classify({ doc, onChange }: { doc: Doc; onChange: (d: Doc) => void }) {
     await supabase.from("documents").update({ ...patch, topic_manual: true }).eq("id", doc.id);
     void refresh();
   };
-  const sel = "h-8 min-w-0 rounded-full border border-card-line bg-surface px-2.5 text-[12.5px] font-semibold";
+  // runde Pills auch in Safari: eigene Optik (appearance-none) mit Pfeil
+  const sel = "h-8 w-full min-w-0 appearance-none truncate rounded-full border border-card-line bg-surface pr-7 pl-3 text-[12.5px] font-semibold text-fg";
+  const Pick = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => <span className={`relative inline-flex min-w-0 ${className}`}>{children}<ChevronDown size={13} className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-muted" /></span>;
   return (
-    <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted">
-      <span>Einordnung</span>
-      <select aria-label="Thema" value={doc.topic ?? ""} onChange={(e) => void save({ topic: e.target.value })} className={`${sel} max-w-[12rem]`}>
-        {!doc.topic && <option value="">Thema wählen</option>}
-        {topicsFor(doc.cluster).map((t) => <option key={t} value={t}>{t}</option>)}
-      </select>
-      <select aria-label="Zweck" value={doc.purpose ?? guessPurpose(doc)} onChange={(e) => void save({ purpose: e.target.value as Doc["purpose"] })} className={sel}>
-        {PURPOSES.filter((p) => p.id !== "erledigt").map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-      </select>
+    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+      <Pick className="max-w-[13rem]">
+        <select aria-label="Thema" value={doc.topic ?? ""} onChange={(e) => void save({ topic: e.target.value })} className={sel}>
+          {!doc.topic && <option value="">Thema wählen</option>}
+          {topicsFor(doc.cluster).map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </Pick>
+      <Pick>
+        <select aria-label="Zweck" value={doc.purpose ?? guessPurpose(doc)} onChange={(e) => void save({ purpose: e.target.value as Doc["purpose"] })} className={sel}>
+          {PURPOSES.filter((p) => p.id !== "erledigt").map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+        </select>
+      </Pick>
     </div>
   );
 }
