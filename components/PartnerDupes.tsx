@@ -191,19 +191,23 @@ export function MergeHistory({ pkey, compact }: { pkey?: string; compact?: boole
   };
   return (
     <section className={`${CARD} overflow-hidden`}>
-      <h2 className={`flex items-center gap-2 px-4 pt-3.5 pb-2 font-semibold ${compact ? "text-[14px]" : "text-[16px]"}`}><History size={16} /> Namen & Zusammenführungen</h2>
+      <div className="flex items-center gap-3 px-5 py-4">
+        <IconTile icon={History} color="#64748b" size={36} />
+        <h2 className={`font-semibold ${compact ? "text-[15px]" : "text-[18px] leading-[26px]"}`}>Namen & Zusammenführungen</h2>
+      </div>
       <ul className="divide-y divide-line border-t border-line">
         {mine.map((m) => {
-          const names = [...new Map(m.entries.map((e) => [e.sender ?? "(ohne Absender)", 0])).keys()];
-          const count = (n: string) => m.entries.filter((e) => (e.sender ?? "(ohne Absender)") === n).length;
+          const names = [...new Set(m.entries.map((e) => e.sender ?? "(ohne Absender)"))].filter((n) => n !== m.target_name);
+          const what = m.kind === "rename" ? "umbenannt" : "zusammengeführt";
           return (
-            <li key={m.id} className={`flex items-start gap-3 px-4 py-3 ${m.undone_at ? "opacity-55" : ""}`}>
-              <IconTile icon={m.kind === "rename" ? PencilLine : GitMerge} size={32} color="#64748b" className="mt-0.5" />
-              <span className="min-w-0 flex-1 text-[13px]">
-                <span className="block"><b className="font-semibold">{names.map((n) => `„${n}“ (${count(n)})`).join(", ")}</b> → <b className="font-semibold">„{m.target_name}“</b></span>
-                <span className="block text-[12px] text-muted">{fmtDate(m.created_at)} {m.kind === "rename" ? "umbenannt" : m.kind === "auto" ? "automatisch zusammengeführt (sehr wahrscheinlich gleich)" : "zusammengeführt"}{m.undone_at ? ` · am ${fmtDate(m.undone_at)} rückgängig gemacht` : ""}</span>
+            <li key={m.id} className={`flex items-center gap-3 px-5 py-4 ${m.undone_at ? "opacity-55" : ""}`}>
+              <IconTile icon={m.kind === "rename" ? PencilLine : GitMerge} size={32} color={m.kind === "rename" ? "#2563eb" : "#6d4aff"} />
+              {/* nur der Name; woraus er entstanden ist, steht klein darunter (ganz im Tooltip) */}
+              <span className="min-w-0 flex-1" title={names.length ? `aus ${names.join(", ")}` : undefined}>
+                <b className="block truncate text-[14px] font-semibold">{m.target_name}</b>
+                <span className="block truncate text-[12px] text-muted">{m.undone_at ? `rückgängig am ${fmtDate(m.undone_at)}` : `${names.length ? `aus ${names.length} ${names.length === 1 ? "Namen" : "Namen"} · ` : ""}${what} am ${fmtDate(m.created_at)}`}</span>
               </span>
-              {!m.undone_at && <button type="button" disabled={busy === m.id} onClick={() => void undo(m)} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-card-line px-3 py-1 text-[12px] font-semibold hover:bg-surface-2 disabled:opacity-50">{busy === m.id ? <Loader2 size={13} className="animate-spin" /> : <Undo2 size={13} />} Rückgängig</button>}
+              {!m.undone_at && <button type="button" disabled={busy === m.id} onClick={() => void undo(m)} aria-label="Rückgängig" title="Rückgängig" className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-card-line text-soft hover:bg-surface-2 hover:text-fg disabled:opacity-50">{busy === m.id ? <Loader2 size={15} className="animate-spin" /> : <Undo2 size={15} />}</button>}
             </li>
           );
         })}
