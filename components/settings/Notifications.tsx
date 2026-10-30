@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import { useState } from "react";
 import { BellRing, Loader2, Send, Smartphone } from "lucide-react";
 import { KIND } from "@/components/TodoList";
@@ -45,7 +46,7 @@ export function NotificationSettings() {
       <section className={`${CARD} p-5`}>
         <div className="flex items-center justify-between gap-4">
           <span className="flex items-start gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-2"><BellRing size={18} /></span>
+            <IconTile icon={BellRing} size={40} color="#64748b" />
             <span><b className="text-[15px]">Mitteilungen auf diesem Gerät</b><span className="mt-0.5 block text-[13px] text-muted">Erinnert an Fristen: Zahlungen, Formulare, Widersprüche, Termine – auch wenn die App zu ist.</span></span>
           </span>
           {busy || on === null ? <Loader2 size={20} className="animate-spin text-muted" /> : <Switch on={!!on} onChange={(v) => void toggle(v)} label="Mitteilungen" disabled={!pushSupported() && !iosHint} />}

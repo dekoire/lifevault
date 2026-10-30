@@ -23,7 +23,7 @@ export function RecentTable({ docs }: { docs: Doc[] }) {
             <Link key={d.id} href={`/d/${d.id}`} className={`flex items-center gap-3 px-4 py-3.5 md:px-6 transition-colors hover:bg-canvas ${GRID} ${d.archived ? "opacity-60" : ""}`}>
               <span className="flex min-w-0 flex-1 items-center gap-3">
                 {processing
-                  ? <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-fg"><span className="flex gap-0.5">{[0, 1, 2].map((i) => <span key={i} className="typing-dot h-1.5 w-1.5 rounded-full bg-canvas" style={{ animationDelay: `${i * 0.15}s` }} />)}</span></span>
+                  ? <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-brand-500"><span className="flex gap-0.5">{[0, 1, 2].map((i) => <span key={i} className="typing-dot h-1.5 w-1.5 rounded-full bg-canvas" style={{ animationDelay: `${i * 0.15}s` }} />)}</span></span>
                   : <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} urgent={isUrgent(d)} size={36} />}
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5">

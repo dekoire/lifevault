@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import { useState } from "react";
 import { Lock, Timer } from "lucide-react";
 import { CARD } from "@/components/ui";
@@ -23,7 +24,7 @@ export function AppLockSettings() {
     <div className="space-y-4">
       <section className={`${CARD} p-5`}>
         <div className="flex items-start gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-2"><Lock size={18} /></span>
+          <IconTile icon={Lock} size={40} color="#64748b" />
           <span className="min-w-0 flex-1"><b className="text-[15px]">PIN</b><span className="mt-0.5 block text-[13px] text-muted">{hasPin === undefined ? "Lädt …" : hasPin ? "Eingerichtet. Nach 5 falschen Versuchen wirst du abgemeldet." : "Noch keine PIN. Ohne PIN sperrt sich die App nicht."}</span></span>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -35,7 +36,7 @@ export function AppLockSettings() {
       </section>
       <section className={`${CARD} p-5`}>
         <div className="flex items-start gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-2"><Timer size={18} /></span>
+          <IconTile icon={Timer} size={40} color="#64748b" />
           <span><b className="text-[15px]">Sperren nach</b><span className="mt-0.5 block text-[13px] text-muted">So lange ohne Bedienung, dann fragt Lifevault nach der PIN (gilt für dieses Gerät).</span></span>
         </div>
         <div className="mt-4 flex flex-wrap gap-1.5">

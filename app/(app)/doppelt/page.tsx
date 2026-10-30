@@ -81,7 +81,7 @@ function Hint({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
 function Empty({ text }: { text: string }) {
   return (
     <div className={`${CARD} flex flex-col items-center px-6 py-16 text-center`}>
-      <span className="grid h-14 w-14 place-items-center rounded-full bg-positive/10 text-positive-text"><CheckCircle2 size={28} /></span>
+      <IconTile icon={CheckCircle2} size={56} color="#16a34a" />
       <b className="mt-4 text-[17px]">Alles aufgeräumt</b>
       <span className="mt-1 text-[14px] text-muted">{text}</span>
     </div>

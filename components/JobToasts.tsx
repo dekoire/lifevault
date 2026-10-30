@@ -17,7 +17,7 @@ export function JobToasts() {
         return (
           <div key={j.id} role="status" className="sheet-up pointer-events-auto overflow-hidden rounded-2xl text-white shadow-[0_12px_32px_rgba(85,48,201,.35)]" style={{ background: "linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%)" }}>
             <div className="flex items-center gap-3 px-4 pt-3.5 pb-3">
-              <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15">
+              <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-[10px] bg-white/15">
                 <Icon size={18} />
                 <span className="absolute -right-0.5 -bottom-0.5 grid h-4.5 w-4.5 place-items-center rounded-full bg-white text-brand-600">
                   {j.state === "running" ? <Loader2 size={11} className="animate-spin" /> : j.state === "done" ? <Check size={11} strokeWidth={3} /> : <AlertCircle size={11} />}

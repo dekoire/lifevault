@@ -33,7 +33,7 @@ export function HistoryTimeline({ history, docs }: { history: History; docs: Doc
                     {/* Verbindungslinie zwischen den Einträgen, hinter den Logos */}
                     {i < r.chain.length - 1 && <span aria-hidden className="absolute top-10 bottom-[-0.75rem] left-[17px] w-0.5 bg-line" />}
                     {home ? (
-                      <span className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-full border border-card-line bg-surface ${now ? "" : "opacity-60"}`}><Home size={17} /></span>
+                      <IconTile icon={Home} size={36} color="#65a30d" className={now ? "" : "opacity-60"} />
                     ) : (
                       <Link href={`/partner/${partnerKey(sender?.sender ?? e.name)}`} className={`relative shrink-0 ${now ? "" : "opacity-60"}`}>
                         <SenderLogo domain={logoDomain(e.name, docs) ?? (sender?.sender && !r.chain.some((x) => x !== e && partnerKey(x.name) === partnerKey(sender.sender!)) ? sender.sender_domain : null)} sender={e.name} cluster={sender?.cluster} size={36} />

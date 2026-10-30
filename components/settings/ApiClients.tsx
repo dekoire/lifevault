@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import { useEffect, useState } from "react";
 import { Ban, Check, Copy, History, KeyRound, Loader2, Plus, RotateCw, ShieldAlert, Trash2 } from "lucide-react";
 import { Dot } from "@/components/ProjectSwitcher";
@@ -92,7 +93,7 @@ function ClientRow({ c, homepage, onRotate, onRevoke, onRemove }: { c: Client; h
   return (
     <div className={`px-5 py-4 ${dead ? "opacity-60" : ""}`}>
       <div className="flex items-start gap-3">
-        {c.app_id ? <AppIcon name={c.name} homepage={homepage} size={40} /> : <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg text-canvas"><KeyRound size={18} /></span>}
+        {c.app_id ? <AppIcon name={c.name} homepage={homepage} size={40} /> : <IconTile icon={KeyRound} size={40} />}
         <span className="min-w-0 flex-1">
           <b className="flex flex-wrap items-center gap-2 text-[15px]">{c.name}{c.revoked_at && <span className="rounded-full bg-negative/10 px-2 py-0.5 text-[11px] text-negative-text">getrennt</span>}{c.app_id && !c.revoked_at && <span className="rounded-full bg-positive/10 px-2 py-0.5 text-[11px] text-positive-text">per Anmeldung verbunden</span>}</b>
           {!c.app_id && <code className="block truncate text-[12px] text-muted">{c.client_id}</code>}

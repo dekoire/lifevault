@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import { useState } from "react";
 import { AtSign, Check, Copy, Loader2, Plus, RefreshCw, RotateCcw, ShieldCheck, X } from "lucide-react";
 import { CARD, Switch } from "@/components/ui";
@@ -23,7 +24,7 @@ export function InboxCard({ mode, from, to }: { mode: "since" | "range"; from: s
   if (inbox === undefined) return <section className={`${CARD} p-5 lg:col-span-2`}><Loader2 size={18} className="animate-spin text-muted" /></section>;
   if (inbox === null) return (
     <section className={`${CARD} flex flex-wrap items-center gap-4 p-5 lg:col-span-2`}>
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-500 text-white"><AtSign size={20} /></span>
+      <IconTile icon={AtSign} size={44} />
       <span className="min-w-0 flex-1"><b className="block text-[16px]">Eigene Lifevault-Adresse</b><span className="text-[13px] text-soft">Rechnungen & Briefe einfach weiterleiten – die Anhänge landen automatisch in deinem Tresor.</span></span>
       <button type="button" onClick={() => void create()} className="inline-flex h-10 items-center gap-2 rounded-full bg-fg px-4 text-[14px] font-semibold text-canvas"><Plus size={16} /> Adresse erzeugen</button>
     </section>
@@ -50,7 +51,7 @@ export function InboxCard({ mode, from, to }: { mode: "since" | "range"; from: s
   return (
     <section className={`${CARD} overflow-hidden lg:col-span-2`}>
       <div className="flex flex-wrap items-center gap-3 p-5">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-500 text-white"><AtSign size={20} /></span>
+        <IconTile icon={AtSign} size={44} />
         <span className="min-w-0 flex-1">
           <b className="block text-[16px]">Deine Lifevault-Adresse</b>
           <span className="text-[13px] text-muted">Mails mit Anhang hierhin weiterleiten oder schicken lassen</span>

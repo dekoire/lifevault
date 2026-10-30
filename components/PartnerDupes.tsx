@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Check, GitMerge, History, Loader2, PencilLine, Undo2, Users, X } from "lucide-react";
 import { SenderLogo } from "@/components/SenderLogo";
@@ -197,7 +198,7 @@ export function MergeHistory({ pkey, compact }: { pkey?: string; compact?: boole
           const count = (n: string) => m.entries.filter((e) => (e.sender ?? "(ohne Absender)") === n).length;
           return (
             <li key={m.id} className={`flex items-start gap-3 px-4 py-3 ${m.undone_at ? "opacity-55" : ""}`}>
-              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-2">{m.kind === "rename" ? <PencilLine size={15} /> : <GitMerge size={15} />}</span>
+              <IconTile icon={m.kind === "rename" ? PencilLine : GitMerge} size={32} color="#64748b" className="mt-0.5" />
               <span className="min-w-0 flex-1 text-[13px]">
                 <span className="block"><b className="font-semibold">{names.map((n) => `„${n}“ (${count(n)})`).join(", ")}</b> → <b className="font-semibold">„{m.target_name}“</b></span>
                 <span className="block text-[12px] text-muted">{fmtDate(m.created_at)} {m.kind === "rename" ? "umbenannt" : m.kind === "auto" ? "automatisch zusammengeführt (sehr wahrscheinlich gleich)" : "zusammengeführt"}{m.undone_at ? ` · am ${fmtDate(m.undone_at)} rückgängig gemacht` : ""}</span>

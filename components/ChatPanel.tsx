@@ -129,7 +129,7 @@ function ResearchCard({ r, onAnswer }: { r: Research; onAnswer?: (yes: boolean) 
   if (r.state === "declined") return (
     <div className="mt-4 rounded-2xl border border-card-line bg-surface p-4">
       <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-3 text-soft"><Globe size={17} /></span>
+        <IconTile icon={Globe} size={36} color="#64748b" />
         <div className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2"><b className="text-[15px]">Internetrecherche</b><span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2 py-0.5 text-[12px] font-semibold text-soft"><X size={11} strokeWidth={3} /> Von dir abgelehnt</span></span>
           {r.reason && <span className="mt-0.5 block text-[13px] text-soft">Fehlt weiterhin: {r.reason}</span>}
@@ -482,7 +482,7 @@ export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu de
           <div className="px-2.5 pt-1 pb-1 text-[12px] font-semibold text-muted">Antworttiefe</div>
           {DEPTHS.map((d) => (
             <button key={d.id} type="button" onClick={() => { onDepth(d.id); setMenu(""); }} className={`flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-[14px] hover:bg-surface-2 ${d.id === cur.id ? "bg-surface-2" : ""}`}>
-              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${d.id === cur.id ? "bg-brand-500 text-white" : "bg-fg text-canvas"}`}><d.icon size={16} /></span>
+              <IconTile icon={d.icon} size={36} color={d.id === cur.id ? "#6d4aff" : "#475569"} />
               <span className="min-w-0 flex-1"><b className="block">{d.label}</b><span className="text-[12px] text-muted">{d.text}</span></span>
               {d.id === cur.id && <Check size={15} className="text-selected" />}
             </button>

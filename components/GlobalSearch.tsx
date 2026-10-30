@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, Sparkles, X } from "lucide-react";
-import { ClusterIcon } from "@/components/ClusterIcon";
+import { ClusterIcon, IconTile } from "@/components/ClusterIcon";
 import { useDetail } from "@/components/DetailPanel";
 import { SenderLogo } from "@/components/SenderLogo";
 import { CLUSTERS } from "@/lib/clusters";
@@ -53,7 +53,7 @@ export function GlobalSearch({ compact = false, button = true }: { compact?: boo
       .map((p) => ({ key: `p${p.key}`, icon: <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={32} />, title: p.name, sub: `Partner · ${p.docs.length} Dokumente`, go: done(() => (detail ? detail({ kind: "partner", key: p.key }) : router.push(`/partner/${p.key}`))) }));
     const cs = CLUSTERS.filter((c) => c.label.toLowerCase().includes(term)).slice(0, 3)
       .map((c) => ({ key: `c${c.id}`, icon: <ClusterIcon id={c.id} size={32} />, title: c.label, sub: "Bereich", go: done(() => router.push(`/c/${c.id}`)) }));
-    const ask = { key: "ask", icon: <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-500 text-white"><Sparkles size={15} /></span>, title: `„${q.trim()}“ im Chat fragen`, sub: "Antwort aus deinen Unterlagen", go: done(() => router.push(`/chat?q=${encodeURIComponent(q.trim())}`)) };
+    const ask = { key: "ask", icon: <IconTile icon={Sparkles} size={32} />, title: `„${q.trim()}“ im Chat fragen`, sub: "Antwort aus deinen Unterlagen", go: done(() => router.push(`/chat?q=${encodeURIComponent(q.trim())}`)) };
     return [...ds, ...ps, ...cs, ask];
   }, [term, q, docs, detail, router]);
   useEffect(() => setSel(0), [term]);

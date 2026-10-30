@@ -1,4 +1,5 @@
 "use client";
+import { IconTile } from "@/components/ClusterIcon";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, FileUp, Inbox, Loader2, Mail, Paperclip, RefreshCw, Sparkles, X } from "lucide-react";
 import { InboxCard } from "@/components/settings/InboxCard";
@@ -195,7 +196,7 @@ export default function MailPage() {
         {/* Gmail */}
         <section className={`${CARD} flex flex-col p-5`}>
           <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface-2"><Mail size={20} /></span>
+            <IconTile icon={Mail} size={44} color="#64748b" />
             <div className="min-w-0 flex-1">
               <h2 className="text-[18px] leading-[26px] font-semibold">Gmail</h2>
               <p className="truncate text-[13px] text-muted">{gmail ? `${gmail.source.slice(6)} · zuletzt ${lastSync(gmail)?.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }) ?? "–"}` : "Noch nicht abgerufen"}</p>
@@ -212,7 +213,7 @@ export default function MailPage() {
         {/* Proton / Dateien */}
         <section className={`${CARD} flex flex-col p-5`}>
           <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface-2"><Inbox size={20} /></span>
+            <IconTile icon={Inbox} size={44} color="#64748b" />
             <div className="min-w-0 flex-1">
               <h2 className="text-[18px] leading-[26px] font-semibold">Proton Mail & andere</h2>
               <p className="text-[13px] text-muted">Mail-Dateien (.eml, .mbox) importieren</p>
@@ -295,7 +296,7 @@ export default function MailPage() {
 function MailRow({ r, onImport }: { r: Row; onImport?: () => void }) {
   return (
     <li className="flex items-start gap-3 px-5 py-3">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2 text-[13px] font-semibold">{senderName(r.m.from).slice(0, 1).toUpperCase()}</span>
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-surface-2 text-[13px] font-semibold">{senderName(r.m.from).slice(0, 1).toUpperCase()}</span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[14px] font-semibold">{r.m.subject || "(ohne Betreff)"}</span>
         <span className="block truncate text-[12px] text-muted">{senderName(r.m.from)}{r.m.date ? ` · ${fmtDate(r.m.date)}` : ""} · {r.reason}</span>
