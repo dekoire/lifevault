@@ -148,17 +148,20 @@ a, button, [role="button"], summary, input, select, textarea {
 :focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 2px; border-radius: 10px; }
 /* Eingabefelder mit eigenem Rahmen (Chat): kein lila Fokusrahmen */
 [data-own-focus]:focus-visible { outline: none; }
+/* anklickbare Karten beim Überfahren: lila, Schrift und Symbole weiß – ohne Schatten */
+@media (hover: hover) {
+  a.shadow-card, button.shadow-card, .lift { transition: background-color 0.12s ease-out, border-color 0.12s ease-out, color 0.12s ease-out; }
+  a.shadow-card:hover, button.shadow-card:hover, .lift:hover {
+    background-color: var(--color-brand-500); border-color: var(--color-brand-500); box-shadow: none; color: #fff; opacity: 1;
+  }
+  :is(a.shadow-card, button.shadow-card, .lift):hover * { color: #fff !important; }
+  :is(a.shadow-card, button.shadow-card, .lift):hover :is(.bg-surface, .bg-surface-2, .bg-surface-3) { background-color: rgb(255 255 255 / 0.16) !important; }
+  :is(a.shadow-card, button.shadow-card, .lift):hover [class*="border"] { border-color: rgb(255 255 255 / 0.3) !important; }
+}
 @media (prefers-reduced-motion: no-preference) {
   /* Antippen: kurz eindrücken */
   button:not(:disabled):active, [role="button"]:active, summary:active { transform: scale(0.97); }
   a:active { transform: scale(0.985); }
-  /* anklickbare Karten heben sich beim Überfahren leicht an */
-  @media (hover: hover) {
-    a.shadow-card:hover, button.shadow-card:hover, .lift:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 22px rgba(16, 24, 40, 0.08), 0 2px 5px rgba(16, 24, 40, 0.04);
-    }
-  }
   a.shadow-card:active, button.shadow-card:active, .lift:active { transform: translateY(0) scale(0.985); }
 
   /* Seitenwechsel und Abschnitte: sanft einblenden, nacheinander */

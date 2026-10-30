@@ -58,23 +58,22 @@ export function AdviceList() {
 
   const items = data?.items ?? [];
   const total = items.reduce((n, i) => n + (i.saving ?? 0), 0);
+  // Nur zeigen, wenn es etwas zu tun gibt – sonst (auch beim Durchsehen oder bei Fehlern) keine Kachel
+  if (!items.length) return null;
   return (
     <section className={`${CARD} overflow-hidden`}>
       {/* Kopf wie „Zuletzt hinzugefügt“: schlichte Überschrift, darunter Spaltenköpfe und Zeilen */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
         <span className="min-w-0 flex-1">
           <h2 className="text-[16px] font-semibold">Handlungsempfehlungen</h2>
-          <span className="block text-[13px] text-muted">{busy && !items.length ? "Deine Unterlagen werden durchgesehen …" : total > 0 ? `Bis zu ${Math.round(total).toLocaleString("de-DE")} € im Jahr möglich · nach Nutzen und Aufwand sortiert` : "Nach Nutzen und Aufwand sortiert"}</span>
+          <span className="block text-[13px] text-muted">{total > 0 ? `Bis zu ${Math.round(total).toLocaleString("de-DE")} € im Jahr möglich · nach Nutzen und Aufwand sortiert` : "Nach Nutzen und Aufwand sortiert"}</span>
         </span>
         <button type="button" onClick={() => void load()} disabled={busy} title="Neu bewerten" aria-label="Neu bewerten" className="grid h-9 w-9 place-items-center rounded-full text-soft hover:bg-surface-2 disabled:opacity-50">{busy ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}</button>
       </div>
       {error && <p className="mx-4 mb-3 rounded-xl bg-negative/10 px-3 py-2 text-[13px] text-negative-text">{error}</p>}
-      {!busy && data && !items.length && <p className="px-4 pb-4 text-[14px] text-muted">Gerade nichts zu tun – alles im grünen Bereich.</p>}
-      {items.length > 0 && (
-        <div className={`hidden border-y border-line bg-surface-2/60 px-4 py-3.5 ${GRID}`} role="row">
-          <span className={HEAD}>Empfehlung</span><span className={HEAD}>Art</span><span className={HEAD}>Aufwand</span><span className={`${HEAD} text-right`}>Ersparnis</span><span />
-        </div>
-      )}
+      <div className={`hidden border-y border-line bg-surface-2/60 px-4 py-3.5 ${GRID}`} role="row">
+        <span className={HEAD}>Empfehlung</span><span className={HEAD}>Art</span><span className={HEAD}>Aufwand</span><span className={`${HEAD} text-right`}>Ersparnis</span><span />
+      </div>
       <div className="divide-y divide-line border-t border-line md:border-t-0">
         {items.map((it, i) => {
           const k = KINDS[it.kind] ?? KINDS.ordnung;

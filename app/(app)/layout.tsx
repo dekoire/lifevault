@@ -8,7 +8,7 @@ import { DraftHost } from "@/components/DraftSheet";
 import { ForwardConfirm } from "@/components/ForwardConfirm";
 import { DownloadsMenu } from "@/components/settings/Downloads";
 import { useCallback, useEffect, useState } from "react";
-import { Building2, Camera, Download, FolderOutput, Search, PanelLeftClose, PanelLeftOpen, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
+import { Building2, Camera, Download, FolderOutput, Search, ChevronsLeft, ChevronsRight, FileUp, House, MessageSquare, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
 import { Logo, LogoMark } from "@/components/Logo";
 import { MfaChallenge, MfaEnroll } from "@/components/Mfa";
 import { useCaptureTray } from "@/components/CaptureTray";
@@ -23,6 +23,7 @@ import { UploadProgress } from "@/components/UploadProgress";
 import { DetailHost } from "@/components/DetailPanel";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import { PressFeedback } from "@/components/PressFeedback";
 import { KeyboardWatch } from "@/components/KeyboardWatch";
 import { Avatar, AvatarMenu, nameFromEmail } from "@/components/AvatarMenu";
 import { supabase, useSession } from "@/lib/supabase";
@@ -117,6 +118,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       {inputs}
       {exporting && <ExportSheet onClose={() => setExporting(false)} />}
       <PullWithDocs />
+      <PressFeedback />
       <KeyboardWatch />
       <UploadProgress />
       <JobToasts />
@@ -124,21 +126,28 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       {/* Desktop: Seitenleiste wie bei Finastry */}
       {/* schwebende, runde Karte mit Abstand zum Rand (oben, unten, links), leicht durchsichtig; --side enthält den Abstand */}
       <aside className={`fixed top-3 bottom-3 left-3 z-30 hidden flex-col rounded-2xl border border-card-line bg-surface/80 py-5 shadow-[0_8px_30px_rgba(15,23,42,.07)] backdrop-blur-xl transition-[width] duration-200 lg:flex ${mini ? "w-[4.5rem] px-2.5" : "w-60 px-3"}`}>
-        <div className={`mb-5 flex items-center ${mini ? "flex-col gap-3" : "justify-between pl-2"}`}>
+        <div className={`mb-5 flex items-center ${mini ? "justify-center" : "pl-2"}`}>
           <Link href="/" aria-label="Start">{mini ? <LogoMark size={30} /> : <Logo size={30} />}</Link>
-          <button type="button" onClick={toggleMini} aria-label={mini ? "Menü aufklappen" : "Menü zuklappen"} title={mini ? "Menü aufklappen" : "Menü zuklappen"} className="grid h-9 w-9 place-items-center rounded-full text-soft hover:bg-surface-2 hover:text-fg">{mini ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}</button>
         </div>
         {!mini && <div className="mb-3"><ProjectSwitcher /></div>}
         <nav className="grid gap-1">
           {NAV.filter((n) => n.href !== "/einstellungen").map(({ href, label, icon: Icon, match }) => {
             const on = match(path);
-            return <Link key={href} href={href} aria-current={on ? "page" : undefined} title={mini ? label : undefined} className={`flex h-11 items-center gap-2.5 rounded-xl text-[14px] font-medium transition-colors ${mini ? "justify-center" : "px-3"} ${on ? "bg-fg text-canvas" : "text-soft hover:bg-surface-2 hover:text-fg"}`}><Icon size={18} strokeWidth={1.8} />{!mini && label}</Link>;
+            return <Link key={href} href={href} aria-current={on ? "page" : undefined} title={mini ? label : undefined} className={`relative flex h-11 min-w-0 items-center gap-2.5 rounded-xl text-[13px] font-medium transition-colors duration-[120ms] ${mini ? "mx-auto w-11 justify-center px-0" : "px-3"} ${on ? "bg-fg text-canvas shadow-xs" : "text-soft hover:bg-surface-2 hover:text-fg"}`}><Icon size={18} strokeWidth={1.75} className="shrink-0" />{!mini && label}</Link>;
           })}
         </nav>
         <Link href="/einstellungen" className={`mt-auto flex items-center gap-2.5 rounded-xl p-2 hover:bg-surface-2 ${mini ? "justify-center" : ""}`} title={`${nameFromEmail(email)} · Einstellungen`}>
           <Avatar email={email} />
-          {!mini && <><span className="min-w-0 flex-1"><b className="block truncate text-[14px]">{nameFromEmail(email)}</b><span className="block truncate text-[12px] text-muted">{email}</span></span><Settings size={16} className="shrink-0 text-muted" /></>}
+          {!mini && <><span className="min-w-0 flex-1"><b className="block truncate text-[13px]">{nameFromEmail(email)}</b><span className="block truncate text-[12px] text-muted">{email}</span></span><Settings size={16} className="shrink-0 text-muted" /></>}
         </Link>
+        {/* Einklappen unten, wie in Finastry */}
+        <div className={`-mb-2 mt-2 border-t border-line pt-2 ${mini ? "-mx-2.5 px-2.5" : "-mx-3 px-3"}`}>
+          <button type="button" onClick={toggleMini} aria-label={mini ? "Seitenleiste ausklappen" : "Seitenleiste einklappen"} title={mini ? "Ausklappen" : "Einklappen"}
+            className={`flex h-10 w-full items-center gap-3 rounded-lg text-[13px] font-medium text-muted hover:bg-surface-2 hover:text-fg ${mini ? "justify-center" : "px-3"}`}>
+            {mini ? <ChevronsRight size={20} strokeWidth={1.75} /> : <ChevronsLeft size={20} strokeWidth={1.75} />}
+            {!mini && "Einklappen"}
+          </button>
+        </div>
       </aside>
 
       {/* Handy: Kopf mit Logo */}
