@@ -11,6 +11,8 @@ export interface Doc {
   mime_type: string;
   size_bytes: number;
   status: "processing" | "ready" | "error";
+  /** letzte Änderung – zeigt, ob „wird ausgelesen“ noch läuft oder hängt */
+  updated_at?: string;
   error: string | null;
   cluster: string | null;
   title: string | null;
@@ -64,4 +66,8 @@ export type SecretPart = Pick<Doc, "summary" | "key_facts" | "deadlines" | "amou
 
 /** Spalten für Listen (ohne Volltext) */
 export type WebSource = { query: string; url?: string; title?: string; imported_at: string; checked_at: string };
-export const LIST_COLS = "id,file_path,file_name,mime_type,size_bytes,status,error,cluster,title,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,tags,sender_domain,archived,archived_reason,encrypted,secret,project_id,split_from,web_source,merged_into,topic,purpose,topic_manual,labels,importance,importance_reason,importance_manual,partner_role,basis_id";
+export const LIST_COLS = "id,file_path,file_name,mime_type,size_bytes,status,updated_at,error,cluster,title,doc_type,sender,doc_date,received_at,summary,key_facts,deadlines,amounts,tags,sender_domain,archived,archived_reason,encrypted,secret,project_id,split_from,web_source,merged_into,topic,purpose,topic_manual,labels,importance,importance_reason,importance_manual,partner_role,basis_id";
+
+/** „Wird ausgelesen“ seit über 10 Minuten: hängt (Abbruch, Zeitüberschreitung) – nicht mehr als laufend zählen */
+export const STALE_MS = 10 * 60_000;
+export const isStuck = (d: Pick<Doc, "status" | "updated_at" | "received_at">) => d.status === "processing" && Date.now() - Date.parse(d.updated_at ?? d.received_at) > STALE_MS;
