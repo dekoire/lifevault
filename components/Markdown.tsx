@@ -84,7 +84,7 @@ function Chart({ body }: { body: string }) {
 export function Markdown({ text, widget }: { text: string; widget?: (kind: string, body: string) => React.ReactNode }) {
   // Infografik-Blöcke herauslösen, Rest normal darstellen
   // Infografiken (kpi, chart) und Bausteine aus dem Chat (zahlung, partner, dokumente, aufgaben, uebersicht, gehalt, aktion)
-  const parts = text.replace(/\r/g, "").split(/```(kpi|chart|zahlung|partner|dokumente|aufgaben|uebersicht|gehalt|aktion|verlauf|partnerliste|gruppen)\n?([\s\S]*?)(?:```|$)/);
+  const parts = text.replace(/\r/g, "").split(/```(kpi|chart|zahlung|partner|dokumente|aufgaben|uebersicht|gehalt|aktion|verlauf|partnerliste|gruppen|konditionen|deckung)\n?([\s\S]*?)(?:```|$)/);
   if (parts.length > 1) {
     const out: React.ReactNode[] = [];
     for (let i = 0; i < parts.length; i += 3) {
