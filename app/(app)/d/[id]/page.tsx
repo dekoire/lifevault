@@ -200,6 +200,16 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
     { icon: <Trash2 size={17} />, label: "Löschen", onClick: () => void del(), danger: true },
   ];
 
+  // gesperrt: nichts verraten – kein Titel, Absender, Logo, Tags oder Fristen; nur Zurück und die Entsperren-Box, mittig
+  if (doc.encrypted && !unlocked) return (
+    <div className="flex min-h-[calc(100dvh-12rem)] flex-col">
+      <button type="button" onClick={() => router.back()} className="inline-flex h-10 items-center gap-1 self-start rounded-full pr-3 pl-1.5 text-[14px] font-semibold text-soft hover:bg-surface-3"><ChevronLeft size={18} /> Zurück</button>
+      <div className="grid flex-1 place-items-center py-10">
+        <div className="w-full max-w-md"><VaultUnlock /></div>
+      </div>
+    </div>
+  );
+
   return (
     <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div className="mb-3 flex items-center justify-between gap-2">
