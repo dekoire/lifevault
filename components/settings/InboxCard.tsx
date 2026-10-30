@@ -1,7 +1,7 @@
 "use client";
 import { IconTile } from "@/components/ClusterIcon";
 import { useState } from "react";
-import { AtSign, Check, Copy, Loader2, Plus, RefreshCw, RotateCcw, ShieldCheck, X } from "lucide-react";
+import { AtSign, Check, ChevronDown, Copy, Loader2, Plus, RefreshCw, RotateCcw, ShieldCheck, X } from "lucide-react";
 import { CARD, Switch } from "@/components/ui";
 import { DEFAULT_KEEP, KEEP_ROWS, normalizeKeep, type KeepRules } from "@/lib/mailkeep";
 import { useDocs } from "@/lib/docs";
@@ -91,9 +91,14 @@ export function InboxCard({ mode, from, to }: { mode: "since" | "range"; from: s
       {inbox.mode && (
         <div className="border-t border-line p-5">
           <b className="block text-[14px]">Was soll gelesen werden?</b>
-          <div className="mt-2.5 inline-flex flex-wrap gap-1 rounded-full bg-surface-2 p-1">
-            {MAIL_MODES.map((m) => <button key={m.id} type="button" onClick={() => void save({ mode: m.id })} aria-pressed={inbox.mode === m.id} className={`h-9 rounded-full px-3.5 text-[13px] font-semibold ${inbox.mode === m.id ? "bg-surface text-fg shadow-sm" : "text-soft hover:text-fg"}`}>{m.label}</button>)}
-          </div>
+          {/* Auswahl als Aufklappfeld – passt am Handy in eine Zeile */}
+          <label className="relative mt-2.5 flex h-12 w-full items-center rounded-xl border border-card-line bg-surface pr-10 pl-4 text-[15px] font-semibold focus-within:border-brand-500 sm:max-w-sm">
+            <span className="truncate">{MAIL_MODES.find((m) => m.id === inbox.mode)?.label}</span>
+            <ChevronDown size={18} className="pointer-events-none absolute right-3.5 text-muted" />
+            <select aria-label="Was soll gelesen werden?" value={inbox.mode} onChange={(e) => void save({ mode: e.target.value as typeof inbox.mode })} className="absolute inset-0 cursor-pointer opacity-0">
+              {MAIL_MODES.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+            </select>
+          </label>
           <p className="mt-2 text-[13px] text-muted">{MAIL_MODES.find((m) => m.id === inbox.mode)?.hint} Die KI entscheidet, was relevant ist; Werbung und Versandinfos ohne Preis werden nicht abgelegt.</p>
         </div>
       )}
