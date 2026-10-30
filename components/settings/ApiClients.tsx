@@ -6,6 +6,7 @@ import { CARD, ICON_BTN, Switch } from "@/components/ui";
 import { CLUSTERS } from "@/lib/clusters";
 import { KINDS } from "@/lib/kinds";
 import { AppIcon } from "@/components/AppIcon";
+import { ConnectDocs } from "@/components/settings/ConnectDocs";
 import { useProjects } from "@/lib/projects";
 import { supabase } from "@/lib/supabase";
 
@@ -69,6 +70,7 @@ export function ApiSettings() {
         </section>
       )}
       <OwnApps />
+      <ConnectDocs />
       <ApiDocs />
     </>
   );
