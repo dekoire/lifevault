@@ -1,3 +1,4 @@
+import { fileProblem } from "@/lib/filecheck";
 import { createClient } from "@supabase/supabase-js";
 import { extract, FILE_TYPES, TEXT_TYPES, toColumns } from "@/lib/extract";
 
@@ -70,6 +71,8 @@ export async function uploadDocument(cred: string, input: { fileName: string; mi
   if (![...FILE_TYPES, ...TEXT_TYPES].includes(mime)) throw new ApiError(415, "unsupported_type", ERRORS.unsupported_type[1]);
   if (!input.data.length || input.data.length > MAX_UPLOAD) throw new ApiError(413, "too_large", `Datei zu groß (höchstens ${MAX_UPLOAD / 1024 / 1024} MB).`);
   if (input.projectId && !/^[0-9a-f-]{36}$/i.test(input.projectId)) throw new ApiError(400, "bad_request", "project_id ist keine gültige ID.");
+  const unsafe = fileProblem(input.data, mime);
+  if (unsafe) throw new ApiError(422, "unsafe_file", unsafe);
   const { project_id } = await rpc<{ project_id: string }>("api_upload_check", { p_cred: cred, p_project: input.projectId ?? null });
   const o = await extract({ data: input.data, mediaType: mime }).catch((e) => { console.error("api extract", (e as Error).message); return undefined; });
   if (!o) throw new ApiError(422, "unreadable", "Das Dokument konnte nicht ausgelesen werden.");
