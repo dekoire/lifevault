@@ -32,7 +32,8 @@ function batches(docs: Doc[]) {
   return out.filter((b) => b.length >= 2).reverse().slice(0, 3);
 }
 
-export function MergeSuggestions() {
+/** intro: steht nur da, wenn es Vorschläge gibt; empty: statt nichts (z. B. auf der Seite „Aufräumen“) */
+export function MergeSuggestions({ intro, empty }: { intro?: React.ReactNode; empty?: React.ReactNode } = {}) {
   const { allDocs } = useDocs();
   const stacks = useMemo(() => batches(allDocs), [allDocs]);
   const [found, setFound] = useState<Record<string, Group[]>>(() => load(`${KEY}:found`, {}));
@@ -58,11 +59,13 @@ export function MergeSuggestions() {
   const groups = [...cardGroups, ...Object.values(found).flat().filter((g) => !g.ids.some((id) => cardIds.has(id)))]
     .map((g) => ({ ...g, docs: g.ids.map((id) => byId.get(id)).filter((d): d is Doc => !!d) }))
     .filter((g) => g.docs.length >= 2 && !gone.includes(g.ids.join(",")));
-  if (!groups.length) return null;
+  if (!groups.length) return <>{empty ?? null}</>;
 
   const dismiss = (g: Group) => { const n = [...gone, g.ids.join(",")]; setGone(n); save(`${KEY}:dismissed`, n); };
 
   return (
+    <>
+    {intro}
     <section className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
       <div className="px-4 pt-4 pb-3">
         <h2 className="flex items-center gap-2 text-[16px] font-semibold"><Combine size={18} className="shrink-0" /> Gehören zusammen? <span className="tnum text-[13px] font-semibold text-fg">{groups.length}</span></h2>
@@ -91,5 +94,6 @@ export function MergeSuggestions() {
       </ul>
       {open && <MergeSheet docs={open.ids.map((id) => byId.get(id)).filter((d): d is Doc => !!d)} title={open.title} reason={open.reason} skip={open.skip} onClose={() => setOpen(undefined)} onDone={() => dismiss(open)} onNotSame={() => dismiss(open)} />}
     </section>
+    </>
   );
 }
