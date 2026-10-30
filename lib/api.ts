@@ -119,3 +119,15 @@ export async function getFile(cred: string, id: string): Promise<{ name: string;
   if (error || !data) throw new ApiError(404, "not_found", ERRORS.not_found[1]);
   return { name: f.name, mime: f.mime, data: new Uint8Array(await data.arrayBuffer()) };
 }
+
+/** Änderungen seit der Lesemarke (neue/geänderte Dokumente, entfernte IDs), seitenweise – siehe api_changes */
+export async function changes(cred: string, cursor?: string | null, limit = 100) {
+  if (cursor && (cursor.length > 100 || !/^[0-9T:.\-Z]+\|[0-9a-f-]{36}$/i.test(cursor))) throw new ApiError(400, "invalid_request", "cursor ist ungültig.");
+  return rpc("api_changes", { p_cred: cred, p_cursor: cursor || null, p_limit: Math.min(200, Math.max(1, limit || 100)) });
+}
+
+/** Stups-Adresse der App setzen (https, Geheimnis 32–200 Zeichen) oder mit leerer Adresse entfernen */
+export async function setWebhook(cred: string, url: string | null, secret: string | null) {
+  if (url && (!/^https:\/\//.test(url) || url.length > 500 || !secret || secret.length < 32 || secret.length > 200)) throw new ApiError(400, "invalid_request", "url (https) und secret (32–200 Zeichen) angeben.");
+  return rpc("api_set_webhook", { p_cred: cred, p_url: url ?? "", p_secret: secret ?? null });
+}
