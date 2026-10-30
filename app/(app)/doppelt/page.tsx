@@ -1,20 +1,20 @@
 "use client";
-import { useState } from "react";
-import { Combine, Copy, History, Users } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CheckCircle2, Combine, Copy, History, Users, type LucideIcon } from "lucide-react";
 import { MergeSuggestions } from "@/components/MergeSuggestions";
 import { DuplicateManager, useDuplicates } from "@/components/Duplicates";
 import { DistinctList, MergeHistory, PartnerMerge, usePartnerDuplicates } from "@/components/PartnerDupes";
-import { BackLink, PageHeader, Segmented } from "@/components/ui";
+import { BackLink, CARD, PageHeader } from "@/components/ui";
 import { useDocs } from "@/lib/docs";
 
 type Tab = "docs" | "parts" | "partner" | "verlauf";
-/** je Reiter in einfachen Worten: was du hier siehst und was beim Antippen passiert */
-const HELP: Record<Tab, { title: string; points: string[] }> = {
-  docs: { title: "Gleiches Dokument mehrfach abgelegt", points: ["Markiere, was du behalten willst – eins, mehrere oder alle.", "Nicht Markiertes wird gelöscht. Was du behältst, fragen wir nicht noch einmal."] },
-  parts: { title: "Teile eines Dokuments", points: ["Kurz nacheinander hochgeladene Seiten, die zusammengehören (z. B. Vorder- und Rückseite).", "Zusammenfügen macht daraus ein Dokument mit allen Seiten. „Nein“ lässt sie getrennt."] },
-  partner: { title: "Ein Absender unter mehreren Namen", points: ["Z. B. „EnBW“ und „EnBW Energie Baden-Württemberg“.", "Zusammenlegen ändert nur den Absender-Namen der Dokumente – gelöscht wird nichts, rückgängig geht jederzeit."] },
-  verlauf: { title: "Was schon entschieden ist", points: ["Zusammengelegte und umbenannte Absender – mit „Rückgängig“.", "Als verschieden markiert – mit „Doch prüfen“ kommen sie wieder in die Liste."] },
-};
+/** je Reiter: Icon, kurzer Hinweis (nur wenn es etwas gibt) und was die leere Kachel sagt */
+const TABS: { id: Tab; label: string; icon: LucideIcon; hint: string; empty: string }[] = [
+  { id: "docs", label: "Doppelte Dokumente", icon: Copy, hint: "Gleiches Dokument mehrmals abgelegt. Tippe an, was bleibt – der Rest wird gelöscht.", empty: "Kein Dokument liegt doppelt." },
+  { id: "parts", label: "Gehören zusammen", icon: Combine, hint: "Einzelne Seiten eines Dokuments, z. B. Vorder- und Rückseite – zusammenfügen zu einem.", empty: "Keine losen Seiten gefunden." },
+  { id: "partner", label: "Absender", icon: Users, hint: "Ein Absender unter mehreren Namen. Zusammenlegen ändert nur den Namen, gelöscht wird nichts.", empty: "Jeder Absender hat nur einen Namen." },
+  { id: "verlauf", label: "Verlauf", icon: History, hint: "Was du schon entschieden hast – alles lässt sich rückgängig machen.", empty: "" },
+];
 
 /** Aufräumen: doppelte Dokumente, zusammengehörende Teile, doppelte Absender und der Verlauf – je ein Reiter */
 export default function DoppeltPage() {
@@ -22,34 +22,67 @@ export default function DoppeltPage() {
   const { groups } = useDuplicates(allDocs);
   const { groups: partnerGroups } = usePartnerDuplicates(allDocs);
   const [tab, setTab] = useState<Tab>("docs");
-  const n = (x: number) => (x ? ` ${x}` : "");
-  const h = HELP[tab];
+  const t = TABS.find((x) => x.id === tab)!;
+  const count: Partial<Record<Tab, number>> = { docs: groups.length, partner: partnerGroups.length };
+  const hint = <Hint icon={t.icon} text={t.hint} />;
+  const empty = <Empty text={t.empty} />;
   return (
     <div className="max-w-5xl">
       <BackLink href="/" label="Start" />
-      <PageHeader title="Aufräumen" subtitle="Doppeltes finden, Zusammengehörendes zusammenfügen – du entscheidest jeden Fall." />
-      <div className="-mx-4 mb-4 overflow-x-auto px-4 [scrollbar-width:none]">
-        <Segmented value={tab} onChange={setTab} options={[
-          { id: "docs", label: `Doppelte Dokumente${n(groups.length)}`, icon: <Copy size={14} /> },
-          { id: "parts", label: "Gehören zusammen", icon: <Combine size={14} /> },
-          { id: "partner", label: `Absender${n(partnerGroups.length)}`, icon: <Users size={14} /> },
-          { id: "verlauf", label: "Verlauf", icon: <History size={14} /> },
-        ]} />
+      <PageHeader title="Aufräumen" subtitle="Doppeltes und Zusammengehörendes – du entscheidest." />
+      <Pills>
+        {TABS.map((x) => {
+          const on = x.id === tab;
+          const n = count[x.id];
+          return (
+            <button key={x.id} type="button" onClick={() => setTab(x.id)} aria-pressed={on} className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-4 text-[14px] font-semibold whitespace-nowrap ${on ? "border-fg bg-fg text-canvas" : "border-card-line bg-surface text-fg hover:bg-surface-2"}`}>
+              <x.icon size={15} /> {x.label}{n ? <span className={`tnum rounded-full px-1.5 text-[12px] ${on ? "bg-canvas/20" : "bg-surface-3"}`}>{n}</span> : null}
+            </button>
+          );
+        })}
+      </Pills>
+      <div className="mt-4 space-y-3">
+        {tab === "docs" && (groups.length ? <>{hint}<DuplicateManager docs={allDocs} /></> : empty)}
+        {tab === "parts" && <MergeSuggestions intro={hint} empty={empty} />}
+        {tab === "partner" && (partnerGroups.length ? <>{hint}<PartnerMerge docs={allDocs} /></> : empty)}
+        {tab === "verlauf" && (
+          <>
+            {hint}
+            <MergeHistory />
+            <DistinctList kind="distinct_docs" title="Dokumente: als verschieden markiert" />
+            <DistinctList kind="distinct" title="Absender: als verschieden markiert" />
+          </>
+        )}
       </div>
-      <div className="mb-4 rounded-2xl border border-card-line bg-surface px-4 py-3">
-        <p className="text-[14px] font-semibold">{h.title}</p>
-        <ul className="mt-1 space-y-0.5 text-[13px] text-soft">{h.points.map((p) => <li key={p} className="flex gap-2"><span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-soft" />{p}</li>)}</ul>
-      </div>
-      {tab === "docs" && <DuplicateManager docs={allDocs} />}
-      {tab === "parts" && (<><MergeSuggestions /><p className="mt-3 text-center text-[13px] text-muted">Werden beim Hochladen erkannt. Steht hier nichts, ist nichts offen.</p></>)}
-      {tab === "partner" && <PartnerMerge docs={allDocs} />}
-      {tab === "verlauf" && (
-        <div className="space-y-3">
-          <MergeHistory />
-          <DistinctList kind="distinct_docs" title="Dokumente: als verschieden markiert" />
-          <DistinctList kind="distinct" title="Absender: als verschieden markiert" />
-        </div>
-      )}
+    </div>
+  );
+}
+
+/** Pills zum Wischen; ist etwas abgeschnitten, blendet links/rechts ein Verlauf aus */
+function Pills({ children }: { children: React.ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ l: false, r: false });
+  const measure = () => { const el = box.current; if (el) setEdge({ l: el.scrollLeft > 4, r: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 }); };
+  useEffect(() => { measure(); addEventListener("resize", measure); return () => removeEventListener("resize", measure); }, []);
+  return (
+    <div className="relative -mx-4 sm:mx-0">
+      <div ref={box} onScroll={measure} className="flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:px-0 [&::-webkit-scrollbar]:hidden">{children}</div>
+      <span aria-hidden className={`pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-page to-transparent transition-opacity ${edge.l ? "opacity-100" : "opacity-0"}`} />
+      <span aria-hidden className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-page to-transparent transition-opacity ${edge.r ? "opacity-100" : "opacity-0"}`} />
+    </div>
+  );
+}
+
+function Hint({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
+  return <p className="flex items-start gap-3 rounded-2xl border border-card-line bg-surface px-4 py-3 text-[13.5px] leading-5 text-soft"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-fg text-canvas"><Icon size={15} /></span><span className="pt-1.5">{text}</span></p>;
+}
+
+function Empty({ text }: { text: string }) {
+  return (
+    <div className={`${CARD} flex flex-col items-center px-6 py-16 text-center`}>
+      <span className="grid h-14 w-14 place-items-center rounded-full bg-positive/10 text-positive-text"><CheckCircle2 size={28} /></span>
+      <b className="mt-4 text-[17px]">Alles aufgeräumt</b>
+      <span className="mt-1 text-[14px] text-muted">{text}</span>
     </div>
   );
 }
