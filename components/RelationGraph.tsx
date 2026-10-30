@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useMemo } from "react";
-import { AlertCircle, Archive, Check, BookOpen, FileQuestion, FileSignature, Info, PenLine, Receipt, Scale, Star, Wallet } from "lucide-react";
+import { AlertCircle, Archive, Check, BookOpen, FileQuestion, FileSignature, Info, PenLine, Crown, Receipt, Scale, Wallet } from "lucide-react";
 import { KindTag } from "@/components/KindTag";
 import { ImportanceDots } from "@/components/Importance";
 import { CARD } from "@/components/ui";
@@ -96,9 +96,9 @@ export function RelationGraph({ doc }: { doc: Doc }) {
   const check = (d: Doc, date: string) => (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); toggle(todoKey(d.id, date)); };
   const DueChip = ({ d }: { d: Doc }) => {
     const due = open(d);
-    if (due) return <span role="button" tabIndex={0} onClick={check(d, due.date)} title="Antippen: als erledigt abhaken" className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-negative/10 px-1.5 py-px text-[11px] font-semibold text-negative-text hover:bg-positive/15 hover:text-positive-text"><AlertCircle size={11} /> bis {fmtDate(due.date)}</span>;
+    if (due) return <span role="button" tabIndex={0} onClick={check(d, due.date)} title="Antippen: als erledigt abhaken" className="mt-0.5 inline-flex items-center gap-1 text-[11.5px] font-semibold text-negative-text hover:text-positive-text"><AlertCircle size={11} /> bis {fmtDate(due.date)}</span>;
     const last = [...(d.deadlines ?? [])].filter((x) => isDone(d, x.date)).sort((a, b) => b.date.localeCompare(a.date))[0];
-    if (last) return <span role="button" tabIndex={0} onClick={check(d, last.date)} title="Antippen: wieder offen" className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-positive/10 px-1.5 py-px text-[11px] font-semibold text-positive-text"><Check size={11} strokeWidth={3} /> erledigt</span>;
+    if (last) return <span role="button" tabIndex={0} onClick={check(d, last.date)} title="Antippen: wieder offen" className="mt-0.5 inline-flex items-center gap-1 text-[11.5px] font-semibold text-positive-text"><Check size={11} strokeWidth={3} /> erledigt</span>;
     return null;
   };
   const weight = (d: Doc) => (data.mode === "standard" && groupOf(d) === "zahlung" && !open(d) ? Math.min(2, importanceOf(d)) : importanceOf(d));
@@ -114,7 +114,7 @@ export function RelationGraph({ doc }: { doc: Doc }) {
     return (
       <li>
         <Link href={`/d/${d.id}`} className={`flex items-start gap-2 rounded-xl bg-surface px-2.5 py-2 text-[13px] text-fg shadow-[0_1px_2px_rgba(16,24,40,.08)] transition hover:-translate-y-px hover:shadow-card ${here ? "ring-2 ring-fg" : ""}`}>
-          {w >= 4 ? <Star size={13} className="mt-[3px] shrink-0 fill-brand-500 text-brand-500" /> : <span className="w-[13px] shrink-0" />}
+          {w >= 4 ? <Crown size={13} strokeWidth={2.2} className="mt-[3px] shrink-0 text-fg" aria-label="wichtig" /> : <span className="w-[13px] shrink-0" />}
           <span className="min-w-0 flex-1">
             <span className="line-clamp-2 leading-[18px]">{short(d.title ?? d.file_name)}</span>
             <span className="tnum block text-[11.5px] text-muted">{when(d)}{here ? " · du bist hier" : ""}</span>
@@ -130,7 +130,7 @@ export function RelationGraph({ doc }: { doc: Doc }) {
   return (
     <section className={`${CARD} mt-4 p-4`}>
       <h2 className="text-[15px] font-semibold">{data.health ? `Verlauf bei ${data.name}` : "So hängt alles zusammen"}</h2>
-      <p className="mt-0.5 text-[12.5px] text-muted">{data.health ? "Alles in zeitlicher Reihenfolge, das Neueste oben. ★ = wichtig, rot = da musst du etwas tun." : "Oben der Vertrag, darunter alles, was dazugehört – nach Bedeutung sortiert. ★ = wichtig, rot = da musst du etwas tun."}</p>
+      <p className="mt-0.5 text-[12.5px] text-muted">{data.health ? "Alles in zeitlicher Reihenfolge, das Neueste oben. Krone = wichtig, rot = da musst du etwas tun." : "Oben der Vertrag, darunter alles, was dazugehört – nach Bedeutung sortiert. Krone = wichtig, rot = da musst du etwas tun."}</p>
 
       {/* Vertrag: aktuelle Fassung oben, frühere darunter (beim Arzt meist keiner – dann nur der Verlauf) */}
       {(current || !data.health) && <div className="mt-4 flex flex-col items-center">
@@ -173,7 +173,7 @@ export function RelationGraph({ doc }: { doc: Doc }) {
                   <span className={`absolute top-3 -left-[6px] h-2.5 w-2.5 rounded-full ring-2 ring-surface ${here ? "bg-brand-500" : due ? "bg-negative" : finished(d) ? "bg-positive" : "bg-line-strong"}`} aria-hidden />
                   <span className="tnum w-12 shrink-0 pt-px text-[12px] text-muted" title={d.doc_date ? "Datum auf dem Dokument" : "kein Datum auf dem Dokument – Tag des Hochladens"}>{fmtDate(dateOf(d)).slice(0, 6)}{!d.doc_date && <span className="block text-[10px] leading-3">hoch­geladen</span>}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="line-clamp-2 text-[13.5px] leading-[18px] font-semibold">{weight(d) >= 4 && <Star size={12} className="mr-1 inline fill-brand-500 text-brand-500" />}{short(d.title ?? d.file_name)}</span>
+                    <span className="line-clamp-2 text-[13.5px] leading-[18px] font-semibold">{weight(d) >= 4 && <Crown size={12} strokeWidth={2.2} className="mr-1 inline text-fg" aria-label="wichtig" />}{short(d.title ?? d.file_name)}</span>
                     <span className="mt-0.5 flex items-center gap-2 text-[11.5px] text-muted"><KindTag d={d} />{here && "du bist hier"}<DueChip d={d} /></span>
                   </span>
                   <span className="mt-1.5 shrink-0"><ImportanceDots value={weight(d)} size={4} /></span>
