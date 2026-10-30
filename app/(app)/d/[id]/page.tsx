@@ -35,7 +35,7 @@ import { addressesInDoc } from "@/lib/mailcore";
 import type { Doc, DocView, Fact, SecretPart } from "@/lib/types";
 import { contactOf } from "@/lib/actions";
 import { RelationGraph } from "@/components/RelationGraph";
-import { ChevronDown, ListChecks, Mail, MessageCircle, Phone, Sparkles, Upload, UserRound } from "lucide-react";
+import { ChevronDown, ListChecks, Mail, MessageCircle, Phone, ScrollText, Upload, UserRound } from "lucide-react";
 
 /** Fakten nach Gruppe sortieren (Reihenfolge wie vom Modell geliefert) */
 function groupFacts(facts: Fact[]) {
@@ -349,7 +349,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
 
           {/* 2. Inhalt: worum es geht – Befund, Leistungen, was versichert ist … */}
           {(view?.content.points.length || explain || (show.summary && content?.summary)) && (
-            <Panel title={view?.content.title ?? explain ?? "Worum es geht"} icon={Sparkles} color="#6d4aff" open={isOpen("sum", true)} onToggle={() => toggle("sum", true)}>
+            <Panel title="Zusammenfassung" icon={ScrollText} color="#6d4aff" sub={view?.content.title ?? explain ?? undefined} open={isOpen("sum", true)} onToggle={() => toggle("sum", true)}>
               <div className="px-5 py-4">
                 {show.summary && content?.summary && <Clamp className="text-[15px] leading-6 text-soft">{content.summary}</Clamp>}
                 {!!view?.content.points.length && <ul className={`space-y-2.5 text-[14px] leading-6 ${show.summary && content?.summary ? "mt-4 border-t border-line pt-4" : ""}`}>{view.content.points.map((p, i) => <li key={i} className="flex gap-3"><span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-500/12 text-brand-500"><Check size={12} strokeWidth={3} /></span>{p}</li>)}</ul>}

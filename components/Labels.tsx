@@ -10,7 +10,7 @@ import type { Doc } from "@/lib/types";
 export function LabelChip({ tag, on = true, onClick }: { tag: string; on?: boolean; onClick?: () => void }) {
   const color = groupOf(tag)?.color ?? "#64748b";
   // ruhig: weiße Pill mit feinem Rand, die Farbe nur als Punkt (Typ des Tags)
-  const cls = `inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12px] font-semibold transition-colors ${on ? "border-card-line bg-surface text-fg" : "border-dashed border-card-line text-muted hover:text-fg"}`;
+  const cls = `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[12px] font-semibold transition-colors ${on ? "border-card-line bg-surface text-fg" : "border-dashed border-card-line text-muted hover:text-fg"}`;
   const dot = <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: on ? color : "var(--color-line-strong)" }} />;
   return onClick
     ? <button type="button" onClick={onClick} aria-pressed={on} className={cls}>{on ? <Check size={12} strokeWidth={3} /> : dot}{tag}</button>
@@ -30,10 +30,15 @@ export function DocLabels({ doc, onChange, inline = false }: { doc: Doc; onChang
   };
   // im Kopf: nur die Tags als Pills, Bearbeiten klappt den Katalog auf
   // im Kopf: Pills reihen sich in die Chip-Zeile der Seite ein (kein eigener Block); Bearbeiten nimmt die ganze Breite
+  const tags = LABEL_GROUPS.flatMap((g) => g.tags.filter((t) => labels.includes(t)));
   if (inline && !edit) return (
     <>
-      {LABEL_GROUPS.flatMap((g) => g.tags.filter((t) => labels.includes(t))).map((t) => <LabelChip key={t} tag={t} />)}
-      <button type="button" onClick={() => setEdit(true)} title="Tags bearbeiten" aria-label="Tags bearbeiten" className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-[12px] font-semibold text-muted hover:bg-surface-2 hover:text-fg"><Pencil size={12} />{labels.length ? "" : " Tags"}</button>
+      {tags.slice(0, -1).map((t) => <LabelChip key={t} tag={t} />)}
+      {/* Stift immer direkt neben dem letzten Tag, nie allein in einer neuen Zeile */}
+      <span className="inline-flex items-center gap-1 whitespace-nowrap">
+        {tags.slice(-1).map((t) => <LabelChip key={t} tag={t} />)}
+        <button type="button" onClick={() => setEdit(true)} title="Tags bearbeiten" aria-label="Tags bearbeiten" className="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-[12px] font-semibold text-muted hover:bg-surface-2 hover:text-fg"><Pencil size={13} />{labels.length ? "" : " Tags"}</button>
+      </span>
     </>
   );
   const groups = LABEL_GROUPS.map((g) => ({ g, tags: edit ? g.tags : g.tags.filter((t) => labels.includes(t)) })).filter((x) => x.tags.length);
