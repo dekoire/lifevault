@@ -1,4 +1,4 @@
-import { gmailConfirmation, HttpError, listForInbox, myInbox, rejectReason, resend, type Received } from "@/lib/inbox-server";
+import { gmailConfirmation, HttpError, listForInbox, myInbox, originOf, rejectReason, resend, type Received } from "@/lib/inbox-server";
 import { unauthorized, userClient } from "@/lib/server";
 
 export const maxDuration = 60;
@@ -26,6 +26,7 @@ export async function POST(req: Request) {
         id: full.id, from: full.from, subject: full.subject ?? "", date: full.created_at,
         snippet: (full.text ?? full.html?.replace(/<[^>]+>/g, " ") ?? "").replace(/\s+/g, " ").trim().slice(0, 300),
         attachments: (full.attachments ?? []).map((a) => ({ id: a.id, name: a.filename ?? "Anhang", mime: a.content_type, size: a.size, inline: a.content_disposition === "inline" })),
+        origin: originOf(full, inbox),
       });
     }
     return Response.json({ items, rejected, confirmations });

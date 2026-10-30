@@ -28,6 +28,7 @@ import { sensitivity } from "@/lib/sensitive";
 import { WebSourceCard } from "@/components/WebSourceCard";
 import { MergedParts } from "@/components/MergedParts";
 import { authFetch, supabase } from "@/lib/supabase";
+import { addressesInDoc } from "@/lib/mailcore";
 import type { Doc, DocView, Fact, SecretPart } from "@/lib/types";
 import { contactOf } from "@/lib/actions";
 import { RelationGraph } from "@/components/RelationGraph";
@@ -81,11 +82,45 @@ function SensitiveBadge({ doc, unlocked, onProtect, flat = false }: { doc: Doc; 
   );
 }
 
-/** Kam das Dokument aus einer E-Mail? Absender, Betreff, Datum der Mail */
+type MailSeen = { msg_id: string; source: string; subject: string | null; sender: string | null; mail_date: string | null; forwarded_by: string | null; original_from: string | null; original_to: string[] | null };
+/** Kam das Dokument aus einer E-Mail? Betreff, Datum, über welches Postfach, von wem ursprünglich und an wen */
 function useMailOrigin(id: string) {
-  const [m, setM] = useState<{ subject: string | null; sender: string | null; mail_date: string | null } | null>(null);
-  useEffect(() => { void supabase.from("mail_seen").select("subject,sender,mail_date").contains("doc_ids", [id]).limit(1).maybeSingle().then(({ data }) => setM(data)); }, [id]);
+  const [m, setM] = useState<MailSeen | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void supabase.from("mail_seen").select("msg_id,source,subject,sender,mail_date,forwarded_by,original_from,original_to").contains("doc_ids", [id]).limit(1).maybeSingle().then(async ({ data }) => {
+      if (!alive) return;
+      setM(data as MailSeen | null);
+      // früher importiert, Herkunft noch nicht bekannt: einmal bei der Mail nachschauen
+      if (data && data.source === "inbox" && !data.original_from) {
+        const r = await authFetch("/api/mail/inbox/origin", { method: "POST", body: JSON.stringify({ email: String(data.msg_id).replace(/^inbox:/, "") }) }).catch(() => null);
+        const o = r?.ok ? ((await r.json()) as { forwardedBy: string | null; originalFrom: string | null; originalTo: string[] }) : null;
+        if (alive && o) setM({ ...(data as MailSeen), forwarded_by: o.forwardedBy, original_from: o.originalFrom, original_to: o.originalTo });
+      }
+    });
+    return () => { alive = false; };
+  }, [id]);
   return m;
+}
+
+/** Herkunft: per Mail (mit Postfach, ursprünglichem Absender und Empfänger) oder hochgeladen */
+function originRows(doc: Doc, mail: MailSeen | null, fullText?: string | null) {
+  const small = (t: string) => <span className="block text-[12px] font-normal text-muted">{t}</span>;
+  const inDoc = fullText ? addressesInDoc(fullText, doc.sender_domain) : [];
+  const rows: { label: string; value: React.ReactNode }[] = [];
+  if (mail) {
+    const sender = (mail.sender ?? "").match(/<([^>]+)>/)?.[1] ?? mail.sender;
+    // direkt aus dem eigenen Postfach geschickt (nicht weitergeleitet): das Postfach ist der Absender
+    const direct = mail.source === "inbox" && !mail.forwarded_by && !mail.original_to?.length;
+    const via = mail.forwarded_by ?? (direct ? mail.original_from ?? sender : null);
+    const from = direct ? null : mail.original_from ?? (mail.source === "inbox" ? null : sender);
+    rows.push({ label: "Herkunft", value: <>Per E-Mail{mail.source === "inbox" ? " an deine Lifevault-Adresse" : ` (${mail.source})`}{small(`${mail.subject || "(ohne Betreff)"} · ${fmtDate(mail.mail_date)}`)}</> });
+    if (via) rows.push({ label: "Über Postfach", value: via });
+    if (from) rows.push({ label: "Ursprünglich von", value: from });
+    if (mail.original_to?.length) rows.push({ label: "Ursprünglich an", value: mail.original_to.join(", ") });
+  } else rows.push({ label: "Herkunft", value: doc.web_source ? "Aus dem Web gespeichert" : "Hochgeladen" });
+  if (inDoc.length) rows.push({ label: "Adresse im Dokument", value: inDoc.join(", ") });
+  return rows;
 }
 
 export default function DocPage({ params }: { params: Promise<{ id: string }> }) {
@@ -310,7 +345,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
               { label: "Absender", value: doc.sender ?? "–" },
               { label: "Datum", value: fmtDate(doc.doc_date) || "–" },
               { label: "Eingang", value: fmtDate(doc.received_at) },
-              ...(mail ? [{ label: "Aus E-Mail", value: <>{mail.subject || "(ohne Betreff)"}<span className="block text-[12px] font-normal text-muted">{(mail.sender ?? "").replace(/<.*>/, "").trim() || mail.sender} · {fmtDate(mail.mail_date)}</span></> }] : []),
+              ...originRows(doc, mail, content?.full_text),
               ...(projects.length > 1 ? [{ label: "Projekt", value: (
                 <select value={doc.project_id ?? ""} onChange={(e) => void run(async () => { const { error } = await supabase.from("documents").update({ project_id: e.target.value }).eq("id", doc.id); if (error) throw error; setDoc({ ...doc, project_id: e.target.value }); })}
                   className="h-8 rounded-full border border-card-line bg-surface px-2.5 text-[13px] font-semibold">
