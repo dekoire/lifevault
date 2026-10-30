@@ -1,7 +1,9 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronRight, Copy, ExternalLink, FileText, Globe, Landmark, Lock, Mail, MapPin, Phone } from "lucide-react";
+import { Check, ChevronRight, Copy, ExternalLink, FileText, Globe, Landmark, Lock, Mail, MapPin, Pencil, Phone, X } from "lucide-react";
+import { KindTag } from "@/components/KindTag";
+import { supabase } from "@/lib/supabase";
 import { nameFromEmail } from "@/components/AvatarMenu";
 import { ClusterTag } from "@/components/ClusterIcon";
 import { useDetail } from "@/components/DetailPanel";
@@ -27,7 +29,7 @@ import type { Doc } from "@/lib/types";
  * Bausteine im Chat: Die KI nennt nur Dokument-IDs bzw. Partner-Schlüssel – Beträge, IBAN, Adressen usw.
  * kommen hier aus den echten Daten. So erfindet die KI keine Bankverbindungen.
  */
-export const WIDGETS = ["zahlung", "partner", "dokumente", "aufgaben", "uebersicht", "gehalt", "aktion"] as const;
+export const WIDGETS = ["zahlung", "partner", "dokumente", "aufgaben", "uebersicht", "gehalt", "aktion", "verlauf"] as const;
 export type WidgetKind = (typeof WIDGETS)[number];
 
 // Kachel-Verläufe wie in Finastry
@@ -195,6 +197,8 @@ function PartnerWidget({ body }: { body: string }) {
               <SenderLogo domain={p!.domain} sender={p!.name} cluster={p!.cluster} size={44} bare />
               <span className="min-w-0 flex-1"><b className="block text-[15px] leading-5">{p!.name}</b><span className="mt-0.5 flex items-center gap-1.5 text-[12px] text-muted"><ClusterTag id={p!.cluster} /> · {p!.docs.length} Dok.</span></span>
             </div>
+            {/* Karte: wo es ist (Google Maps, ohne Anmeldung) */}
+            {addr && <iframe title={`Karte ${p!.name}`} src={`https://www.google.com/maps?q=${encodeURIComponent(`${p!.name}, ${addr}`)}&output=embed`} loading="lazy" referrerPolicy="no-referrer" className="h-40 w-full border-t border-line" />}
             <div className="divide-y divide-line border-t border-line text-[13px]">
               {addr && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p!.name}, ${addr}`)}`} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2.5 px-4 py-2.5 hover:bg-surface-2"><MapPin size={15} className="mt-0.5 shrink-0 text-muted" /><span className="min-w-0 flex-1">{addr}</span><ExternalLink size={12} className="mt-1 text-muted" /></a>}
               {phone && <a href={`tel:${phone.replace(/[^\d+]/g, "")}`} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-surface-2"><Phone size={15} className="shrink-0 text-muted" /><span className="tnum flex-1 font-semibold">{phone}</span></a>}
@@ -204,6 +208,7 @@ function PartnerWidget({ body }: { body: string }) {
             </div>
             <div className="flex gap-2 border-t border-line p-3">
               {phone && <a href={`tel:${phone.replace(/[^\d+]/g, "")}`} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[12.5px] font-semibold text-canvas"><Phone size={13} /> Anrufen</a>}
+              {addr && <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${p!.name}, ${addr}`)}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center gap-1.5 rounded-full border border-card-line px-3.5 text-[12.5px] font-semibold hover:bg-surface-2"><MapPin size={13} /> Route</a>}
               <Link href={`/partner/${p!.key}`} className="inline-flex h-9 items-center gap-1 rounded-full border border-card-line px-3.5 text-[12.5px] font-semibold hover:bg-surface-2">Alles zu {p!.name.split(" ")[0]} <ChevronRight size={13} /></Link>
             </div>
           </article>
@@ -240,17 +245,96 @@ export function Thumb({ d }: { d: Doc }) {
 function DocsWidget({ body }: { body: string }) {
   const { allDocs } = useDocs();
   const open = useDetail();
+  const [edit, setEdit] = useState<string>();
   const list = ids(body).map((id) => allDocs.find((d) => d.id === id)).filter(Boolean) as Doc[];
   if (!list.length) return null;
+  const editing = list.find((d) => d.id === edit);
   return (
-    <div className="-mx-1 flex snap-x gap-2.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
-      {list.slice(0, 12).map((d, i) => (
-        <button key={d.id} type="button" onClick={() => open?.({ kind: "doc", id: d.id })} className="w-40 shrink-0 snap-start overflow-hidden rounded-2xl border border-card-line bg-surface text-left shadow-card hover:border-brand-500/40">
-          {/* Nummer, damit man sagen kann „verbinde 1 und 2“ */}
-          <span className="relative block h-28 overflow-hidden"><Thumb d={d} /><span className="absolute top-2 left-2"><SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={26} /></span>{list.length > 1 && <span className="tnum absolute top-2 right-2 grid h-6 min-w-6 place-items-center rounded-full bg-fg px-1.5 text-[12px] font-bold text-canvas">{i + 1}</span>}</span>
-          <span className="block p-2.5"><b className="line-clamp-2 text-[12.5px] leading-4">{d.title ?? d.file_name}</b><span className="mt-1 block truncate text-[11px] text-muted">{d.doc_type ?? "Dokument"} · {fmtDate(dateOf(d))}</span></span>
-        </button>
-      ))}
+    <div className="space-y-2.5">
+      <div className="-mx-1 flex snap-x gap-2.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
+        {list.slice(0, 12).map((d, i) => (
+          <div key={d.id} role="button" tabIndex={0} onClick={() => open?.({ kind: "doc", id: d.id })} onKeyDown={(e) => e.key === "Enter" && open?.({ kind: "doc", id: d.id })} className={`relative w-40 shrink-0 cursor-pointer snap-start overflow-hidden rounded-2xl border bg-surface text-left shadow-card hover:border-brand-500/40 ${edit === d.id ? "border-brand-500" : "border-card-line"}`}>
+            {/* Nummer, damit man sagen kann „verbinde 1 und 2“ */}
+            <span className="relative block h-28 overflow-hidden"><Thumb d={d} /><span className="absolute top-2 left-2"><SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={26} /></span>{list.length > 1 && <span className="tnum absolute top-2 right-2 grid h-6 min-w-6 place-items-center rounded-full bg-fg px-1.5 text-[12px] font-bold text-canvas">{i + 1}</span>}</span>
+            <span className="block p-2.5 pr-9"><b className="line-clamp-2 text-[12.5px] leading-4">{d.title ?? d.file_name}</b><span className="mt-1 block truncate text-[11px] text-muted">{d.doc_type ?? "Dokument"} · {fmtDate(dateOf(d))}</span></span>
+            {/* Stift: Titel, Absender, Datum direkt hier ändern */}
+            <button type="button" aria-label="Bearbeiten" title="Bearbeiten" onClick={(e) => { e.stopPropagation(); setEdit(edit === d.id ? undefined : d.id); }} className="absolute right-2 bottom-2 grid h-7 w-7 place-items-center rounded-full border border-card-line bg-surface text-muted hover:text-fg"><Pencil size={13} /></button>
+          </div>
+        ))}
+      </div>
+      {editing && <DocEditor key={editing.id} d={editing} onClose={() => setEdit(undefined)} />}
+    </div>
+  );
+}
+
+/** Dokument im Chat bearbeiten: Titel, Absender (Partner), Datum – speichert direkt, mit Rückgängig */
+function DocEditor({ d, onClose }: { d: Doc; onClose: () => void }) {
+  const { refresh } = useDocs();
+  const [title, setTitle] = useState(d.title ?? "");
+  const [sender, setSender] = useState(d.sender ?? "");
+  const [date, setDate] = useState(d.doc_date ?? "");
+  const [state, setState] = useState<"edit" | "busy" | "saved">("edit");
+  const [old] = useState({ title: d.title, sender: d.sender, doc_date: d.doc_date });
+  const save = async () => {
+    setState("busy");
+    const { error } = await supabase.from("documents").update({ title: title.trim() || d.title, sender: sender.trim() || null, doc_date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : d.doc_date }).eq("id", d.id);
+    await refresh();
+    setState(error ? "edit" : "saved");
+  };
+  const undo = async () => { await supabase.from("documents").update(old).eq("id", d.id); await refresh(); onClose(); };
+  const field = "h-9 w-full rounded-lg border border-card-line bg-surface px-2.5 text-[13.5px] outline-none focus:border-fg";
+  return (
+    <div className="rounded-2xl border border-brand-500/40 bg-surface p-3.5 shadow-card">
+      <p className="mb-2 flex items-center gap-2 text-[12px] font-semibold tracking-wide text-muted uppercase"><Pencil size={13} /> Bearbeiten<button type="button" onClick={onClose} aria-label="Schließen" className="ml-auto grid h-7 w-7 place-items-center rounded-full hover:bg-surface-2"><X size={14} /></button></p>
+      <div className="grid gap-2 text-[12px] text-muted sm:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_10rem]">
+        <label>Titel<input value={title} onChange={(e) => setTitle(e.target.value)} className={`mt-0.5 ${field}`} /></label>
+        <label>Absender / Partner<input value={sender} onChange={(e) => setSender(e.target.value)} className={`mt-0.5 ${field}`} /></label>
+        <label>Datum<input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`mt-0.5 ${field}`} /></label>
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        {state === "saved" ? <><span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-positive-text"><Check size={15} /> Gespeichert</span><button type="button" onClick={() => void undo()} className="h-8 rounded-full border border-card-line px-3 text-[12px] font-semibold hover:bg-surface-2">Rückgängig</button></>
+          : <button type="button" disabled={state === "busy"} onClick={() => void save()} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas disabled:opacity-60"><Check size={14} /> Speichern</button>}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Verlauf bei einem Partner (z. B. Arzt): kompakt als Tabelle mit Vorschaubild ----------
+function HistoryWidget({ body }: { body: string }) {
+  const { allDocs } = useDocs();
+  const open = useDetail();
+  const partners = useMemo(() => buildPartners(allDocs), [allDocs]);
+  const p = keys(body).map((k) => partners.find((x) => x.key === k)).find(Boolean);
+  if (!p) return null;
+  const docs = [...p.docs].sort((a, b) => dateOf(b).localeCompare(dateOf(a))).slice(0, 15);
+  // Kernaussage: erster Satz der Zusammenfassung
+  const gist = (d: Doc) => (d.summary ?? "").split(/(?<=[.!?])\s/)[0]?.slice(0, 160) ?? "";
+  const amount = (d: Doc) => d.amounts?.find((a) => /gesamt|summe|betrag|offen|zu zahlen/i.test(a.label)) ?? d.amounts?.[0];
+  return (
+    <div className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
+      <div className="flex items-center gap-3 px-4 pt-3.5 pb-3">
+        <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={40} bare />
+        <span className="min-w-0 flex-1"><b className="block text-[15px] leading-5">{p.name}</b><span className="text-[12px] text-muted">Verlauf · {p.docs.length} Dokumente · {fmtDate(p.first)} – {fmtDate(p.last)}</span></span>
+      </div>
+      <ol className="relative border-t border-line">
+        {docs.map((d) => {
+          const a = amount(d);
+          return (
+            <li key={d.id}>
+              <button type="button" onClick={() => open?.({ kind: "doc", id: d.id })} className="flex w-full items-start gap-3 border-b border-line px-4 py-2.5 text-left last:border-b-0 hover:bg-surface-2">
+                <span className="tnum w-[4.6rem] shrink-0 pt-0.5 text-[12px] font-semibold text-muted">{fmtDate(dateOf(d))}</span>
+                <span className="h-12 w-9 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2"><Thumb d={d} /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1.5"><KindTag d={d} /><b className="truncate text-[13.5px]">{d.title ?? d.file_name}</b></span>
+                  {gist(d) && <span className="mt-0.5 line-clamp-2 block text-[12.5px] leading-[17px] text-soft">{gist(d)}</span>}
+                </span>
+                {a && <span className="tnum shrink-0 rounded-md bg-brand-500/10 px-1.5 py-px text-[12.5px] font-semibold">{fmtMoney(a.value, a.currency)}</span>}
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+      <Link href={`/partner/${p.key}`} className="flex items-center justify-center gap-1 border-t border-line px-4 py-2.5 text-[12.5px] font-semibold text-selected hover:bg-surface-2">Alles zu {p.name} <ChevronRight size={13} /></Link>
     </div>
   );
 }
@@ -379,6 +463,7 @@ export function ChatWidget({ kind, body }: { kind: string; body: string }) {
     case "uebersicht": return <OverviewWidget />;
     case "gehalt": return <SalaryWidget body={body} />;
     case "aktion": return <ActionsWidget body={body} />;
+    case "verlauf": return <HistoryWidget body={body} />;
     default: return null;
   }
 }
