@@ -12,7 +12,7 @@ export { CARD } from "@/components/ui";
 /** Kopfzeile über DocRow-Listen, gleiche Ränder wie die Zeilen */
 export function DocRowHead() {
   return (
-    <div className="flex items-center gap-3 border-b border-line px-4 py-[18px] text-[12px] font-semibold text-muted md:px-6" role="row">
+    <div className="flex items-center gap-3 px-4 py-[18px] text-[12px] font-semibold text-muted md:px-6" role="row">
       <span className="w-10 shrink-0" /><span className="flex-1">Dokument</span><span className="hidden w-[52px] sm:block">Wichtig</span><span className="w-4 shrink-0" />
     </div>
   );

@@ -70,7 +70,7 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
   const GRID = "md:grid md:grid-cols-[minmax(0,1fr)_8.5rem_6.5rem_3.5rem_1rem] md:items-center md:gap-4";
   const HEAD = "text-[12px] font-semibold text-muted";
   const Head = () => (
-    <div className={`hidden border-b border-line px-6 py-[18px] ${GRID}`} role="row">
+    <div className={`hidden px-6 py-[18px] ${GRID}`} role="row">
       <span className={HEAD}>Dokument</span><span className={HEAD}>Art</span><span className={HEAD}>Datum</span><span className={HEAD}>Wichtig</span><span />
     </div>
   );
@@ -109,7 +109,7 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
             <p className="truncate text-[13px] text-muted">{docs.length} {docs.length === 1 ? "Dokument" : "Dokumente"}{years ? ` · ${years}` : ""}</p>
           </span>
         </div>
-        <div className="grid grid-cols-4 divide-x divide-line border-y border-line text-center">
+        <div className="grid grid-cols-4 divide-x divide-line border-t border-line text-center">
           {([["Wichtig", count("wichtig"), ""], ["Laufend", count("laufend"), ""], ["Offen", due, due ? "text-negative-text" : ""], ["Erledigt", count("erledigt"), "text-positive-text"]] as const).map(([l, n, c]) => (
             <div key={l} className="px-2 py-4"><b className={`tnum block text-[20px] leading-7 ${n ? c : "text-muted"}`}>{n}</b><span className="text-[12px] text-muted">{l}</span></div>
           ))}
@@ -137,7 +137,7 @@ export function PartnerRelevance({ docs, afterMain }: { docs: Doc[]; afterMain?:
               <ChevronDown size={16} className={`shrink-0 text-muted transition-transform ${open[b.id] ? "rotate-180" : ""}`} />
             </button>
             {open[b.id] && (
-              <div className="border-t border-line">
+              <div>
                 <Head />
                 <div className="divide-y divide-line">
                   {list.map((d) => <Row key={d.id} d={d} note={sorted.get(d.id)?.why} dim={b.id === "erledigt" || b.id === "doppelt"} />)}
