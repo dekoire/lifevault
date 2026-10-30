@@ -64,15 +64,15 @@ export function MergeSuggestions() {
 
   return (
     <section className="overflow-hidden rounded-2xl border border-card-line bg-surface shadow-card">
-      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-500 text-white"><Combine size={17} /></span>
-        <span className="min-w-0 flex-1"><b className="block text-[15px]">Gehören zusammen?</b><span className="text-[12.5px] text-muted">Kurz nacheinander hochgeladen – sieht nach einem Dokument aus</span></span>
+      <div className="px-4 pt-4 pb-3">
+        <h2 className="flex items-center gap-2 text-[16px] font-semibold"><Combine size={18} className="shrink-0" /> Gehören zusammen? <span className="tnum text-[13px] font-semibold text-fg">{groups.length}</span></h2>
+        <p className="mt-0.5 text-[12.5px] text-muted">Kurz nacheinander hochgeladen – sieht nach einem Dokument aus</p>
       </div>
       <ul className="divide-y divide-line border-t border-line">
         {groups.map((g) => {
           const k = g.ids.join(",");
           return (
-            <li key={k} className="flex flex-wrap items-center gap-3 px-4 py-3">
+            <li key={k} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap">
               {/* kleine Vorschau der Teile, überlappend */}
               <button type="button" onClick={() => setOpen(g)} className="flex shrink-0 -space-x-4" aria-label="Ansehen">
                 {g.docs.slice(0, 3).map((d, i) => <span key={d.id} className="h-14 w-11 overflow-hidden rounded-lg border-2 border-surface bg-surface-2 shadow-card" style={{ transform: `rotate(${(i - 1) * 4}deg)` }}><Thumb d={d} /></span>)}
