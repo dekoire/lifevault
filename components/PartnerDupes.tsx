@@ -53,29 +53,12 @@ export function usePartnerDuplicates(docs: Doc[]) {
  * Gleiche Partner unter verschiedenen Namen – zwei Reiter: „Offen“ (fragen, ab 50 % Wahrscheinlichkeit) und
  * „Entschieden“ (zusammengeführt, automatisch zusammengeführt, als verschieden markiert – alles rückgängig machbar).
  */
+/** Offene Fälle „ein Partner, mehrere Namen“ – Entschiedenes steht auf der Seite „Doppelt“ unter „Verlauf“ */
 export function PartnerMerge({ docs }: { docs: Doc[] }) {
   const { groups, notSame } = usePartnerDuplicates(docs);
-  const { list } = useDecisions();
-  const [tab, setTab] = useState<"open" | "done">("open");
-  const distinctN = list.filter((d) => d.kind === "distinct").length;
-  const pill = (on: boolean) => `h-9 rounded-full px-4 text-[13px] font-semibold transition-colors ${on ? "bg-fg text-canvas" : "bg-surface-3 text-soft hover:text-fg"}`;
-  return (
-    <div className="space-y-3">
-      <div className="flex gap-1.5">
-        <button type="button" onClick={() => setTab("open")} aria-pressed={tab === "open"} className={pill(tab === "open")}>Offen {groups.length > 0 && <span className="tnum ml-1 opacity-70">{groups.length}</span>}</button>
-        <button type="button" onClick={() => setTab("done")} aria-pressed={tab === "done"} className={pill(tab === "done")}>Entschieden</button>
-      </div>
-      {tab === "open" ? (
-        groups.length ? <div className="space-y-3">{groups.map((g) => <Group key={g.key} g={g} onDismiss={() => notSame(g)} />)}</div>
-          : <p className={`${CARD} p-5 text-center text-[14px] text-muted`}>Nichts offen. Sehr ähnliche Namen führen wir selbst zusammen – das steht unter „Entschieden“. 👍</p>
-      ) : (
-        <div className="space-y-3">
-          <MergeHistory />
-          {distinctN > 0 && <DistinctList kind="distinct" title="Als verschieden markiert" />}
-        </div>
-      )}
-    </div>
-  );
+  return groups.length
+    ? <div className="space-y-3">{groups.map((g) => <Group key={g.key} g={g} onDismiss={() => notSame(g)} />)}</div>
+    : <p className={`${CARD} p-5 text-center text-[14px] text-muted`}>Nichts offen. Sehr ähnliche Namen legen wir selbst zusammen – das steht unter „Verlauf“.</p>;
 }
 
 /** „Verschieden“-Entscheidungen: Partner bzw. Dokumente, die nicht mehr vorgeschlagen werden – „Doch prüfen“ holt sie zurück */
