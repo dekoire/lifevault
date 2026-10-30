@@ -25,6 +25,7 @@ import { DetailHost } from "@/components/DetailPanel";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { PressFeedback } from "@/components/PressFeedback";
+import { RedateMissing } from "@/components/RedateMissing";
 import { KeyboardWatch } from "@/components/KeyboardWatch";
 import { AvatarMenu } from "@/components/AvatarMenu";
 import { supabase, useSession } from "@/lib/supabase";
@@ -120,6 +121,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
       {exporting && <ExportSheet onClose={() => setExporting(false)} />}
       <PullWithDocs />
       <PressFeedback />
+      <RedateMissing />
       <KeyboardWatch />
       <UploadProgress />
       <JobToasts />

@@ -146,7 +146,7 @@ export async function mailBodyPdf(m: { from: string; subject: string; date: stri
   line(m.subject || "(ohne Betreff)", bold, 14);
   y -= 4;
   line(`Von: ${m.from}`, font, 9, rgb(0.4, 0.4, 0.4));
-  if (m.date) line(`Datum: ${new Date(m.date).toLocaleString("de-DE")}`, font, 9, rgb(0.4, 0.4, 0.4));
+  if (m.date) line(`E-Mail empfangen am ${new Date(m.date).toLocaleString("de-DE")} (nicht das Dokumentdatum)`, font, 9, rgb(0.4, 0.4, 0.4));
   line("Aus dem E-Mail-Text übernommen (die Mail hatte keinen Dokument-Anhang).", font, 9, rgb(0.4, 0.4, 0.4));
   y -= 10;
   for (const l of (m.bodyText ?? "").split("\n")) line(l);

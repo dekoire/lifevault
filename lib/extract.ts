@@ -20,7 +20,7 @@ const Schema = z.object({
   docType: z.string().describe("Art, z. B. Vertrag, Gehaltsabrechnung, Rechnung, Mahnung, Kassenbon, Arztbrief, Befund, Angebot, Bescheid, Police"),
   sender: z.string().nullable().describe("Absender bzw. Vertragspartner, Arbeitgeber, Händler, Praxis (Firmenname ohne Rechtsform-Zusätze, wenn eindeutig)"),
   senderDomain: z.string().nullable().describe("Hauptwebadresse des Absenders ohne https, z. B. vodafone.de, o2online.de, telekom.de, huk.de, mercedes-benz.de, dm.de – bei bekannten Firmen immer angeben (auch wenn sie nicht im Dokument steht), bei unbekannten nur, wenn sie im Dokument steht, sonst null"),
-  docDate: z.string().nullable().describe("Datum des Dokuments als YYYY-MM-DD, sonst null"),
+  docDate: z.string().nullable().describe("Datum, das IM Dokument steht (Rechnungs-, Bestell-, Brief-, Ausstellungs-, Abrechnungsdatum) als YYYY-MM-DD – nie das Empfangs- oder Weiterleitungsdatum einer E-Mail; nur null, wenn wirklich kein Datum drin steht"),
   summary: z.string().describe("Zusammenfassung in 2–3 Sätzen: worum geht es, was ist wichtig, was ist zu tun – OHNE Namen von Privatpersonen, Adressen, Geburtsdaten, Kontonummern oder Kennnummern"),
   keyFacts: z.array(z.object({
     group: z.string().describe("Gruppe, z. B. „Persönliche Daten“, „Bezüge“, „Abzüge“, „Auszahlung“, „Steuer & Sozialversicherung“, „Gültigkeit & Zeitraum“, „Vertragsdaten“, „Leistungen“, „Kosten“, „Medizinisches“, „Kontakt“"),
@@ -43,6 +43,7 @@ Gehaltsabrechnungen, Arbeitsverträge, Zeugnisse → arbeit. Arztbriefe, Befunde
 Alle Kennungen gegenüber dem Absender (Kundennummer, Vertragsnummer, Versicherungsschein-/Policennummer, Rufnummer, Zählernummer, Mitgliedsnummer, Personalnummer, Benutzername/Login, Rechnungsnummer, Aktenzeichen, Kassenzeichen, Geschäftszeichen, Beleg-/Vorgangs-/Bestell-/Buchungsnummer, Ticket-/Schadennummer, IBAN, Kfz-Kennzeichen) einzeln in die Gruppe „Kennungen & Nummern“ – mit klarem Label.
 Schreibe alle wichtigen Fakten heraus und sortiere sie in Gruppen (personenbezogene Daten getrennt von Beträgen und von Metadaten wie Zeitraum/Gültigkeit). Markiere personenbezogene Fakten mit personal = true.
 Datumsangaben immer als YYYY-MM-DD. Was nicht im Dokument steht, lässt du leer bzw. null.
+Dokumentdatum (docDate): das Datum des Schreibens selbst – bei Rechnungen das Rechnungsdatum, bei Bestellungen das Bestelldatum, bei Briefen das Briefdatum, bei Abrechnungen das Erstellungsdatum (nicht Beginn des Abrechnungszeitraums). Zeilen wie „E-Mail empfangen am“ oder Weiterleitungs-Köpfe sind NICHT das Dokumentdatum; bei weitergeleiteten Mails zählt das Datum der ursprünglichen Nachricht bzw. das im Text.
 Thema (topic) – wähle genau einen Wert aus der Liste des Bereichs (bei Gesundheit das Fachgebiet der Praxis/Klinik, Krankenkasse für Kassenpost):
 ${TOPIC_PROMPT}
 ${LABEL_PROMPT}
