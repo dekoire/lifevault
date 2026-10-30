@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowLeftRight, Check, FolderPlus, Link2, Loader2, ShieldCheck } from "lucide-react";
+import { AppIcon } from "@/components/AppIcon";
 import { LogoMark } from "@/components/Logo";
 import { Dot } from "@/components/ProjectSwitcher";
 import { CARD, Switch } from "@/components/ui";
@@ -108,7 +109,7 @@ export default function ConnectPage() {
     <div className="mx-auto max-w-xl space-y-4 pb-10">
       <div className="flex flex-col items-center gap-3 pt-4 text-center">
         <span className="flex items-center gap-3">
-          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-fg text-[22px] font-bold text-canvas">{app!.name.slice(0, 1).toUpperCase()}</span>
+          <AppIcon name={app!.name} homepage={app!.homepage} size={56} />
           <ArrowLeftRight size={18} className="text-muted" />
           <LogoMark size={56} />
         </span>

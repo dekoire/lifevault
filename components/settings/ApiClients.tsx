@@ -5,6 +5,7 @@ import { Dot } from "@/components/ProjectSwitcher";
 import { CARD, ICON_BTN, Switch } from "@/components/ui";
 import { CLUSTERS } from "@/lib/clusters";
 import { KINDS } from "@/lib/kinds";
+import { AppIcon } from "@/components/AppIcon";
 import { useProjects } from "@/lib/projects";
 import { supabase } from "@/lib/supabase";
 
@@ -29,7 +30,12 @@ export function ApiSettings() {
   const [clients, setClients] = useState<Client[]>();
   const [creating, setCreating] = useState(false);
   const [shown, setShown] = useState<{ name: string; clientId: string; secret: string }>();
-  const load = async () => { const { data } = await supabase.from("api_clients").select("*").order("created_at", { ascending: false }); setClients((data as Client[]) ?? []); };
+  const [homes, setHomes] = useState<Record<string, string | null>>({});
+  const load = async () => {
+    const [{ data }, { data: apps }] = await Promise.all([supabase.from("api_clients").select("*").order("created_at", { ascending: false }), supabase.rpc("oauth_my_apps")]);
+    setClients((data as Client[]) ?? []);
+    setHomes(Object.fromEntries(((apps as { app_id: string; homepage: string | null }[] | null) ?? []).map((a) => [a.app_id, a.homepage])));
+  };
   useEffect(() => { void load(); }, []);
 
   const rotate = async (c: Client) => {
@@ -59,7 +65,7 @@ export function ApiSettings() {
       )}
       {clients === undefined ? <Loader2 className="animate-spin text-muted" /> : clients.length === 0 ? null : (
         <section className={`${CARD} divide-y divide-line`}>
-          {clients.map((c) => <ClientRow key={c.id} c={c} onRotate={() => void rotate(c)} onRevoke={() => void revoke(c)} onRemove={() => void remove(c)} />)}
+          {clients.map((c) => <ClientRow key={c.id} c={c} homepage={c.app_id ? homes[c.app_id] : undefined} onRotate={() => void rotate(c)} onRevoke={() => void revoke(c)} onRemove={() => void remove(c)} />)}
         </section>
       )}
       <OwnApps />
@@ -68,7 +74,7 @@ export function ApiSettings() {
   );
 }
 
-function ClientRow({ c, onRotate, onRevoke, onRemove }: { c: Client; onRotate: () => void; onRevoke: () => void; onRemove: () => void }) {
+function ClientRow({ c, homepage, onRotate, onRevoke, onRemove }: { c: Client; homepage?: string | null; onRotate: () => void; onRevoke: () => void; onRemove: () => void }) {
   const { projects } = useProjects();
   const [log, setLog] = useState<Audit[]>();
   const dead = !!c.revoked_at || (!!c.expires_at && c.expires_at < new Date().toISOString());
@@ -84,7 +90,7 @@ function ClientRow({ c, onRotate, onRevoke, onRemove }: { c: Client; onRotate: (
   return (
     <div className={`px-5 py-4 ${dead ? "opacity-60" : ""}`}>
       <div className="flex items-start gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg text-canvas"><KeyRound size={18} /></span>
+        {c.app_id ? <AppIcon name={c.name} homepage={homepage} size={40} /> : <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg text-canvas"><KeyRound size={18} /></span>}
         <span className="min-w-0 flex-1">
           <b className="flex flex-wrap items-center gap-2 text-[15px]">{c.name}{c.revoked_at && <span className="rounded-full bg-negative/10 px-2 py-0.5 text-[11px] text-negative-text">getrennt</span>}{c.app_id && !c.revoked_at && <span className="rounded-full bg-positive/10 px-2 py-0.5 text-[11px] text-positive-text">per Anmeldung verbunden</span>}</b>
           {!c.app_id && <code className="block truncate text-[12px] text-muted">{c.client_id}</code>}
@@ -334,7 +340,7 @@ function OwnApps() {
         <div className="divide-y divide-line rounded-2xl border border-card-line">
           {apps.map((a) => (
             <div key={a.id} className={`flex items-start gap-3 px-4 py-3 ${a.revoked_at ? "opacity-60" : ""}`}>
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-fg text-[15px] font-bold text-canvas">{a.name.slice(0, 1).toUpperCase()}</span>
+              <AppIcon name={a.name} homepage={a.homepage} size={36} />
               <span className="min-w-0 flex-1">
                 <b className="flex items-center gap-2 text-[14px]">{a.name}{a.revoked_at && <span className="rounded-full bg-negative/10 px-2 py-0.5 text-[11px] text-negative-text">gesperrt</span>}</b>
                 <code className="block truncate text-[12px] text-muted">{a.client_id}</code>

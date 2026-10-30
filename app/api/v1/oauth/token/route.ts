@@ -16,6 +16,8 @@ export async function POST(req: Request) {
     else if (g === "refresh_token") out = await rpc("oauth_refresh_token", { p_client_id: id, p_secret: secret, p_refresh: body.refresh_token });
     else if (g === "client_credentials") out = await rpc("api_token", { p_client_id: id, p_client_secret: secret });
     else throw new ApiError(400, "unsupported_grant_type", "grant_type: authorization_code, refresh_token oder client_credentials.");
+    // Wiederverwendung erkannt: die Datenbank hat die Verbindung schon gesperrt und meldet den Fehler als Ergebnis
+    if ((out as { error?: string } | null)?.error) throw new ApiError(400, "invalid_grant", "Code bzw. Token wurde schon benutzt – Verbindung aus Sicherheitsgründen getrennt.");
     return Response.json(out, { headers: { "Cache-Control": "no-store", Pragma: "no-cache" } });
   } catch (e) {
     return oauthFail(e);
