@@ -36,36 +36,39 @@ export function DuplicateHint({ docs }: { docs: Doc[] }) {
   const { groups } = useDuplicates(docs);
   const { groups: partnerGroups } = usePartnerDuplicates(docs);
   if (!groups.length && !partnerGroups.length) return null;
-  const row = "flex items-center gap-3 rounded-xl bg-surface-2 px-3 py-2.5";
+  const n = groups.length + partnerGroups.length;
+  const btn = "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[12.5px] font-semibold text-canvas";
+  // gleicher Aufbau wie „Zu erledigen“ und „Gehören zusammen?“: schwarzes Symbol, Zahl, Zeilen mit Vorschau und Knopf
   return (
-    <Link href="/doppelt" className={`${CARD} lift block p-4`}>
-      <span className="flex items-center gap-2">
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-brand-500/10 text-brand-500"><Copy size={14} /></span>
-        <b className="min-w-0 flex-1 truncate text-[14.5px]">Doppeltes aufräumen <span className="tnum ml-1 rounded-full border border-card-line px-2 py-px text-[11.5px] font-semibold text-muted">{groups.length + partnerGroups.length}</span></b>
-        <ChevronRight size={17} className="shrink-0 text-muted" />
-      </span>
-      <span className="mt-3 block space-y-2">
+    <section className={`${CARD} overflow-hidden`}>
+      <div className="px-4 pt-4 pb-3">
+        <h2 className="flex items-center gap-2 text-[16px] font-semibold"><Copy size={18} className="shrink-0" /> Doppeltes aufräumen <span className="tnum text-[13px] font-semibold text-fg">{n}</span></h2>
+        <p className="mt-0.5 text-[12.5px] text-muted">Gleiches mehrfach abgelegt – eines behalten, den Rest löschen</p>
+      </div>
+      <ul className="divide-y divide-line border-t border-line">
         {partnerGroups.slice(0, 2).map((g) => (
-          <span key={g.key} className={row}>
-            <span className="flex shrink-0 -space-x-2">{g.partners.slice(0, 3).map((p) => <span key={p.name} className="rounded-full ring-2 ring-surface-2"><SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={28} /></span>)}</span>
+          <li key={g.key} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap">
+            <span className="flex shrink-0 -space-x-2">{g.partners.slice(0, 3).map((p) => <span key={p.name} className="rounded-full ring-2 ring-surface"><SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={32} /></span>)}</span>
             <span className="min-w-0 flex-1">
-              <b className="block truncate text-[13px] font-semibold">{g.partners.map((p) => p.name).slice(0, 3).join(" · ")}{g.partners.length > 3 ? ` +${g.partners.length - 3}` : ""}</b>
-              <span className="block truncate text-[11.5px] text-muted">Ein Partner, mehrere Namen · {g.reasons[0]}</span>
+              <b className="block truncate text-[14px]">{g.partners.map((p) => p.name).slice(0, 3).join(" · ")}{g.partners.length > 3 ? ` +${g.partners.length - 3}` : ""}</b>
+              <span className="line-clamp-2 block text-[12px] text-muted">Ein Partner, mehrere Namen · {g.reasons[0]}</span>
             </span>
-          </span>
+            <Link href="/doppelt" className={btn}><Copy size={13} /> Ansehen & prüfen</Link>
+          </li>
         ))}
         {groups.slice(0, 3).map((g) => (
-          <span key={g.key} className={row}>
-            <span className="h-9 w-7 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface"><Thumb d={g.docs[0]} /></span>
+          <li key={g.key} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap">
+            <span className="flex shrink-0 -space-x-4">{g.docs.slice(0, 3).map((d, i) => <span key={d.id} className="h-14 w-11 overflow-hidden rounded-lg border-2 border-surface bg-surface-2 shadow-card" style={{ transform: `rotate(${(i - 1) * 4}deg)` }}><Thumb d={d} /></span>)}</span>
             <span className="min-w-0 flex-1">
-              <b className="block truncate text-[13px] font-semibold">{g.docs[0].title ?? g.docs[0].file_name}</b>
-              <span className="block truncate text-[11.5px] text-muted">{g.docs.length}× vorhanden · {where(g)}</span>
+              <b className="block truncate text-[14px]">{g.docs[0].title ?? g.docs[0].file_name}</b>
+              <span className="line-clamp-2 block text-[12px] text-muted">{g.docs.length}× vorhanden · {g.why ? `${g.why} · ` : ""}{where(g)}</span>
             </span>
-          </span>
+            <Link href="/doppelt" className={btn}><Copy size={13} /> Ansehen & prüfen</Link>
+          </li>
         ))}
-      </span>
-      <span className="mt-3 block text-center text-[13px] font-semibold text-brand-500">Prüfen und zusammenführen</span>
-    </Link>
+      </ul>
+      {n > 5 && <Link href="/doppelt" className="flex items-center justify-center gap-1 border-t border-line py-2.5 text-[13px] font-semibold text-fg hover:bg-surface-2/60">Alle {n} ansehen <ChevronRight size={15} /></Link>}
+    </section>
   );
 }
 
