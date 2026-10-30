@@ -67,7 +67,7 @@ export function TodoList({ docs }: { docs: Doc[] }) {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 px-4 pt-4 pb-3">
         <h2 className="flex min-w-0 flex-1 items-center gap-2 text-[16px] font-semibold"><ListTodo size={18} className="shrink-0" /> Zu erledigen
           {openList.length > 0 && (late > 0
-            ? <span className="tnum inline-flex items-center gap-1 rounded-full bg-negative/10 px-2 py-0.5 text-[12px] font-semibold text-negative-text"><AlertTriangle size={12} /> {late} von {openList.length} überfällig</span>
+            ? <span className="tnum text-[13px] font-semibold text-fg" title={`${late} von ${openList.length} überfällig`}>{late} von {openList.length}</span>
             : <span className="tnum rounded-full bg-surface-2 px-2 py-px text-[12px] font-bold">{openList.length}</span>)}
         </h2>
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
