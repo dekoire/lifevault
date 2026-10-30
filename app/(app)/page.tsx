@@ -88,7 +88,7 @@ export default function Home() {
                         <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={52} bare />
                         <span className="w-full min-w-0">
                           <span className="block truncate text-[13px] leading-5 font-semibold">{p.name}</span>
-                          <span className="block text-[11.5px] text-muted">{p.docs.length} {p.docs.length === 1 ? "Dokument" : "Dokumente"}</span>
+                          <span className="block text-[12px] text-muted">{p.docs.length} {p.docs.length === 1 ? "Dokument" : "Dokumente"}</span>
                         </span>
                       </Link>
                     ))}

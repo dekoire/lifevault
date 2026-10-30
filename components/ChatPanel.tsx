@@ -62,7 +62,7 @@ function WebLinks({ links }: { links: { title: string; url: string }[] }) {
           <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-2 rounded-full border border-card-line bg-surface py-1.5 pr-3.5 pl-1.5 text-[13px] font-semibold hover:bg-surface-2">
             <span className="grid h-6 w-6 shrink-0 place-items-center overflow-hidden rounded-full bg-surface-2"><img src={`/api/logo?d=${encodeURIComponent(host(l.url))}`} alt="" width={16} height={16} className="object-contain" /></span>
             <span className="min-w-0 truncate">{l.title}</span>
-            <span className="shrink-0 text-[11.5px] font-medium text-muted">{host(l.url)}</span>
+            <span className="shrink-0 text-[12px] font-medium text-muted">{host(l.url)}</span>
             <ExternalLink size={13} className="shrink-0 text-muted" />
           </a>
         ))}
@@ -79,7 +79,7 @@ function FollowUps({ qs, onAsk }: { qs: string[]; onAsk: (q: string) => void }) 
       <div className="mb-2 text-[12px] font-semibold tracking-wide text-muted uppercase">Weiter fragen</div>
       <div className="flex flex-col items-start gap-1.5">
         {qs.map((q) => (
-          <button key={q} type="button" onClick={() => onAsk(q)} className="inline-flex max-w-full items-center gap-2 rounded-full border border-card-line bg-surface px-3.5 py-2 text-left text-[13.5px] font-medium hover:border-brand-500/50 hover:bg-lavender">
+          <button key={q} type="button" onClick={() => onAsk(q)} className="inline-flex max-w-full items-center gap-2 rounded-full border border-card-line bg-surface px-3.5 py-2 text-left text-[14px] font-medium hover:border-brand-500/50 hover:bg-lavender">
             <CornerDownRight size={14} className="shrink-0 text-brand-500" /> <span className="min-w-0">{q}</span>
           </button>
         ))}
@@ -130,7 +130,7 @@ function ResearchCard({ r, onAnswer }: { r: Research; onAnswer?: (yes: boolean) 
       <div className="flex items-start gap-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-3 text-soft"><Globe size={17} /></span>
         <div className="min-w-0 flex-1">
-          <span className="flex flex-wrap items-center gap-2"><b className="text-[15px]">Internetrecherche</b><span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2 py-0.5 text-[11.5px] font-semibold text-soft"><X size={11} strokeWidth={3} /> Von dir abgelehnt</span></span>
+          <span className="flex flex-wrap items-center gap-2"><b className="text-[15px]">Internetrecherche</b><span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2 py-0.5 text-[12px] font-semibold text-soft"><X size={11} strokeWidth={3} /> Von dir abgelehnt</span></span>
           {r.reason && <span className="mt-0.5 block text-[13px] text-soft">Fehlt weiterhin: {r.reason}</span>}
           <span className="mt-2 flex items-start gap-1.5 text-[13px] text-muted line-through decoration-line-strong"><Globe size={14} className="mt-0.5 shrink-0" />{r.query}</span>
           <span className="mt-2 block text-[12px] text-muted">Nichts wurde gesendet.</span>
@@ -164,7 +164,7 @@ function SaveCard({ o, onAnswer }: { o: SaveOffer; onAnswer?: (yes: boolean) => 
   const { allDocs } = useDocs();
   const related = o.relatedId ? allDocs.find((d) => d.id === o.relatedId) : undefined;
   if (o.state === "declined") return <p className="mt-3 text-[13px] text-muted">Nicht abgelegt.</p>;
-  if (o.state === "saved") return <p className="mt-3 text-[12.5px] text-positive-text">Abgelegt{related ? ` zu „${related.title}“` : ""} · wird ausgelesen</p>;
+  if (o.state === "saved") return <p className="mt-3 text-[13px] text-positive-text">Abgelegt{related ? ` zu „${related.title}“` : ""} · wird ausgelesen</p>;
   return (
     <div className="mt-4 rounded-2xl border border-card-line bg-surface p-4">
       <div className="flex items-start gap-3">
@@ -439,7 +439,7 @@ export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu de
         />
       </div>
       {err && (
-        <div role="alert" className="mx-1 mb-1 flex items-start gap-2 rounded-xl bg-negative/10 px-3 py-2 text-[12.5px] text-negative-text">
+        <div role="alert" className="mx-1 mb-1 flex items-start gap-2 rounded-xl bg-negative/10 px-3 py-2 text-[13px] text-negative-text">
           <span className="min-w-0 flex-1">{err}</span>
           <button type="button" onClick={() => setErr(undefined)} aria-label="Hinweis schließen" className="shrink-0 opacity-70 hover:opacity-100"><X size={14} /></button>
         </div>

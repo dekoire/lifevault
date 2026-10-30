@@ -141,7 +141,7 @@ function ModelPick({ value, models, standard, onPick }: { value: string; models:
     <span className="relative block">
       <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex h-12 w-full items-center gap-2.5 rounded-2xl border border-card-line bg-surface pr-3 pl-2.5 text-left hover:bg-surface-2">
         <ModelLogo id={value} />
-        <span className="min-w-0 flex-1"><b className="block truncate text-[13.5px] leading-5">{value.split("/").slice(1).join("/") || value}</b><span className="block truncate text-[11.5px] text-muted">{providerOf(value)} · {cost(cur)}{value === standard ? " · Standard" : ""}</span></span>
+        <span className="min-w-0 flex-1"><b className="block truncate text-[14px] leading-5">{value.split("/").slice(1).join("/") || value}</b><span className="block truncate text-[12px] text-muted">{providerOf(value)} · {cost(cur)}{value === standard ? " · Standard" : ""}</span></span>
         <ChevronDown size={16} className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
@@ -150,7 +150,7 @@ function ModelPick({ value, models, standard, onPick }: { value: string; models:
           <span className="absolute right-0 left-0 z-20 mt-1.5 block overflow-hidden rounded-2xl border border-card-line bg-surface shadow-[0_16px_40px_rgba(16,24,40,.16)]">
             <label className="m-2 flex h-10 items-center gap-2 rounded-full bg-surface-2 px-3.5">
               <Search size={15} className="text-muted" />
-              <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Modell oder Anbieter suchen, z. B. sonnet, gpt, gemini" className="min-w-0 flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-muted" />
+              <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Modell oder Anbieter suchen, z. B. sonnet, gpt, gemini" className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-muted" />
             </label>
             <span className="block max-h-80 overflow-y-auto px-1.5 pb-1.5">
               {list.map((x, i) => (
@@ -158,7 +158,7 @@ function ModelPick({ value, models, standard, onPick }: { value: string; models:
                   {providerOf(x.id) !== providerOf(list[i - 1]?.id ?? "") && <span className="block px-2.5 pt-2.5 pb-1 text-[11px] font-semibold tracking-wide text-muted uppercase">{providerOf(x.id)}</span>}
                   <button type="button" onClick={() => pick(x.id)} className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-surface-2 ${x.id === value ? "bg-surface-2" : ""}`}>
                     <ModelLogo id={x.id} size={24} />
-                    <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">{x.id.split("/").slice(1).join("/")}{x.id === standard && <span className="ml-1.5 rounded-full border border-card-line px-1.5 text-[10.5px] font-semibold text-soft">Standard</span>}</span>
+                    <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{x.id.split("/").slice(1).join("/")}{x.id === standard && <span className="ml-1.5 rounded-full border border-card-line px-1.5 text-[11px] font-semibold text-soft">Standard</span>}</span>
                     <span className="tnum shrink-0 text-[12px] text-muted">{cost(x)}</span>
                     {x.id === value && <Check size={15} className="shrink-0" />}
                   </button>
@@ -206,7 +206,7 @@ function AiModels() {
               <span className="min-w-0 flex-1"><b className="text-[14px]">{t.label}</b>{saved === t.id && <span className="ml-2 text-[12px] font-semibold text-positive-text">gespeichert</span>}<span className="block text-[12px] text-muted">{t.text}</span></span>
               <span className="flex w-full flex-col gap-1 md:w-[28rem]">
                 <ModelPick value={current} models={byProvider} standard={data.defaults[t.id]} onPick={(id) => void save(t.id, id)} />
-                <span className="px-3 text-[11.5px] text-muted">{price(m)}{chosen[t.id] && <> · <button type="button" onClick={() => void save(t.id, "")} className="font-semibold text-selected">Standard ({data.defaults[t.id]})</button></>}</span>
+                <span className="px-3 text-[12px] text-muted">{price(m)}{chosen[t.id] && <> · <button type="button" onClick={() => void save(t.id, "")} className="font-semibold text-selected">Standard ({data.defaults[t.id]})</button></>}</span>
               </span>
             </li>
           );

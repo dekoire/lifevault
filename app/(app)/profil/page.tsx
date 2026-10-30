@@ -111,7 +111,7 @@ export default function ProfilPage() {
         </div>
         {chips.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {chips.map((c) => { const lp = c.icon === Home ? undefined : logoFor(c.v, []); return <span key={c.v} className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white/10 py-0.5 text-white ring-1 ring-white/15 pr-2.5 pl-1.5 text-[12.5px] font-semibold">{lp ? <span className="grid h-[22px] w-[22px] shrink-0 place-items-center overflow-hidden rounded-full bg-white"><SenderLogo domain={lp.domain} sender={lp.name} cluster={lp.cluster} size={16} bare /></span> : <c.icon size={13} className="mx-0.5 shrink-0" />}<span className="truncate">{c.v}</span></span>; })}
+            {chips.map((c) => { const lp = c.icon === Home ? undefined : logoFor(c.v, []); return <span key={c.v} className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white/10 py-0.5 text-white ring-1 ring-white/15 pr-2.5 pl-1.5 text-[13px] font-semibold">{lp ? <span className="grid h-[22px] w-[22px] shrink-0 place-items-center overflow-hidden rounded-full bg-white"><SenderLogo domain={lp.domain} sender={lp.name} cluster={lp.cluster} size={16} bare /></span> : <c.icon size={13} className="mx-0.5 shrink-0" />}<span className="truncate">{c.v}</span></span>; })}
           </div>
         )}
         {/* Kennzahlen in einer Leiste, durch Striche getrennt */}
@@ -128,7 +128,7 @@ export default function ProfilPage() {
         <section className={`${CARD} mb-4 overflow-hidden`}>
           <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-1">
             <h2 className="flex items-center gap-2.5 text-[16px] font-semibold"><span className="grid h-8 w-8 place-items-center rounded-full bg-surface-2"><IdCard size={16} /></span>Steckbrief</h2>
-            {person.some((f) => f.earlier.length) && <button type="button" onClick={() => { setShowEarlier(!showEarlier); setAllFields(true); }} className="rounded-full border border-card-line px-3 py-1 text-[12.5px] font-semibold text-soft hover:text-fg">{showEarlier ? "Nur aktuell" : "Frühere Werte"}</button>}
+            {person.some((f) => f.earlier.length) && <button type="button" onClick={() => { setShowEarlier(!showEarlier); setAllFields(true); }} className="rounded-full border border-card-line px-3 py-1 text-[13px] font-semibold text-soft hover:text-fg">{showEarlier ? "Nur aktuell" : "Frühere Werte"}</button>}
           </div>
           <p className="px-5 pb-3 text-[12px] text-muted">Jeweils der neueste Stand aus deinen Dokumenten, mit Quelle.</p>
           <ul className="grid border-t border-line md:grid-cols-2">
@@ -139,7 +139,7 @@ export default function ProfilPage() {
                   {[...f.current, ...(showEarlier ? f.earlier : [])].map((v, i) => (
                     <span key={i} className={`block ${i >= f.current.length ? "opacity-55" : ""}`}>
                       <CopyValue value={v.value} />
-                      <Link href={`/d/${v.docId}`} className="block truncate text-[11.5px] font-normal text-muted hover:text-selected">{i >= f.current.length ? "früher · " : ""}{fmtDate(v.date)} · {v.docTitle}</Link>
+                      <Link href={`/d/${v.docId}`} className="block truncate text-[12px] font-normal text-muted hover:text-selected">{i >= f.current.length ? "früher · " : ""}{fmtDate(v.date)} · {v.docTitle}</Link>
                     </span>
                   ))}
                 </span>
@@ -192,7 +192,7 @@ export default function ProfilPage() {
                           <span onClick={(e) => { if ((e.target as HTMLElement).closest("button")) return; const lp = (/wohn/i.test(s.id) ? undefined : logoFor(it.value, it.docIds)); if (lp) openDetail?.({ kind: "partner", key: lp.key }); }} className={(/wohn/i.test(s.id) ? undefined : logoFor(it.value, it.docIds)) ? "block cursor-pointer hover:[&_*]:underline-offset-2" : "block"}>
                           <Clamp className={`text-[14px] font-semibold ${it.status === "früher" ? "text-soft" : ""}`}>{it.value}<CopyBtn value={it.value} />{it.status === "früher" && <span className="ml-1.5 rounded-full border border-card-line bg-surface px-2 py-0.5 text-[11px] font-semibold text-muted">früher</span>}</Clamp>
                           </span>
-                          {it.detail && <Clamp className="mt-0.5 text-[12.5px] text-muted">{it.detail}</Clamp>}
+                          {it.detail && <Clamp className="mt-0.5 text-[13px] text-muted">{it.detail}</Clamp>}
                           {it.docIds.length > 0 && <span className="mt-1.5 flex flex-wrap gap-1">{it.docIds.slice(0, 3).map((id) => titleOf(id) && <Link key={id} href={`/d/${id}`} className="inline-flex max-w-[15rem] items-center gap-1 truncate rounded-full border border-card-line bg-surface px-2 py-0.5 text-[11px] font-medium text-soft hover:text-fg"><FileText size={11} className="shrink-0" /><span className="truncate">{titleOf(id)}</span></Link>)}</span>}
                         </span>
                         </span>

@@ -189,7 +189,7 @@ function Shell({ email, children }: { email: string; children: React.ReactNode }
               ] as const).map(({ icon: Icon, title, text, go }) => (
                 <button key={title} type="button" onClick={() => { setSheet(false); go(); }} className="flex flex-col items-center gap-3 rounded-2xl bg-surface-2 px-4 py-7 text-center transition-colors hover:bg-surface-3 active:scale-[.98]">
                   <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-500 text-white"><Icon size={24} /></span>
-                  <span><b className="block text-[15px]">{title}</b><span className="block text-[12.5px] text-muted">{text}</span></span>
+                  <span><b className="block text-[15px]">{title}</b><span className="block text-[13px] text-muted">{text}</span></span>
                 </button>
               ))}
             </div>

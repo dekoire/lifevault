@@ -43,10 +43,10 @@ export function DocLabels({ doc, onChange, inline = false }: { doc: Doc; onChang
         <span className="text-[12px] font-semibold text-muted">Tags</span>
         <button type="button" onClick={() => setEdit(!edit)} className="inline-flex h-7 items-center gap-1 rounded-full px-2 text-[12px] font-semibold text-soft hover:bg-surface-2 hover:text-fg">{edit ? <><X size={13} /> Fertig</> : <><Pencil size={12} /> Bearbeiten</>}</button>
       </div>
-      {!groups.length && <p className="text-[12.5px] text-muted">{doc.labels ? "Keine Tags." : "Tags werden gerade vergeben …"}</p>}
+      {!groups.length && <p className="text-[13px] text-muted">{doc.labels ? "Keine Tags." : "Tags werden gerade vergeben …"}</p>}
       {groups.map(({ g, tags }) => (
         <div key={g.id} className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-0.5 inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-muted"><span className="h-2 w-2 rounded-full" style={{ background: g.color }} />{g.label}</span>
+          <span className="mr-0.5 inline-flex items-center gap-1.5 text-[12px] font-semibold text-muted"><span className="h-2 w-2 rounded-full" style={{ background: g.color }} />{g.label}</span>
           {tags.map((t) => <LabelChip key={t} tag={t} on={labels.includes(t)} onClick={edit ? () => void toggle(t) : undefined} />)}
         </div>
       ))}

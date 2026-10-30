@@ -97,18 +97,18 @@ export function MergeReview({ docs, title, reason, skip: preSkip = [], onDone, o
     <div className="space-y-3">
       <div>
         <b className="block text-[15px] leading-5">{title}</b>
-        <span className="text-[12.5px] text-muted">{reason ? `${reason} · ` : ""}{list.length} Teile – wischen zum Vergleichen</span>
+        <span className="text-[13px] text-muted">{reason ? `${reason} · ` : ""}{list.length} Teile – wischen zum Vergleichen</span>
       </div>
       {/* Ergebnis der Seitenprüfung */}
       {check === "loading" ? (
-        <p className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-[12.5px] text-soft"><Loader2 size={14} className="animate-spin" /> KI prüft Seite für Seite: Reihenfolge, fehlende Seiten, passt alles zusammen?</p>
+        <p className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-[13px] text-soft"><Loader2 size={14} className="animate-spin" /> KI prüft Seite für Seite: Reihenfolge, fehlende Seiten, passt alles zusammen?</p>
       ) : check === "error" ? (
-        <p className="rounded-xl bg-surface-2 px-3 py-2.5 text-[12.5px] text-muted">Automatische Prüfung gerade nicht möglich – bitte selbst durchwischen.</p>
+        <p className="rounded-xl bg-surface-2 px-3 py-2.5 text-[13px] text-muted">Automatische Prüfung gerade nicht möglich – bitte selbst durchwischen.</p>
       ) : (
         <div className="space-y-1.5">
-          <p className="flex items-start gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-[12.5px]"><Check size={14} className="mt-0.5 shrink-0 text-positive-text" /><span><b className="font-semibold">{check.summary}</b>{reordered && <span className="block text-muted">Reihenfolge angepasst – bitte kurz durchwischen.</span>}</span></p>
-          {check.missing.map((m) => <p key={m} className="flex items-start gap-2 rounded-xl bg-[#fff7e6] px-3 py-2 text-[12.5px] font-semibold text-[#7a4a00] dark:bg-[#3a2a0a] dark:text-[#f5c46b]"><AlertTriangle size={14} className="mt-0.5 shrink-0" /> {m}</p>)}
-          {check.notBelonging.map((n) => <p key={n.id} className="flex items-start gap-2 rounded-xl bg-negative/10 px-3 py-2 text-[12.5px] text-negative-text"><AlertTriangle size={14} className="mt-0.5 shrink-0" /><span><b>Passt wohl nicht dazu:</b> {byId.get(n.id)?.title ?? "ein Teil"} – {n.reason} (abgewählt)</span></p>)}
+          <p className="flex items-start gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-[13px]"><Check size={14} className="mt-0.5 shrink-0 text-positive-text" /><span><b className="font-semibold">{check.summary}</b>{reordered && <span className="block text-muted">Reihenfolge angepasst – bitte kurz durchwischen.</span>}</span></p>
+          {check.missing.map((m) => <p key={m} className="flex items-start gap-2 rounded-xl bg-[#fff7e6] px-3 py-2 text-[13px] font-semibold text-[#7a4a00] dark:bg-[#3a2a0a] dark:text-[#f5c46b]"><AlertTriangle size={14} className="mt-0.5 shrink-0" /> {m}</p>)}
+          {check.notBelonging.map((n) => <p key={n.id} className="flex items-start gap-2 rounded-xl bg-negative/10 px-3 py-2 text-[13px] text-negative-text"><AlertTriangle size={14} className="mt-0.5 shrink-0" /><span><b>Passt wohl nicht dazu:</b> {byId.get(n.id)?.title ?? "ein Teil"} – {n.reason} (abgewählt)</span></p>)}
         </div>
       )}
 
@@ -121,9 +121,9 @@ export function MergeReview({ docs, title, reason, skip: preSkip = [], onDone, o
               <figure key={d.id} className="relative w-full shrink-0 snap-center">
                 {/* antippen: Vollbild zum Zoomen und Vergleichen */}
                 <button type="button" onClick={() => setZoom(list.indexOf(d))} aria-label="Groß ansehen" className={`block h-80 w-full p-3 sm:h-96 ${off ? "opacity-35" : ""}`}><PagePreview d={d} className="rounded-lg" /></button>
-                <span className="pointer-events-none absolute right-3 bottom-14 inline-flex items-center gap-1 rounded-full bg-fg/85 px-2.5 py-1 text-[11.5px] font-semibold text-canvas"><Maximize2 size={12} /> Groß ansehen</span>
+                <span className="pointer-events-none absolute right-3 bottom-14 inline-flex items-center gap-1 rounded-full bg-fg/85 px-2.5 py-1 text-[12px] font-semibold text-canvas"><Maximize2 size={12} /> Groß ansehen</span>
                 <span className={`absolute top-3 left-3 rounded-full px-2.5 py-1 text-[12px] font-semibold shadow-card ${off ? "bg-surface text-muted line-through" : "bg-fg text-canvas"}`}>{role(d)}</span>
-                {odd(d.id) && <span className="absolute bottom-3 left-3 inline-flex max-w-[85%] items-center gap-1 rounded-full bg-negative px-2.5 py-1 text-[11.5px] font-semibold text-white shadow-card"><AlertTriangle size={12} /> passt wohl nicht dazu</span>}
+                {odd(d.id) && <span className="absolute bottom-3 left-3 inline-flex max-w-[85%] items-center gap-1 rounded-full bg-negative px-2.5 py-1 text-[12px] font-semibold text-white shadow-card"><AlertTriangle size={12} /> passt wohl nicht dazu</span>}
                 <button type="button" onClick={() => setSkip((s) => (s.includes(d.id) ? s.filter((x) => x !== d.id) : [...s, d.id]))} className={`absolute top-3 right-3 inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold shadow-card ${off ? "bg-surface text-fg" : "bg-surface/95 text-fg"}`}>
                   {off ? <><Check size={13} /> doch übernehmen</> : <><X size={13} /> nicht übernehmen</>}
                 </button>
@@ -145,9 +145,9 @@ export function MergeReview({ docs, title, reason, skip: preSkip = [], onDone, o
       <div className="flex items-center gap-2">
         <span className="flex-1" />
         <span className="flex justify-center gap-1.5">{list.map((d, i) => <button key={d.id} type="button" aria-label={`Teil ${i + 1}`} onClick={() => go(i)} className={`h-1.5 rounded-full transition-all ${i === at ? "w-5 bg-fg" : "w-1.5 bg-line-strong"}`} />)}</span>
-        <span className="flex flex-1 justify-end">{used.length === 2 && <button type="button" onClick={swap} className="inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[12.5px] font-semibold text-soft hover:bg-surface-2 hover:text-fg"><ArrowLeftRight size={14} /> {isCard ? "Seiten tauschen" : "Tauschen"}</button>}</span>
+        <span className="flex flex-1 justify-end">{used.length === 2 && <button type="button" onClick={swap} className="inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-semibold text-soft hover:bg-surface-2 hover:text-fg"><ArrowLeftRight size={14} /> {isCard ? "Seiten tauschen" : "Tauschen"}</button>}</span>
       </div>
-      {skip.length > 0 && <label className="flex items-center gap-2 text-[12.5px] text-soft"><input type="checkbox" checked={dropSkipped} onChange={(e) => setDropSkipped(e.target.checked)} className="h-4 w-4 accent-brand-500" /> abgewählte Fotos löschen (doppelt)</label>}
+      {skip.length > 0 && <label className="flex items-center gap-2 text-[13px] text-soft"><input type="checkbox" checked={dropSkipped} onChange={(e) => setDropSkipped(e.target.checked)} className="h-4 w-4 accent-brand-500" /> abgewählte Fotos löschen (doppelt)</label>}
       {error && <p role="alert" className="text-[13px] text-negative-text">{error}</p>}
       {/* Knöpfe: oben der eine Hauptschritt über die ganze Breite, darunter zwei gleich breite */}
       <div className={`space-y-2 ${sheet ? "sticky bottom-0 -mx-4 border-t border-line bg-canvas px-4 pt-3 pb-1 sm:-mx-5 sm:px-5" : "pt-1"}`}>

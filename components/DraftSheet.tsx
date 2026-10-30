@@ -62,14 +62,14 @@ function DraftSheet({ doc, initial, onClose }: { doc: Doc; initial?: DraftPurpos
   const copy = async () => { await navigator.clipboard?.writeText(full); setCopied(true); setTimeout(() => setCopied(false), 1500); };
   const mail = () => { if (draft) location.href = `mailto:${contact.emails[0] ?? ""}?subject=${encodeURIComponent(draft.subject)}&body=${encodeURIComponent(draft.body)}`; };
   const letter = async () => { if (draft) saveFile(await letterPdf(draft, doc.sender ?? "", contact.addresses[0] ?? ""), `${draft.subject.replace(/[\\/:*?"<>|]+/g, " ").slice(0, 60)}.pdf`); };
-  const pill = (on: boolean) => `h-8 rounded-full px-3 text-[12.5px] font-semibold transition-colors ${on ? "bg-fg text-canvas" : "bg-surface-3 text-soft hover:text-fg"}`;
+  const pill = (on: boolean) => `h-8 rounded-full px-3 text-[13px] font-semibold transition-colors ${on ? "bg-fg text-canvas" : "bg-surface-3 text-soft hover:text-fg"}`;
 
   return createPortal(
     <div className="sheet-backdrop fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-6" onClick={onClose}>
       <div role="dialog" aria-label="Schreiben vorbereiten" onClick={(e) => e.stopPropagation()} className="sheet-rise flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl bg-surface shadow-[0_24px_64px_rgba(16,24,40,.25)] sm:rounded-3xl">
         <div className="flex items-center gap-3 px-5 pt-5 pb-3">
           <SenderLogo domain={doc.sender_domain} sender={doc.sender} cluster={doc.cluster} size={36} />
-          <span className="min-w-0 flex-1"><b className="block text-[16px]">Schreiben vorbereiten</b><span className="block truncate text-[12.5px] text-muted">an {doc.sender ?? "Absender"} · zu „{doc.title ?? doc.file_name}“</span></span>
+          <span className="min-w-0 flex-1"><b className="block text-[16px]">Schreiben vorbereiten</b><span className="block truncate text-[13px] text-muted">an {doc.sender ?? "Absender"} · zu „{doc.title ?? doc.file_name}“</span></span>
           <button type="button" onClick={onClose} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full bg-surface-3"><X size={17} /></button>
         </div>
         <div className="space-y-2.5 border-b border-line px-5 pb-3">
@@ -78,23 +78,23 @@ function DraftSheet({ doc, initial, onClose }: { doc: Doc; initial?: DraftPurpos
           </div>
           <div className="flex items-center gap-2">
             <span className="inline-flex rounded-full bg-surface-3 p-0.5">
-              {(["mail", "brief"] as const).map((c) => <button key={c} type="button" onClick={() => setChannel(c)} aria-pressed={channel === c} className={`h-7 rounded-full px-3 text-[12.5px] font-semibold ${channel === c ? "bg-surface text-fg shadow-card" : "text-soft"}`}>{c === "mail" ? "E-Mail" : "Brief"}</button>)}
+              {(["mail", "brief"] as const).map((c) => <button key={c} type="button" onClick={() => setChannel(c)} aria-pressed={channel === c} className={`h-7 rounded-full px-3 text-[13px] font-semibold ${channel === c ? "bg-surface text-fg shadow-card" : "text-soft"}`}>{c === "mail" ? "E-Mail" : "Brief"}</button>)}
             </span>
             <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Zusatz (optional), z. B. „bitte in 3 Raten“" className="h-8 min-w-0 flex-1 rounded-full border border-card-line bg-surface px-3 text-[13px] outline-none placeholder:text-muted focus:border-line-strong" />
-            <button type="button" onClick={() => void write()} disabled={busy} className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-brand-500 px-3 text-[12.5px] font-semibold text-white disabled:opacity-50">{busy ? <Loader2 size={13} className="animate-spin" /> : draft ? <RefreshCw size={13} /> : <Sparkles size={13} />} {draft ? "Neu" : "Schreiben"}</button>
+            <button type="button" onClick={() => void write()} disabled={busy} className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-brand-500 px-3 text-[13px] font-semibold text-white disabled:opacity-50">{busy ? <Loader2 size={13} className="animate-spin" /> : draft ? <RefreshCw size={13} /> : <Sparkles size={13} />} {draft ? "Neu" : "Schreiben"}</button>
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           {error && <p className="mb-3 rounded-xl bg-negative/10 px-3 py-2 text-[13px] text-negative-text">{error}</p>}
-          {busy && !draft && <p className="flex items-center gap-2 py-10 text-[13.5px] text-muted"><Loader2 size={15} className="animate-spin" /> Wird vorformuliert …</p>}
+          {busy && !draft && <p className="flex items-center gap-2 py-10 text-[14px] text-muted"><Loader2 size={15} className="animate-spin" /> Wird vorformuliert …</p>}
           {draft && (
             <div className={`space-y-2.5 ${busy ? "opacity-50" : ""}`}>
               <label className="block"><span className="mb-1 block text-[12px] font-semibold text-muted">Betreff</span>
                 <input value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} className="h-10 w-full rounded-xl border border-card-line bg-surface px-3 text-[14px] font-semibold outline-none focus:border-line-strong" /></label>
               <label className="block"><span className="mb-1 block text-[12px] font-semibold text-muted">Text – frei bearbeitbar</span>
                 <textarea value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} rows={12} className="w-full resize-y rounded-xl border border-card-line bg-surface px-3 py-2.5 text-[14px] leading-6 outline-none focus:border-line-strong" /></label>
-              {draft.hints.length > 0 && <ul className="space-y-1 rounded-xl bg-surface-2 px-3 py-2 text-[12.5px] text-soft">{draft.hints.map((h) => <li key={h} className="flex gap-1.5"><PenLine size={13} className="mt-0.5 shrink-0" />{h}</li>)}</ul>}
-              <p className="text-[11.5px] text-muted">Vorschlag der KI, keine Rechtsberatung – bitte vor dem Absenden prüfen und [Platzhalter] ausfüllen.</p>
+              {draft.hints.length > 0 && <ul className="space-y-1 rounded-xl bg-surface-2 px-3 py-2 text-[13px] text-soft">{draft.hints.map((h) => <li key={h} className="flex gap-1.5"><PenLine size={13} className="mt-0.5 shrink-0" />{h}</li>)}</ul>}
+              <p className="text-[12px] text-muted">Vorschlag der KI, keine Rechtsberatung – bitte vor dem Absenden prüfen und [Platzhalter] ausfüllen.</p>
             </div>
           )}
         </div>

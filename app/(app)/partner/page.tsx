@@ -73,22 +73,22 @@ export default function PartnersPage() {
                       <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={38} />
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center gap-1.5">
-                          <b className="truncate text-[14.5px]">{p.name}</b>
+                          <b className="truncate text-[15px]">{p.name}</b>
                           {p.isShop && <span className="shrink-0 rounded-full border border-card-line px-1.5 py-px text-[11px] font-semibold text-soft">Händler</span>}
                           {!p.active && <span className="shrink-0 rounded-full border border-card-line px-1.5 py-px text-[11px] font-semibold text-soft">früher</span>}
                           {byPartner.get(p.key)?.entry.status === "aktuell" && byPartner.get(p.key)?.prev && <span className="shrink-0 rounded-full bg-positive/10 px-1.5 py-px text-[11px] font-semibold text-positive-text">aktuell · {byPartner.get(p.key)!.role}</span>}
                         </span>
-                        {!p.active && (byPartner.get(p.key)?.next ?? byPartner.get(p.key)?.current) && <span className="hidden truncate text-[12.5px] text-muted md:block">abgelöst durch {(byPartner.get(p.key)!.next ?? byPartner.get(p.key)!.current)!.name}</span>}
-                        <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-muted md:hidden">
+                        {!p.active && (byPartner.get(p.key)?.next ?? byPartner.get(p.key)?.current) && <span className="hidden truncate text-[13px] text-muted md:block">abgelöst durch {(byPartner.get(p.key)!.next ?? byPartner.get(p.key)!.current)!.name}</span>}
+                        <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted md:hidden">
                           <ClusterTag id={p.cluster} className="shrink-0 text-soft" /><span>·</span>
                           <span className="truncate">{!p.active && (byPartner.get(p.key)?.next ?? byPartner.get(p.key)?.current) ? `→ ${(byPartner.get(p.key)!.next ?? byPartner.get(p.key)!.current)!.name} · ` : ""}{p.docs.length} Dok.{p.ids.length ? ` · ${p.ids.length} Kenn.` : ""} · {fmtDate(p.last)}</span>
                         </span>
                       </span>
                     </span>
-                    <span className="hidden min-w-0 text-[13.5px] text-soft md:block"><ClusterTag id={p.cluster} /></span>
-                    <span className="tnum hidden text-right text-[13.5px] text-soft md:block">{p.docs.length}</span>
-                    <span className="tnum hidden text-right text-[13.5px] text-soft md:block">{p.ids.length || "–"}</span>
-                    <span className="tnum hidden text-right text-[13.5px] text-soft md:block">{fmtDate(p.last)}</span>
+                    <span className="hidden min-w-0 text-[14px] text-soft md:block"><ClusterTag id={p.cluster} /></span>
+                    <span className="tnum hidden text-right text-[14px] text-soft md:block">{p.docs.length}</span>
+                    <span className="tnum hidden text-right text-[14px] text-soft md:block">{p.ids.length || "–"}</span>
+                    <span className="tnum hidden text-right text-[14px] text-soft md:block">{fmtDate(p.last)}</span>
                   </Link>
                 ))}
               </div>

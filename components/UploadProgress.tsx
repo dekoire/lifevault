@@ -87,10 +87,10 @@ function FileHead({ name, step, split }: { name: string; step: Step; split: bool
     <div className="mb-3.5 flex items-center gap-3">
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface-2 text-fg"><FileText size={19} strokeWidth={1.8} /></span>
       <span className="min-w-0 flex-1">
-        <b className="block truncate text-[14.5px] leading-5">{name}</b>
+        <b className="block truncate text-[15px] leading-5">{name}</b>
         {step === 3
-          ? <span className="block text-[12.5px] font-medium text-negative-text">Fehlgeschlagen</span>
-          : <span className="text-shimmer block text-[12.5px] font-medium">Schritt {step + 1} von 3 · {LABELS(split)[step].doing}</span>}
+          ? <span className="block text-[13px] font-medium text-negative-text">Fehlgeschlagen</span>
+          : <span className="text-shimmer block text-[13px] font-medium">Schritt {step + 1} von 3 · {LABELS(split)[step].doing}</span>}
       </span>
     </div>
   );
@@ -107,7 +107,7 @@ function Steps({ step, split }: { step: Step; split: boolean }) {
             <span aria-hidden className={`relative block h-1.5 overflow-hidden rounded-full ${state === "done" ? "bg-fg" : state === "fail" ? "bg-negative/25" : "bg-surface-3"}`}>
               {state === "active" && <span className="progress-run absolute inset-y-0 w-1/2 rounded-full bg-fg" />}
             </span>
-            <span className={`mt-2 flex items-center gap-1 text-[11.5px] font-semibold ${state === "todo" ? "text-muted" : state === "fail" ? "text-negative-text" : "text-fg"}`}>
+            <span className={`mt-2 flex items-center gap-1 text-[12px] font-semibold ${state === "todo" ? "text-muted" : state === "fail" ? "text-negative-text" : "text-fg"}`}>
               {state === "done" ? <Check size={13} strokeWidth={2.6} className="shrink-0" /> : <Icon size={13} className="shrink-0" />}
               <span className="truncate">{label}</span>
             </span>

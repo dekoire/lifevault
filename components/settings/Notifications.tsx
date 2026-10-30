@@ -61,22 +61,22 @@ export function NotificationSettings() {
         <section className={`${CARD} divide-y divide-line`}>
           <div className="p-5">
             <b className="text-[14px]">Wann erinnern?</b>
-            <span className="block text-[12.5px] text-muted">Mehrfachauswahl – vor jeder Frist</span>
+            <span className="block text-[13px] text-muted">Mehrfachauswahl – vor jeder Frist</span>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {DAYS.map((d) => { const sel = prefs.daysBefore.includes(d); return <button key={d} type="button" aria-pressed={sel} onClick={() => void update({ ...prefs, daysBefore: sel ? prefs.daysBefore.filter((x) => x !== d) : [...prefs.daysBefore, d].sort((a, b) => b - a) })} className={`h-8 rounded-full px-3.5 text-[13px] font-semibold ${sel ? "bg-fg text-canvas" : "border border-card-line text-soft hover:text-fg"}`}>{dayLabel(d)}</button>; })}
             </div>
           </div>
           <div className="flex items-center justify-between gap-4 p-5">
-            <span><b className="text-[14px]">Uhrzeit</b><span className="block text-[12.5px] text-muted">Erinnerungen kommen zu dieser Stunde</span></span>
+            <span><b className="text-[14px]">Uhrzeit</b><span className="block text-[13px] text-muted">Erinnerungen kommen zu dieser Stunde</span></span>
             <select value={prefs.time} onChange={(e) => void update({ ...prefs, time: e.target.value })} className="h-10 rounded-full border border-card-line bg-surface px-3 text-[14px] font-semibold">{TIMES.map((t) => <option key={t} value={t}>{t} Uhr</option>)}</select>
           </div>
           <div className="flex items-center justify-between gap-4 p-5">
-            <span><b className="text-[14px]">Überfällige wöchentlich</b><span className="block text-[12.5px] text-muted">Montags eine Zusammenfassung, was noch offen und überfällig ist</span></span>
+            <span><b className="text-[14px]">Überfällige wöchentlich</b><span className="block text-[13px] text-muted">Montags eine Zusammenfassung, was noch offen und überfällig ist</span></span>
             <Switch on={prefs.overdueWeekly} onChange={(v) => void update({ ...prefs, overdueWeekly: v })} label="Überfällige wöchentlich" />
           </div>
           <div className="p-5">
             <b className="text-[14px]">Wofür?</b>
-            <span className="block text-[12.5px] text-muted">Nur diese Arten von Aufgaben</span>
+            <span className="block text-[13px] text-muted">Nur diese Arten von Aufgaben</span>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {ALL_KINDS.map((k) => { const K = KIND[k]; const sel = prefs.kinds.includes(k); return (
                 <button key={k} type="button" aria-pressed={sel} onClick={() => void update({ ...prefs, kinds: sel ? prefs.kinds.filter((x) => x !== k) : [...prefs.kinds, k] })} className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${sel ? "border border-fg text-fg" : "border border-card-line text-muted line-through"}`}><K.icon size={13} strokeWidth={2.4} />{K.label}</button>

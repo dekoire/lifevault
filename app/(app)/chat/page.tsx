@@ -74,10 +74,10 @@ function Chat() {
     <div className="flex h-full flex-col">
       {/* Kopf wie bei Finastry: Zurück, Einklappen; darunter Neuer Chat */}
       <div className="flex items-center gap-1 px-3 pt-3 pb-2">
-        <span className="flex-1"><button type="button" onClick={back} className="inline-flex h-9 items-center gap-1 rounded-[6px] pr-3 pl-1.5 text-[14.5px] font-semibold hover:bg-black/[0.04]"><ChevronLeft size={18} /> Zurück</button></span>
+        <span className="flex-1"><button type="button" onClick={back} className="inline-flex h-9 items-center gap-1 rounded-[6px] pr-3 pl-1.5 text-[15px] font-semibold hover:bg-black/[0.04]"><ChevronLeft size={18} /> Zurück</button></span>
         <button type="button" onClick={() => (drawer ? setDrawer(false) : toggleSide())} aria-label="Gespräche einklappen" title="Einklappen" className="grid h-9 w-9 place-items-center rounded-full text-soft hover:bg-black/[0.04] hover:text-fg"><PanelLeftClose size={18} /></button>
       </div>
-      <button type="button" onClick={() => open(undefined)} className="mx-2 flex h-10 items-center gap-2.5 rounded-[6px] px-3.5 text-[14.5px] hover:bg-black/[0.04]"><SquarePen size={16} className="text-soft" /> Neuer Chat</button>
+      <button type="button" onClick={() => open(undefined)} className="mx-2 flex h-10 items-center gap-2.5 rounded-[6px] px-3.5 text-[15px] hover:bg-black/[0.04]"><SquarePen size={16} className="text-soft" /> Neuer Chat</button>
       <div className="no-scrollbar mt-3 flex-1 space-y-4 overflow-y-auto px-2 pb-6">
         {pinned.length > 0 && <div><p className="px-3.5 pb-1.5 text-[13px] text-muted">Angepinnt</p>{pinned.map((t) => <ThreadItem key={t.id} t={t} active={t.id === current} onOpen={() => open(t.id)} onPatch={(p) => void patch(t, p)} onRemove={() => void remove(t)} />)}</div>}
         <div>
@@ -100,7 +100,7 @@ function Chat() {
             {/* links: Gespräche (Leiste) vor „Zurück“, dann der Titel */}
             <span className="flex min-w-0 items-center gap-1">
               {!side && <button type="button" onClick={toggleList} aria-label="Gespräche zeigen" title="Gespräche" className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-surface"><PanelLeftOpen size={19} /></button>}
-              {!side && <button type="button" onClick={back} className="inline-flex h-10 shrink-0 items-center gap-1 rounded-full pr-3 pl-1.5 text-[14.5px] font-semibold hover:bg-surface"><ChevronLeft size={18} /> Zurück</button>}
+              {!side && <button type="button" onClick={back} className="inline-flex h-10 shrink-0 items-center gap-1 rounded-full pr-3 pl-1.5 text-[15px] font-semibold hover:bg-surface"><ChevronLeft size={18} /> Zurück</button>}
               <b className="min-w-0 truncate pl-1 text-[15px] max-lg:hidden">{empty ? "Neuer Chat" : threads.find((t) => t.id === current)?.title ?? "Chat"}</b>
             </span>
             <span className="flex items-center gap-1">
@@ -134,7 +134,7 @@ function Chat() {
             <div className="mx-auto max-w-md">
               <VaultUnlock compact title="Tresor entsperren" onClose={chat.cancelGate}
                 text={<>Für <b className="text-white">„{chat.gate.q}“</b> brauche ich wahrscheinlich verschlüsselte Unterlagen. Danach geht die Frage automatisch los.</>}
-                footer={<button type="button" onClick={chat.skipGate} className="rounded-full border border-card-line bg-surface px-4 text-[13.5px] font-semibold text-fg hover:bg-surface-2">Ohne Tresor fragen</button>} />
+                footer={<button type="button" onClick={chat.skipGate} className="rounded-full border border-card-line bg-surface px-4 text-[14px] font-semibold text-fg hover:bg-surface-2">Ohne Tresor fragen</button>} />
             </div>
           )}
           <div className={`mx-auto max-w-3xl ${chat.gate ? "hidden" : ""}`}><Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} onTextChange={setTyping} aiState={chat.busy ? (chat.msgs.at(-1)?.role === "assistant" && chat.msgs.at(-1)?.content ? "speak" : "think") : undefined} onFiles={(f) => void chat.attach(f)} attachments={chat.attachments} onRemoveAttachment={chat.removeAttachment} depth={chat.depth} onDepth={chat.setDepth} /></div>
@@ -161,7 +161,7 @@ function ThreadItem({ t, active, onOpen, onPatch, onRemove }: { t: Thread; activ
   );
   return (
     <div className={`group relative flex items-center rounded-[6px] ${active ? "bg-black/[0.06]" : "hover:bg-black/[0.04]"}`}>
-      <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-2 py-2 pr-1 pl-3.5 text-left text-[14px] leading-5 lg:py-1.5 lg:text-[13.5px]">
+      <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-2 py-2 pr-1 pl-3.5 text-left text-[14px] leading-5 lg:py-1.5 lg:text-[14px]">
         <span className="min-w-0 flex-1 truncate">{t.title}</span>
         {t.starred && <Star size={13} className="shrink-0 fill-amber text-amber" aria-label="Gemerkt" />}
         {t.pinned && <Pin size={13} className="shrink-0 fill-current text-brand-500" aria-label="Angepinnt" />}

@@ -280,7 +280,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
           {act && (
             <span className={`inline-flex items-center gap-2 rounded-2xl px-3.5 py-2 ${actDays <= 7 ? "bg-urgent text-white" : "border border-card-line bg-surface"}`} title={act.what}>
               <CalendarClock size={16} className="shrink-0" />
-              <span className="leading-tight"><span className={`block text-[11.5px] ${actDays <= 7 ? "text-white/80" : "text-muted"}`}>{act.label}</span><b className="tnum text-[15px]">{fmtDate(act.date)}</b><span className={`ml-1.5 text-[12px] ${actDays <= 7 ? "text-white/80" : "text-muted"}`}>{actDays === 0 ? "heute" : `in ${actDays} ${actDays === 1 ? "Tag" : "Tagen"}`}</span></span>
+              <span className="leading-tight"><span className={`block text-[12px] ${actDays <= 7 ? "text-white/80" : "text-muted"}`}>{act.label}</span><b className="tnum text-[15px]">{fmtDate(act.date)}</b><span className={`ml-1.5 text-[12px] ${actDays <= 7 ? "text-white/80" : "text-muted"}`}>{actDays === 0 ? "heute" : `in ${actDays} ${actDays === 1 ? "Tag" : "Tagen"}`}</span></span>
             </span>
           )}
           <div className="flex gap-1.5">
@@ -295,7 +295,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
         {/Passwort/.test(doc.error ?? "") && (
           <form onSubmit={(e) => { e.preventDefault(); const pw = new FormData(e.currentTarget).get("pw"); if (typeof pw === "string" && pw) void run(() => reprocess(doc.id, pw)); }} className="mt-2.5 flex gap-2">
             <input name="pw" type="text" autoComplete="off" placeholder="PDF-Passwort, z. B. Geburtsdatum TTMMJJJJ" data-own-focus className="h-10 min-w-0 flex-1 rounded-full border border-card-line bg-surface px-4 text-[14px] text-fg outline-none focus:border-line-strong" />
-            <button type="submit" disabled={busy} className="h-10 shrink-0 rounded-full bg-fg px-4 text-[13.5px] font-semibold text-canvas disabled:opacity-50">Öffnen</button>
+            <button type="submit" disabled={busy} className="h-10 shrink-0 rounded-full bg-fg px-4 text-[14px] font-semibold text-canvas disabled:opacity-50">Öffnen</button>
           </form>
         )}
       </div>}
@@ -320,7 +320,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
                 <div key={i} className={`group relative min-w-0 rounded-2xl border px-3.5 py-3 ${g.urgent ? "border-urgent bg-urgent text-white" : "border-card-line bg-surface"} ${tiles.length === 3 && i === 2 ? "col-span-2 sm:col-span-1" : ""}`}>
                   <span className={`block truncate text-[12px] ${g.urgent ? "text-white/80" : "text-muted"}`}>{g.label}</span>
                   <span className="tnum mt-0.5 block truncate text-[18px] leading-6 font-[650]" title={g.value}>{g.value}</span>
-                  {g.sub && <span className={`block truncate text-[11.5px] ${g.urgent ? "text-white/80" : "text-muted"}`} title={g.sub}>{g.sub}</span>}
+                  {g.sub && <span className={`block truncate text-[12px] ${g.urgent ? "text-white/80" : "text-muted"}`} title={g.sub}>{g.sub}</span>}
                   {g.copy && <CopyBtn value={g.copy} className="absolute top-2.5 right-2.5" />}
                 </div>
               ))}
@@ -331,9 +331,9 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
           {(view?.content.points.length || explain || (show.summary && content?.summary)) && (
             <section className={`${CARD} p-4`}>
               <h2 className="mb-1.5 text-[16px] leading-6 font-semibold">{view?.content.title ?? explain ?? "Worum es geht"}</h2>
-              {show.summary && content?.summary && <Clamp className="text-[14.5px] leading-6 text-soft">{content.summary}</Clamp>}
+              {show.summary && content?.summary && <Clamp className="text-[15px] leading-6 text-soft">{content.summary}</Clamp>}
               {!!view?.content.points.length && <ul className="mt-3 space-y-1.5 text-[14px] leading-6">{view.content.points.map((p, i) => <li key={i} className="flex gap-2.5"><span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />{p}</li>)}</ul>}
-              {!doc.encrypted && !view && doc.status === "ready" && <p className="mt-3 text-[12.5px] text-muted">Wird aufbereitet …</p>}
+              {!doc.encrypted && !view && doc.status === "ready" && <p className="mt-3 text-[13px] text-muted">Wird aufbereitet …</p>}
             </section>
           )}
 
@@ -394,7 +394,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
                   <div key={g}>
                     <h3 className="border-t border-line bg-surface-2/60 px-4 py-1.5 text-[12px] font-semibold tracking-wide text-muted uppercase">{g}</h3>
                     <FactGrid facts={all ? fs : fs.slice(0, 8)} />
-                    {fs.length > 8 && <button type="button" onClick={() => setMore({ ...more, [g]: !all })} className="w-full border-t border-line px-4 py-2 text-center text-[12.5px] font-semibold text-fg hover:bg-surface-2">{all ? "Weniger anzeigen" : `Alle ${fs.length} anzeigen`}</button>}
+                    {fs.length > 8 && <button type="button" onClick={() => setMore({ ...more, [g]: !all })} className="w-full border-t border-line px-4 py-2 text-center text-[13px] font-semibold text-fg hover:bg-surface-2">{all ? "Weniger anzeigen" : `Alle ${fs.length} anzeigen`}</button>}
                   </div>
                 );
               })}
@@ -444,13 +444,13 @@ function CostCard({ costs }: { costs: NonNullable<DocView["costs"]> }) {
       <div className="flex items-start justify-between gap-3 px-4 pt-3.5 pb-3">
         <span className="min-w-0">
           <span className="flex items-center gap-2 text-[12px] font-semibold tracking-wide text-muted uppercase"><Wallet size={14} /> Kosten · Stand heute</span>
-          {costs.total ? <><b className="tnum mt-1 block text-[24px] leading-8">{fmtMoney(costs.total.value, "EUR")}<span className="text-[14px] font-semibold text-muted">{per}</span></b><span className="block text-[12.5px] text-muted">{costs.total.label}</span></> : <b className="mt-1 block text-[15px]">{costs.items.length} Positionen</b>}
+          {costs.total ? <><b className="tnum mt-1 block text-[24px] leading-8">{fmtMoney(costs.total.value, "EUR")}<span className="text-[14px] font-semibold text-muted">{per}</span></b><span className="block text-[13px] text-muted">{costs.total.label}</span></> : <b className="mt-1 block text-[15px]">{costs.items.length} Positionen</b>}
         </span>
       </div>
       {costs.items.length > 0 && (
         <>
           <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center justify-between border-t border-line px-4 py-2.5 text-[13px] font-semibold hover:bg-surface-2">Zusammensetzung<ChevronDown size={15} className={`text-muted transition-transform ${open ? "rotate-180" : ""}`} /></button>
-          {open && <ul className="divide-y divide-line border-t border-line text-[13.5px]">{costs.items.map((x, i) => <li key={i} className="flex items-baseline gap-3 px-4 py-2"><span className="min-w-0 flex-1">{x.label}{x.note && <span className="block text-[12px] text-muted">{x.note}</span>}</span><span className="tnum shrink-0 font-semibold">{fmtMoney(x.value, "EUR")}</span></li>)}</ul>}
+          {open && <ul className="divide-y divide-line border-t border-line text-[14px]">{costs.items.map((x, i) => <li key={i} className="flex items-baseline gap-3 px-4 py-2"><span className="min-w-0 flex-1">{x.label}{x.note && <span className="block text-[12px] text-muted">{x.note}</span>}</span><span className="tnum shrink-0 font-semibold">{fmtMoney(x.value, "EUR")}</span></li>)}</ul>}
         </>
       )}
     </section>

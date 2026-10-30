@@ -81,10 +81,10 @@ export function DocTable({ docs, cluster = true, sender = true, archiveToggle = 
     <div className="flex items-center gap-3 rounded-2xl px-4 py-3 text-white shadow-card" style={{ background: "var(--accent-grad, linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%))" }}>
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15"><Hash size={17} /></span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[11.5px] text-white/75">Gefiltert nach {restrict.label.split(":")[0]} · {list.length} {list.length === 1 ? "Dokument" : "Dokumente"}</span>
-        <b className="tnum block truncate text-[14.5px]">{restrict.label.includes(":") ? restrict.label.split(":").slice(1).join(":").trim() : restrict.label}</b>
+        <span className="block text-[12px] text-white/75">Gefiltert nach {restrict.label.split(":")[0]} · {list.length} {list.length === 1 ? "Dokument" : "Dokumente"}</span>
+        <b className="tnum block truncate text-[15px]">{restrict.label.includes(":") ? restrict.label.split(":").slice(1).join(":").trim() : restrict.label}</b>
       </span>
-      <button type="button" onClick={onClearRestrict} aria-label="Kennungs-Filter entfernen" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-white/15 px-3 text-[12.5px] font-semibold hover:bg-white/25"><X size={14} /> Alle zeigen</button>
+      <button type="button" onClick={onClearRestrict} aria-label="Kennungs-Filter entfernen" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-white/15 px-3 text-[13px] font-semibold hover:bg-white/25"><X size={14} /> Alle zeigen</button>
     </div>
   );
   const table = (
@@ -126,21 +126,21 @@ function Row({ d, grid, cluster, sender }: { d: Doc; grid: string; cluster: bool
         <SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} urgent={isUrgent(d)} size={36} />
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
-            <span className="truncate text-[14.5px] font-semibold">{title}</span>
+            <span className="truncate text-[15px] font-semibold">{title}</span>
             {d.encrypted && <Lock size={13} className="shrink-0 text-brand-500" aria-label="verschlüsselt" />}
             {d.archived && <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-card-line px-1.5 py-px text-[11px] font-semibold text-soft"><Archive size={11} /> Archiv</span>}
           </span>
-          <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-muted md:hidden">
+          <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted md:hidden">
             {processing ? <span className="text-shimmer font-medium">Wird ausgelesen</span> : d.status === "error" ? <span className="inline-flex items-center gap-1 text-negative-text"><AlertCircle size={13} /> {d.error ?? "Fehler"}</span> : (
               <><KindTag d={d} />{cluster && <><ClusterTag id={d.cluster} className="shrink-0 text-soft" /><span>·</span></>}<span className="truncate">{[sender ? d.sender : null, fmtDate(dateOf(d))].filter(Boolean).join(" · ")}</span></>
             )}
           </span>
-          {d.status === "ready" && <span className="hidden min-w-0 items-center gap-1.5 text-[12.5px] text-muted md:flex"><KindTag d={d} />{d.doc_type && <span className="truncate">{d.doc_type}</span>}</span>}
+          {d.status === "ready" && <span className="hidden min-w-0 items-center gap-1.5 text-[13px] text-muted md:flex"><KindTag d={d} />{d.doc_type && <span className="truncate">{d.doc_type}</span>}</span>}
         </span>
       </span>
-      {cluster && <span className="hidden min-w-0 text-[13.5px] text-soft md:block"><ClusterTag id={d.cluster} /></span>}
-      {sender && <span className="hidden truncate text-[13.5px] text-soft md:block">{d.sender ?? "–"}</span>}
-      <span className="tnum hidden text-right text-[13.5px] text-soft md:block">{fmtDate(dateOf(d))}</span>
+      {cluster && <span className="hidden min-w-0 text-[14px] text-soft md:block"><ClusterTag id={d.cluster} /></span>}
+      {sender && <span className="hidden truncate text-[14px] text-soft md:block">{d.sender ?? "–"}</span>}
+      <span className="tnum hidden text-right text-[14px] text-soft md:block">{fmtDate(dateOf(d))}</span>
     </Link>
   );
 }

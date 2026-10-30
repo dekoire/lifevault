@@ -80,11 +80,11 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
   // Anstehendes (Kündigungsfrist, Zahlung …) ganz oben links, direkt unter dem Hauptdokument
   const upcoming = deadlines.length > 0 && (
             <section className={CARD}>
-              <h2 className="flex items-center gap-2 px-5 pt-4 pb-2 text-[16px] font-semibold"><CalendarClock size={17} /> Anstehend <span className="text-[12.5px] font-normal text-muted">– Fristen, Kündigung, Zahlungen</span></h2>
+              <h2 className="flex items-center gap-2 px-5 pt-4 pb-2 text-[16px] font-semibold"><CalendarClock size={17} /> Anstehend <span className="text-[13px] font-normal text-muted">– Fristen, Kündigung, Zahlungen</span></h2>
               <ul className="grid gap-2.5 px-4 pb-4 sm:grid-cols-2">{deadlines.map((x, i) => { const days = Math.round((Date.parse(x.date) - Date.now()) / 86_400_000); return (
                 <li key={i}><Link href={`/d/${x.d.id}`} className="flex h-full flex-col gap-1.5 rounded-xl bg-surface-2 p-3.5 transition-colors hover:bg-surface-3">
                   <span className="flex items-baseline justify-between gap-2"><b className="tnum text-[17px]">{fmtDate(x.date)}</b><span className={`text-[12px] font-semibold ${days < 0 ? "text-negative-text" : days <= 30 ? "text-amber" : "text-muted"}`}>{days < 0 ? `seit ${-days} Tagen` : days === 0 ? "heute" : days < 60 ? `in ${days} Tagen` : `in ${Math.round(days / 30)} Monaten`}</span></span>
-                  <span className="line-clamp-2 text-[13.5px] leading-5 text-soft">{x.what}</span>
+                  <span className="line-clamp-2 text-[14px] leading-5 text-soft">{x.what}</span>
                 </Link></li>
               ); })}</ul>
             </section>
@@ -104,13 +104,13 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
         </>}
       />
       {link && (link.prev || link.next || link.current) && (
-        <section className={`mb-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border px-4 py-3 text-[13.5px] ${link.entry.status === "früher" ? "border-amber/30 bg-amber/5" : "border-card-line bg-surface"}`}>
+        <section className={`mb-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border px-4 py-3 text-[14px] ${link.entry.status === "früher" ? "border-amber/30 bg-amber/5" : "border-card-line bg-surface"}`}>
           <span className="inline-flex items-center gap-2 font-semibold"><ClusterIcon id={p.cluster} size={26} tone="plain" />{link.role} · {span(link.entry)}</span>
           {link.entry.status === "früher" && (link.next ?? link.current) && (
             <span className="inline-flex items-center gap-1.5">Abgelöst durch <ArrowRight size={13} /> <PLink name={(link.next ?? link.current)!.name} strong />{link.next?.change && <span className="inline-flex items-center gap-1 rounded-full border border-card-line px-2 py-px text-[11px] font-semibold">{link.next.change === "uebergabe" && <GitBranch size={11} />}{CHANGE_LABEL[link.next.change]}</span>}</span>
           )}
           {link.prev && <span className="inline-flex flex-wrap items-center gap-1.5 text-soft">Vorher: <PLink name={link.prev.name} /> <span className="text-muted">({span(link.prev)})</span></span>}
-          {(link.entry.note || link.next?.note) && <span className="basis-full text-[12.5px] text-muted">{link.next?.note ?? link.entry.note}</span>}
+          {(link.entry.note || link.next?.note) && <span className="basis-full text-[13px] text-muted">{link.next?.note ?? link.entry.note}</span>}
         </section>
       )}
       {/* links: worum es geht – Hauptdokument, Überblick, alle Dokumente, Gruppen; rechts: Nummern (zugeklappt) und Fristen */}
@@ -127,7 +127,7 @@ export default function PartnerPage({ params }: { params: Promise<{ key: string 
             <h2 className="flex items-center gap-2 px-5 pt-4 pb-2 text-[16px] font-semibold"><Hash size={17} /> Kennungen & Nummern</h2>
             {p.ids.length ? (
               <>
-                <p className="px-5 pb-2 text-[12.5px] text-muted">Antippen zeigt links die Dokumente mit dieser Nummer.</p>
+                <p className="px-5 pb-2 text-[13px] text-muted">Antippen zeigt links die Dokumente mit dieser Nummer.</p>
                 {/* Themen zum Auf-/Zuklappen – immer nur eins offen, anfangs alle zu */}
                 {topics.map((topic) => { const isOpen = shownTopic === topic; const n = p.ids.filter((i) => i.topic === topic).length; return (
                   <div key={topic}>
@@ -206,10 +206,10 @@ function RenameModal({ p, others, onSave, onClose }: { p: { key: string; name: s
       <form onSubmit={save} onClick={(e) => e.stopPropagation()} className="sheet-rise max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl sm:rounded-3xl" role="dialog" aria-label="Partner umbenennen">
         <div className="flex items-center gap-3">
           <SenderLogo domain={check?.domain ?? p.domain} sender={name || p.name} cluster={p.cluster} size={44} />
-          <div className="min-w-0 flex-1"><h2 className="text-[17px] font-semibold">Partner umbenennen</h2><p className="truncate text-[12.5px] text-muted">bisher „{p.name}“</p></div>
+          <div className="min-w-0 flex-1"><h2 className="text-[17px] font-semibold">Partner umbenennen</h2><p className="truncate text-[13px] text-muted">bisher „{p.name}“</p></div>
           <button type="button" onClick={onClose} aria-label="Schließen" className="grid h-9 w-9 place-items-center rounded-full hover:bg-surface-2"><X size={17} /></button>
         </div>
-        <label className="mt-4 block text-[12.5px] font-semibold text-soft">Neuer Name
+        <label className="mt-4 block text-[13px] font-semibold text-soft">Neuer Name
           <input autoFocus value={name} onChange={(e) => { setName(e.target.value); setCheck(null); }} onFocus={(e) => e.currentTarget.select()} maxLength={300} className="mt-1.5 h-11 w-full rounded-xl border border-card-line bg-surface px-3.5 text-[15px] font-normal text-fg outline-none focus:border-brand-500" />
         </label>
         {check && (
@@ -217,16 +217,16 @@ function RenameModal({ p, others, onSave, onClose }: { p: { key: string; name: s
             {check.suggested && check.suggested !== name.trim() && (
               <button type="button" onClick={() => setName(check.suggested)} className="flex w-full items-center gap-2 rounded-xl border border-card-line px-3 py-2 text-left text-[13px] hover:bg-surface-2"><Sparkles size={14} className="shrink-0 text-brand-500" /><span className="min-w-0 flex-1">Vorschlag: <b>{check.suggested}</b></span><span className="text-[12px] font-semibold text-selected">Übernehmen</span></button>
             )}
-            <p className="flex items-center gap-2 text-[12.5px] text-muted">{check.domain ? <><Check size={14} className="text-positive-text" /> Logo von <b className="text-fg">{check.domain}</b></> : "Keine Webadresse gefunden – Logo bleibt wie es ist."}</p>
+            <p className="flex items-center gap-2 text-[13px] text-muted">{check.domain ? <><Check size={14} className="text-positive-text" /> Logo von <b className="text-fg">{check.domain}</b></> : "Keine Webadresse gefunden – Logo bleibt wie es ist."}</p>
             {check.similar.length > 0 && (
               <div>
-                <p className="mb-1.5 text-[12.5px] font-semibold text-soft">Ähnliche Partner – mit zusammenlegen?</p>
+                <p className="mb-1.5 text-[13px] font-semibold text-soft">Ähnliche Partner – mit zusammenlegen?</p>
                 <div className="divide-y divide-line rounded-xl border border-card-line">
                   {check.similar.map((o) => { const on = merge.includes(o.key); return (
                     <label key={o.key} className="flex cursor-pointer items-center gap-2.5 px-3 py-2">
                       <input type="checkbox" checked={on} onChange={() => setMerge(on ? merge.filter((k) => k !== o.key) : [...merge, o.key])} className="h-4 w-4 accent-brand-500" />
                       <SenderLogo domain={o.domain} sender={o.name} cluster={o.cluster} size={26} bare />
-                      <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold">{o.name}</span>
+                      <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{o.name}</span>
                       <span className="text-[12px] text-muted">{o.n} Dok.</span>
                     </label>
                   ); })}
@@ -235,7 +235,7 @@ function RenameModal({ p, others, onSave, onClose }: { p: { key: string; name: s
             )}
           </div>
         )}
-        <p className="mt-3 text-[12.5px] text-muted">{check ? `${docsN} ${docsN === 1 ? "Dokument bekommt" : "Dokumente bekommen"} den Namen „${name.trim()}“.` : "Wir prüfen den Namen, laden das passende Logo und suchen ähnliche Partner."} Alte Namen bleiben im Verlauf und lassen sich zurückholen.</p>
+        <p className="mt-3 text-[13px] text-muted">{check ? `${docsN} ${docsN === 1 ? "Dokument bekommt" : "Dokumente bekommen"} den Namen „${name.trim()}“.` : "Wir prüfen den Namen, laden das passende Logo und suchen ähnliche Partner."} Alte Namen bleiben im Verlauf und lassen sich zurückholen.</p>
         {error && <p role="alert" className="mt-2 text-[13px] text-negative-text">{error}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="inline-flex h-10 items-center rounded-full border border-card-line px-4 text-[14px] font-semibold hover:bg-surface-2">Abbrechen</button>

@@ -109,7 +109,7 @@ function Group({ g, onDismiss }: { g: PartnerGroup; onDismiss: () => void }) {
       {/* Frage zuerst: ist das derselbe Partner? */}
       <div className="px-4 pt-4">
         <p className="text-[15px] font-semibold">Ist das derselbe Partner?</p>
-        <p className="mt-0.5 text-[12.5px] text-muted">
+        <p className="mt-0.5 text-[13px] text-muted">
           <span className={`mr-1.5 rounded-full px-2 py-px text-[11px] font-semibold ${g.score >= 0.7 ? "bg-fg text-canvas" : "border border-card-line text-soft"}`}>{Math.round(g.score * 100)} % wahrscheinlich</span>
           {g.reasons.join(" · ")}
         </p>
@@ -127,14 +127,14 @@ function Group({ g, onDismiss }: { g: PartnerGroup; onDismiss: () => void }) {
                   <button type="button" role="radio" aria-checked={isKeep} onClick={() => { setKeep(p.key); setPicked((c) => (c.includes(p.key) ? c : [...c, p.key])); }} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
                     <span className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border-2 ${isKeep ? "border-fg" : "border-line-strong"}`}>{isKeep && <span className="h-2 w-2 rounded-full bg-fg" />}</span>
                     <SenderLogo domain={p.domain} sender={p.name} cluster={p.cluster} size={30} />
-                    <span className="min-w-0 flex-1"><b className="block truncate text-[13.5px] font-semibold">{p.name}</b><span className="block truncate text-[11.5px] text-muted">{p.docs.length} {p.docs.length === 1 ? "Dokument" : "Dokumente"}{p.domain ? ` · ${p.domain}` : ""}</span></span>
+                    <span className="min-w-0 flex-1"><b className="block truncate text-[14px] font-semibold">{p.name}</b><span className="block truncate text-[12px] text-muted">{p.docs.length} {p.docs.length === 1 ? "Dokument" : "Dokumente"}{p.domain ? ` · ${p.domain}` : ""}</span></span>
                   </button>
-                  {g.partners.length > 2 && !isKeep && <button type="button" onClick={() => setPicked((c) => (on ? c.filter((x) => x !== p.key) : [...c, p.key]))} className="shrink-0 text-[11.5px] font-semibold text-muted hover:text-fg">{on ? "gehört nicht dazu" : "doch dazu"}</button>}
+                  {g.partners.length > 2 && !isKeep && <button type="button" onClick={() => setPicked((c) => (on ? c.filter((x) => x !== p.key) : [...c, p.key]))} className="shrink-0 text-[12px] font-semibold text-muted hover:text-fg">{on ? "gehört nicht dazu" : "doch dazu"}</button>}
                 </li>
               );
             })}
           </ul>
-          <p className="mt-1.5 text-[11.5px] text-muted">Tippe den Namen an, der bleiben soll.</p>
+          <p className="mt-1.5 text-[12px] text-muted">Tippe den Namen an, der bleiben soll.</p>
         </div>
         <ArrowRight size={18} className="mx-auto rotate-90 text-muted sm:rotate-0" />
         {/* rechts: so sieht es danach aus */}
@@ -144,7 +144,7 @@ function Group({ g, onDismiss }: { g: PartnerGroup; onDismiss: () => void }) {
             <SenderLogo domain={target.domain} sender={target.name} cluster={target.cluster} size={36} />
             <span className="min-w-0"><b className="block truncate text-[14px]">{target.name}</b><span className="block text-[12px] text-muted">alle {total} Dokumente zusammen</span></span>
           </span>
-          <p className="mt-2 text-[11.5px] text-muted">Nur der Absendername wird angeglichen – kein Dokument wird gelöscht. Rückgängig jederzeit.</p>
+          <p className="mt-2 text-[12px] text-muted">Nur der Absendername wird angeglichen – kein Dokument wird gelöscht. Rückgängig jederzeit.</p>
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 border-t border-line px-4 py-3">

@@ -162,11 +162,11 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
             f.range !== "all" && { k: "range", text: f.range === "year" ? "Dieses Jahr" : "Letzte 12 Monate" },
             f.encOnly && { k: "encOnly", text: "Nur verschlüsselte" },
           ].filter((c): c is { k: keyof Filter; text: string; color?: string } => !!c).map((c) => (
-            <button key={c.k} type="button" onClick={() => set({ [c.k]: NONE[c.k] } as Partial<Filter>)} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-card-line bg-surface pr-2 pl-3 text-[12.5px] font-semibold hover:bg-surface-2" style={c.color ? { color: c.color, borderColor: `${c.color}55`, background: `${c.color}12` } : undefined}>
+            <button key={c.k} type="button" onClick={() => set({ [c.k]: NONE[c.k] } as Partial<Filter>)} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-card-line bg-surface pr-2 pl-3 text-[13px] font-semibold hover:bg-surface-2" style={c.color ? { color: c.color, borderColor: `${c.color}55`, background: `${c.color}12` } : undefined}>
               {c.text}<X size={13} className="opacity-60" />
             </button>
           ))}
-          <button type="button" onClick={() => setF(NONE)} className="h-8 px-2 text-[12.5px] font-semibold text-selected">Alle zurücksetzen</button>
+          <button type="button" onClick={() => setF(NONE)} className="h-8 px-2 text-[13px] font-semibold text-selected">Alle zurücksetzen</button>
         </div>
       )}
       {picking && (
@@ -202,7 +202,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
                       {g.partner && <SenderLogo domain={g.partner.domain} sender={g.partner.name} cluster={g.partner.cluster} size={24} />}
                       <span className="truncate text-[14px] font-semibold text-fg">{g.label}</span>
                       <span className="h-px flex-1 bg-line/70" />
-                      <span className="tnum rounded-full border border-card-line bg-surface px-2 py-px text-[11.5px] font-semibold text-soft">{g.docs.length}</span>
+                      <span className="tnum rounded-full border border-card-line bg-surface px-2 py-px text-[12px] font-semibold text-soft">{g.docs.length}</span>
                     </div>
                     {block(g.docs)}
                   </div>
@@ -219,7 +219,7 @@ export function GroupedDocs({ cluster, view }: { cluster: string; view: "cards" 
           <div className="flex items-center gap-3 px-1.5 pb-3">
             <span className="min-w-0 flex-1 text-[14px] leading-5"><b className="tnum text-[17px]">{picked.size}</b> ausgewählt{lockedN > 0 && <span className="block text-[12px] text-canvas/60">{lockedN} verschlüsselt – Tresor entsperren</span>}</span>
             <span className="relative shrink-0">
-              <select value={pickFormat} onChange={(e) => setPickFormat(e.target.value as ExportFormat)} aria-label="Format" className="h-10 appearance-none rounded-full bg-canvas/15 pr-9 pl-4 text-[13.5px] font-semibold text-canvas [&>option]:text-fg">
+              <select value={pickFormat} onChange={(e) => setPickFormat(e.target.value as ExportFormat)} aria-label="Format" className="h-10 appearance-none rounded-full bg-canvas/15 pr-9 pl-4 text-[14px] font-semibold text-canvas [&>option]:text-fg">
                 {EXPORT_FORMATS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
               </select>
               <ChevronDown size={15} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-canvas/70" />
@@ -261,7 +261,7 @@ function SenderPick({ value, onChange, options }: { value: string; onChange: (v:
       <div className={`overflow-hidden rounded-2xl border ${value ? "border-fg" : "border-card-line"} bg-surface`}>
         <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-3 py-2.5 text-left">
           {cur ? <SenderLogo domain={cur.domain} sender={cur.name} cluster={cur.cluster} size={32} /> : <Placeholder icon={Users} size={32} />}
-          <span className="min-w-0 flex-1 truncate text-[14.5px] font-semibold">{cur?.name ?? "Alle Absender"}</span>
+          <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{cur?.name ?? "Alle Absender"}</span>
           <ChevronDown size={17} className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
         {open && (
@@ -269,7 +269,7 @@ function SenderPick({ value, onChange, options }: { value: string; onChange: (v:
             {options.length > 6 && (
               <label className="mb-1 flex h-9 items-center gap-2 rounded-full bg-surface-2 px-3">
                 <Search size={14} className="text-muted" />
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Absender suchen" className="min-w-0 flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-muted" />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Absender suchen" className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-muted" />
               </label>
             )}
             <div className="max-h-72 overflow-y-auto">

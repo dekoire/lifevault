@@ -15,8 +15,8 @@ export function PageHeader({ title, subtitle, action, icon }: { title: React.Rea
       <div className="flex min-w-0 items-center gap-3.5">
         {icon}
         <div className="min-w-0">
-          <h1 className="text-[28px] leading-9 font-[650] tracking-tight md:text-[32px] md:leading-10">{title}</h1>
-          {subtitle && <p className="mt-1 text-[14px] text-muted">{subtitle}</p>}
+          <h1 className="text-[31px] leading-[38px] font-[650] tracking-tight md:text-[32px] md:leading-10">{title}</h1>
+          {subtitle && <p className="mt-1 max-w-2xl text-[14px] leading-6 text-muted md:text-[15px]">{subtitle}</p>}
         </div>
       </div>
       {action && <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div>}

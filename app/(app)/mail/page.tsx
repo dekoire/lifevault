@@ -189,7 +189,7 @@ export default function MailPage() {
               </span>
             )}
           </div>
-          <p className="mt-2 text-[12.5px] text-muted">{mode === "since" ? "Gilt für alle Quellen. Holt alles seit dem letzten Abruf je Postfach. Beim ersten Mal: die letzten 90 Tage. Schon geprüfte Mails werden übersprungen." : "Durchsucht genau diesen Zeitraum. Schon geprüfte Mails werden übersprungen."}</p>
+          <p className="mt-2 text-[13px] text-muted">{mode === "since" ? "Gilt für alle Quellen. Holt alles seit dem letzten Abruf je Postfach. Beim ersten Mal: die letzten 90 Tage. Schon geprüfte Mails werden übersprungen." : "Durchsucht genau diesen Zeitraum. Schon geprüfte Mails werden übersprungen."}</p>
         </section>
 
         {/* Gmail */}
@@ -198,14 +198,14 @@ export default function MailPage() {
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface-2"><Mail size={20} /></span>
             <div className="min-w-0 flex-1">
               <h2 className="text-[16px] font-semibold">Gmail</h2>
-              <p className="truncate text-[12.5px] text-muted">{gmail ? `${gmail.source.slice(6)} · zuletzt ${lastSync(gmail)?.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }) ?? "–"}` : "Noch nicht abgerufen"}</p>
+              <p className="truncate text-[13px] text-muted">{gmail ? `${gmail.source.slice(6)} · zuletzt ${lastSync(gmail)?.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }) ?? "–"}` : "Noch nicht abgerufen"}</p>
             </div>
           </div>
           <p className="mt-3 flex-1 text-[13px] text-soft">Google fragt einmal nach Erlaubnis (nur Lesen). Der Zugang gilt rund eine Stunde und wird nicht gespeichert – Mails und Anhänge laufen direkt von Google in deinen Tresor.</p>
           {GMAIL_CLIENT_ID ? (
             <button type="button" disabled={busy} onClick={() => void runGmail()} className="mt-4 inline-flex h-10 w-fit items-center gap-2 rounded-full bg-fg px-4 text-[14px] font-semibold text-canvas disabled:opacity-50">{busy ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />} {gmail ? "Jetzt abrufen" : "Gmail verbinden & abrufen"}</button>
           ) : (
-            <p className="mt-4 rounded-xl border border-card-line bg-surface-2 px-3 py-2 text-[12.5px] text-soft">Gmail ist noch nicht eingerichtet: Es fehlt die Google Client-ID (<code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</code>).</p>
+            <p className="mt-4 rounded-xl border border-card-line bg-surface-2 px-3 py-2 text-[13px] text-soft">Gmail ist noch nicht eingerichtet: Es fehlt die Google Client-ID (<code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</code>).</p>
           )}
         </section>
 
@@ -215,7 +215,7 @@ export default function MailPage() {
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface-2"><Inbox size={20} /></span>
             <div className="min-w-0 flex-1">
               <h2 className="text-[16px] font-semibold">Proton Mail & andere</h2>
-              <p className="text-[12.5px] text-muted">Mail-Dateien (.eml, .mbox) importieren</p>
+              <p className="text-[13px] text-muted">Mail-Dateien (.eml, .mbox) importieren</p>
             </div>
           </div>
           <div
@@ -229,7 +229,7 @@ export default function MailPage() {
             </span>
           </div>
           <input ref={fileRef} type="file" multiple accept=".eml,.mbox,message/rfc822" className="hidden" onChange={(e) => { void runFiles([...(e.target.files ?? [])]); e.target.value = ""; }} />
-          <details className="mt-3 text-[12.5px] text-soft">
+          <details className="mt-3 text-[13px] text-soft">
             <summary className="cursor-pointer font-semibold text-fg">So bekommst du Mails aus Proton Mail</summary>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li><b>Einzelne Mail:</b> Mail öffnen → „…“ (Weitere) → „Exportieren“ → .eml-Datei hier ablegen.</li>
@@ -258,7 +258,7 @@ export default function MailPage() {
           <h2 className="flex items-center gap-2 px-5 pt-4 pb-3 text-[16px] font-semibold"><Sparkles size={17} className="text-brand-500" /> Relevant <span className="tnum rounded-full border border-card-line px-2 py-px text-[12px]">{relevant.length}</span></h2>
           <ul className="divide-y divide-line border-t border-line">
             {relevant.map((r) => <MailRow key={r.m.id} r={r} />)}
-            {!relevant.length && <li className="px-5 py-4 text-[13.5px] text-muted">Nichts Relevantes gefunden.</li>}
+            {!relevant.length && <li className="px-5 py-4 text-[14px] text-muted">Nichts Relevantes gefunden.</li>}
           </ul>
           {skipped.length > 0 && (
             <>
@@ -279,7 +279,7 @@ export default function MailPage() {
               <li key={s.msg_id} className="flex items-center gap-3 px-5 py-3">
                 <Paperclip size={15} className="shrink-0 text-muted" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13.5px] font-semibold">{s.subject || "(ohne Betreff)"}</span>
+                  <span className="block truncate text-[14px] font-semibold">{s.subject || "(ohne Betreff)"}</span>
                   <span className="block truncate text-[12px] text-muted">{senderName(s.sender ?? "")} · {s.mail_date ? fmtDate(s.mail_date) : ""} · {s.reason}</span>
                 </span>
                 <span className="shrink-0 text-[12px] text-muted">{s.doc_ids.length} {s.doc_ids.length === 1 ? "Datei" : "Dateien"}</span>
@@ -297,7 +297,7 @@ function MailRow({ r, onImport }: { r: Row; onImport?: () => void }) {
     <li className="flex items-start gap-3 px-5 py-3">
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2 text-[13px] font-semibold">{senderName(r.m.from).slice(0, 1).toUpperCase()}</span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13.5px] font-semibold">{r.m.subject || "(ohne Betreff)"}</span>
+        <span className="block truncate text-[14px] font-semibold">{r.m.subject || "(ohne Betreff)"}</span>
         <span className="block truncate text-[12px] text-muted">{senderName(r.m.from)}{r.m.date ? ` · ${fmtDate(r.m.date)}` : ""} · {r.reason}</span>
         <span className="mt-1 flex flex-wrap gap-1">
           {r.m.attachments.map((a, i) => <span key={i} className={`inline-flex max-w-[16rem] items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${r.relevant && r.pick.includes(i) ? "border-fg text-fg" : "border-card-line text-muted"}`}><Paperclip size={10} className="shrink-0" /><span className="truncate">{a.name}</span></span>)}

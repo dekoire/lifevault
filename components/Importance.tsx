@@ -60,7 +60,7 @@ export function RelationNote({ doc, className = "" }: { doc: Doc; className?: st
   const reason = doc.importance_reason && doc.importance_reason !== "von dir festgelegt" ? doc.importance_reason : "";
   if (!reason && !basis && !children) return null;
   return (
-    <p className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] leading-5 text-muted ${className}`}>
+    <p className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] leading-5 text-muted ${className}`}>
       {reason && <span>{reason}</span>}
       {reason && (basis || children > 0) && <span aria-hidden>·</span>}
       {basis && <span className="inline-flex min-w-0 items-center gap-1"><Link2 size={12} className="shrink-0" /> Gehört zu <Link href={`/d/${basis.id}`} className="truncate font-semibold text-selected hover:underline">{basis.title ?? basis.file_name}</Link></span>}
@@ -120,7 +120,7 @@ export function ImportanceCard({ doc, onChange }: { doc: Doc; onChange: (d: Doc)
         <div className="mt-2 grid grid-cols-5 gap-1" aria-hidden>
           {[1, 2, 3, 4, 5].map((i) => <span key={i} className="h-1.5 rounded-full" style={{ background: i <= value ? `color-mix(in srgb, var(--color-brand-500) ${40 + i * 12}%, transparent)` : "var(--color-line)" }} />)}
         </div>
-        <div className="mt-1 flex justify-between text-[10.5px] text-muted"><span>unwichtig</span><span>unverzichtbar</span></div>
+        <div className="mt-1 flex justify-between text-[11px] text-muted"><span>unwichtig</span><span>unverzichtbar</span></div>
         {reason && <p className="mt-2 text-[13px] leading-5 text-soft"><b className="font-semibold text-fg">Warum: </b>{reason}</p>}
         {doc.importance_manual && <p className="mt-1 text-[12px] text-muted">Von dir festgelegt – bleibt beim Neubewerten.</p>}
       </div>

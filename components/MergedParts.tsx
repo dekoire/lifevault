@@ -27,9 +27,9 @@ export function MergedParts({ doc, onSplit }: { doc: Doc; onSplit?: () => void }
           <li key={p.id} className="flex items-center gap-3 px-4 py-2.5">
             <span className="h-14 w-11 shrink-0 overflow-hidden rounded-md border border-card-line bg-surface-2"><Thumb d={p} /></span>
             <span className="min-w-0 flex-1">
-              <b className="block text-[11.5px] font-semibold tracking-wide text-muted uppercase">{card ? (isBack(p) ? "Rückseite" : "Vorderseite") : `Seite ${i + 1}`}</b>
+              <b className="block text-[12px] font-semibold tracking-wide text-muted uppercase">{card ? (isBack(p) ? "Rückseite" : "Vorderseite") : `Seite ${i + 1}`}</b>
               <span className="block truncate text-[13px] font-semibold">{p.title ?? p.file_name}</span>
-              <span className="block truncate text-[11.5px] text-muted">hochgeladen {when(p.received_at)} · {p.file_name}</span>
+              <span className="block truncate text-[12px] text-muted">hochgeladen {when(p.received_at)} · {p.file_name}</span>
             </span>
           </li>
         ))}
@@ -37,7 +37,7 @@ export function MergedParts({ doc, onSplit }: { doc: Doc; onSplit?: () => void }
       <div className="flex flex-wrap items-center gap-2 border-t border-line px-4 py-3">
         {ask ? (
           <>
-            <span className="w-full text-[12.5px] text-soft">Die {parts.length} Dokumente werden wieder getrennt abgelegt – jedes für sich, das gemeinsame PDF entfällt.</span>
+            <span className="w-full text-[13px] text-soft">Die {parts.length} Dokumente werden wieder getrennt abgelegt – jedes für sich, das gemeinsame PDF entfällt.</span>
             <button type="button" disabled={busy} onClick={() => void split()} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-fg px-4 text-[13px] font-semibold text-canvas disabled:opacity-60">{busy ? <Loader2 size={14} className="animate-spin" /> : <Scissors size={14} />} Ja, Dokumente trennen</button>
             <button type="button" disabled={busy} onClick={() => setAsk(false)} className="inline-flex h-9 items-center px-3 text-[13px] font-semibold text-muted hover:text-fg">Abbrechen</button>
           </>

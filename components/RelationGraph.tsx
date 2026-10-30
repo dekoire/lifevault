@@ -97,9 +97,9 @@ export function RelationGraph({ doc }: { doc: Doc }) {
   const check = (d: Doc, date: string) => (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); toggle(todoKey(d.id, date)); };
   const DueChip = ({ d }: { d: Doc }) => {
     const due = open(d);
-    if (due) return <span role="button" tabIndex={0} onClick={check(d, due.date)} title="Antippen: als erledigt abhaken" className="mt-0.5 inline-flex items-center gap-1 text-[11.5px] font-semibold text-negative-text hover:text-positive-text"><AlertCircle size={11} /> bis {fmtDate(due.date)}</span>;
+    if (due) return <span role="button" tabIndex={0} onClick={check(d, due.date)} title="Antippen: als erledigt abhaken" className="mt-0.5 inline-flex items-center gap-1 text-[12px] font-semibold text-negative-text hover:text-positive-text"><AlertCircle size={11} /> bis {fmtDate(due.date)}</span>;
     const last = [...(d.deadlines ?? [])].filter((x) => isDone(d, x.date)).sort((a, b) => b.date.localeCompare(a.date))[0];
-    if (last) return <span role="button" tabIndex={0} onClick={check(d, last.date)} title="Antippen: wieder offen" className="mt-0.5 inline-flex items-center gap-1 text-[11.5px] font-semibold text-positive-text"><Check size={11} strokeWidth={3} /> erledigt</span>;
+    if (last) return <span role="button" tabIndex={0} onClick={check(d, last.date)} title="Antippen: wieder offen" className="mt-0.5 inline-flex items-center gap-1 text-[12px] font-semibold text-positive-text"><Check size={11} strokeWidth={3} /> erledigt</span>;
     return null;
   };
   const weight = (d: Doc) => (data.mode === "standard" && groupOf(d) === "zahlung" && !open(d) ? Math.min(2, importanceOf(d)) : importanceOf(d));
@@ -119,7 +119,7 @@ export function RelationGraph({ doc }: { doc: Doc }) {
           <span className="mt-0.5 shrink-0"><SenderLogo domain={d.sender_domain} sender={d.sender} cluster={d.cluster} size={30} /></span>
           <span className="min-w-0 flex-1">
             <span className="line-clamp-2 leading-[18px]">{w >= 4 && <Crown size={12} strokeWidth={2.2} className="mr-1 inline -translate-y-px text-fg" aria-label="wichtig" />}{short(d.title ?? d.file_name)}</span>
-            <span className="tnum block text-[11.5px] text-muted">{when(d)}{here ? " · du bist hier" : ""}</span>
+            <span className="tnum block text-[12px] text-muted">{when(d)}{here ? " · du bist hier" : ""}</span>
             {(due || finished(d)) && <DueChip d={d} />}
           </span>
           <span className="mt-[6px] shrink-0"><ImportanceDots value={w} size={4} /></span>
@@ -132,7 +132,7 @@ export function RelationGraph({ doc }: { doc: Doc }) {
   return (
     <section className={`${CARD} mt-4 p-4`}>
       <h2 className="text-[15px] font-semibold">{data.health ? `Verlauf bei ${data.name}` : "So hängt alles zusammen"}</h2>
-      <p className="mt-0.5 text-[12.5px] text-muted">{data.health ? "Alles in zeitlicher Reihenfolge, das Neueste oben. Krone = wichtig, rot = da musst du etwas tun." : "Oben der Vertrag, darunter alles, was dazugehört – nach Bedeutung sortiert. Krone = wichtig, rot = da musst du etwas tun."}</p>
+      <p className="mt-0.5 text-[13px] text-muted">{data.health ? "Alles in zeitlicher Reihenfolge, das Neueste oben. Krone = wichtig, rot = da musst du etwas tun." : "Oben der Vertrag, darunter alles, was dazugehört – nach Bedeutung sortiert. Krone = wichtig, rot = da musst du etwas tun."}</p>
 
       {/* Vertrag: aktuelle Fassung oben, frühere darunter (beim Arzt meist keiner – dann nur der Verlauf) */}
       {(current || !data.health) && <div className="mt-4 flex flex-col items-center">
@@ -153,9 +153,9 @@ export function RelationGraph({ doc }: { doc: Doc }) {
           <div key={v.id} className="flex w-full max-w-xs flex-col items-center">
             <span className="h-3 w-px bg-line-strong" aria-hidden />
             <Link href={`/d/${v.id}`} className={`w-full rounded-xl border border-card-line bg-surface-2 px-3 py-2 text-center opacity-80 hover:opacity-100 ${v.id === doc.id ? "ring-2 ring-brand-500/40" : ""}`}>
-              <span className="block text-[10.5px] font-semibold tracking-wide text-muted uppercase">Frühere Fassung{v.id === doc.id ? " · du bist hier" : ""}</span>
+              <span className="block text-[11px] font-semibold tracking-wide text-muted uppercase">Frühere Fassung{v.id === doc.id ? " · du bist hier" : ""}</span>
               <span className="block truncate text-[13px] font-semibold">{short(v.title ?? v.file_name)}</span>
-              <span className="block text-[11.5px] text-muted">{fmtDate(dateOf(v))}{v.archived ? " · nicht mehr gültig" : ""}</span>
+              <span className="block text-[12px] text-muted">{fmtDate(dateOf(v))}{v.archived ? " · nicht mehr gültig" : ""}</span>
             </Link>
           </div>
         ))}
@@ -175,8 +175,8 @@ export function RelationGraph({ doc }: { doc: Doc }) {
                   <span className={`absolute top-3 -left-[6px] h-2.5 w-2.5 rounded-full ring-2 ring-surface ${here ? "bg-brand-500" : due ? "bg-negative" : finished(d) ? "bg-positive" : "bg-line-strong"}`} aria-hidden />
                   {(() => { const k = knownDate(d, docs); return <span className="tnum w-12 shrink-0 pt-px text-[12px] text-muted" title={k.how === "dokument" ? "Datum auf dem Dokument" : k.how === "mappe" ? "Datum der Mappe, aus der das Blatt stammt" : "kein Datum auf dem Dokument – Eingang"}>{fmtDate(k.iso).slice(0, 6)}{k.how !== "dokument" && <span className="block text-[10px] leading-3">{k.how === "mappe" ? "Mappe" : "Eingang"}</span>}</span>; })()}
                   <span className="min-w-0 flex-1">
-                    <span className="line-clamp-2 text-[13.5px] leading-[18px] font-semibold">{weight(d) >= 4 && <Crown size={12} strokeWidth={2.2} className="mr-1 inline text-fg" aria-label="wichtig" />}{short(d.title ?? d.file_name)}</span>
-                    <span className="mt-0.5 flex items-center gap-2 text-[11.5px] text-muted"><KindTag d={d} />{here && "du bist hier"}<DueChip d={d} /></span>
+                    <span className="line-clamp-2 text-[14px] leading-[18px] font-semibold">{weight(d) >= 4 && <Crown size={12} strokeWidth={2.2} className="mr-1 inline text-fg" aria-label="wichtig" />}{short(d.title ?? d.file_name)}</span>
+                    <span className="mt-0.5 flex items-center gap-2 text-[12px] text-muted"><KindTag d={d} />{here && "du bist hier"}<DueChip d={d} /></span>
                   </span>
                   <span className="mt-1.5 shrink-0"><ImportanceDots value={weight(d)} size={4} /></span>
                 </Link>
@@ -212,7 +212,7 @@ export function RelationGraph({ doc }: { doc: Doc }) {
         </div>
       )}
       {data.archived > 0 && (
-        <Link href={`/partner/${data.partner}`} className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] text-muted hover:text-fg"><Archive size={13} /> {data.archived} erledigt oder veraltet – im Archiv</Link>
+        <Link href={`/partner/${data.partner}`} className="mt-3 inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg"><Archive size={13} /> {data.archived} erledigt oder veraltet – im Archiv</Link>
       )}
     </section>
   );

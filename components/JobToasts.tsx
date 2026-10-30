@@ -27,12 +27,12 @@ export function JobToasts() {
                 <b className="block truncate text-[14px]">{j.title}</b>
                 <span className="block truncate text-[12px] text-white/75">{j.state === "running" && j.total ? `${j.done} von ${j.total}` : j.detail}{j.state === "running" && j.total && j.detail ? ` · ${j.detail}` : ""}</span>
               </span>
-              {j.kind === "export" && j.state === "done" && <button type="button" onClick={() => void again(j.downloadId)} className="h-8 shrink-0 rounded-full bg-white px-3 text-[12.5px] font-semibold text-brand-600">Laden</button>}
+              {j.kind === "export" && j.state === "done" && <button type="button" onClick={() => void again(j.downloadId)} className="h-8 shrink-0 rounded-full bg-white px-3 text-[13px] font-semibold text-brand-600">Laden</button>}
               {j.kind === "export" && j.state === "done" && <button type="button" onClick={() => void mail(j.downloadId, j.password)} aria-label="Per Mail senden" title="Per Mail senden" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/15 hover:bg-white/25"><Mail size={15} /></button>}
               {j.state !== "running" && <button type="button" onClick={() => dismissJob(j.id)} aria-label="Ausblenden" className="grid h-7 w-7 shrink-0 place-items-center rounded-full hover:bg-white/15"><X size={15} /></button>}
             </div>
             {j.password && j.state === "done" && (
-              <div className="mx-4 mb-3 flex items-center gap-2 rounded-xl bg-white/15 px-3 py-1.5 text-[12.5px]">
+              <div className="mx-4 mb-3 flex items-center gap-2 rounded-xl bg-white/15 px-3 py-1.5 text-[13px]">
                 <KeyRound size={13} className="shrink-0" /><span className="text-white/75">Passwort</span>
                 <code className="min-w-0 flex-1 truncate font-semibold tracking-wide">{j.password}</code>
                 <button type="button" onClick={() => void navigator.clipboard?.writeText(j.password!)} aria-label="Passwort kopieren" className="grid h-6 w-6 place-items-center rounded-full hover:bg-white/20"><Copy size={12} /></button>

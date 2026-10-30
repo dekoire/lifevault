@@ -94,7 +94,7 @@ export default function Landing() {
           {NEW.map(({ icon: Icon, t, d }) => (
             <li key={t} className="flex gap-3 rounded-2xl border border-card-line bg-surface p-4">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-500 text-white"><Icon size={18} /></span>
-              <span><b className="block text-[15px]">{t}</b><span className="block text-[13.5px] leading-5 text-muted">{d}</span></span>
+              <span><b className="block text-[15px]">{t}</b><span className="block text-[14px] leading-5 text-muted">{d}</span></span>
             </li>
           ))}
         </ul>
