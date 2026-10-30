@@ -9,7 +9,7 @@ import type { Doc } from "@/lib/types";
 /**
  * Karten aus dem Chat für Verträge und Versicherungen – die KI liest die Dokumente und füllt die Felder, die App zeigt
  * sie einheitlich mit Logo und Link zum Dokument:
- * - ```konditionen  je Zeile ein JSON: {"id","art","beitrag","laufzeit","kuendigung","kuendbarBis","selbstbeteiligung","leistungen":[],"ausschluesse":[]}
+ * - ```konditionen  je Zeile ein JSON: {"id","art","beitrag","laufzeit","kuendigung","kuendbarBis","selbstbeteiligung","leistungen":[],"ausschluesse":[],"fehlt"}
  * - ```deckung      ein JSON: {"frage","urteil":"ja|teilweise|nein|unklar","id","gruende":[],"bedingungen":[],"quelle","naechster","seite","zitat"}
  * - ```regelungen   ein JSON: {"titel","id","fazit","punkte":[{"thema","regelung","details","ton":"gut|achtung|neutral","id","seite","zitat"}]}
  * seite/zitat ergeben den lila Verweis [S. 3] – Antippen öffnet das Dokument an der Stelle, markiert.
@@ -51,7 +51,7 @@ export function ConditionsWidget({ body }: { body: string }) {
             {d && (x.zitat || x.seite) ? <p className="-mt-1.5 px-4 pb-2 text-[12px] text-muted">Steht so im Vertrag <Cite {...citeOf(x, d.id)} /></p> : null}
             {facts.length > 0 && (
               <div className="grid grid-cols-2 gap-px border-t border-line bg-line">
-                {facts.map(([l, v]) => <div key={l} className="min-w-0 bg-surface px-4 py-2.5"><span className="block text-[11.5px] text-muted">{l}</span><b className="tnum block text-[14px] leading-5 break-words">{v}</b></div>)}
+                {facts.map(([l, v], j) => <div key={l} className={`min-w-0 bg-surface px-4 py-2.5 ${facts.length % 2 && j === facts.length - 1 ? "col-span-2" : ""}`}><span className="block text-[11.5px] text-muted">{l}</span><b className="tnum block text-[14px] leading-5 break-words">{v}</b></div>)}
               </div>
             )}
             {until && <p className="flex items-center gap-2 border-t border-line bg-amber/5 px-4 py-2 text-[12.5px]"><CalendarClock size={14} className="shrink-0 text-amber" /> Kündbar bis <b className="tnum">{fmtDate(until)}</b></p>}
@@ -61,6 +61,7 @@ export function ConditionsWidget({ body }: { body: string }) {
                 <ul className="space-y-1 text-[13.5px] leading-5">{leistungen.map((l) => <li key={l} className="flex gap-2"><CheckCircle2 size={15} className="mt-0.5 shrink-0 text-positive-text" />{l}</li>)}</ul>
               </div>
             )}
+            {str(x.fehlt) && <p className="flex items-start gap-2 border-t border-line bg-surface-2/60 px-4 py-2.5 text-[12.5px] leading-[18px] text-soft"><CircleHelp size={14} className="mt-0.5 shrink-0 text-muted" /><span><b className="font-semibold text-fg">Nicht in deinen Unterlagen:</b> {str(x.fehlt, 240)}</span></p>}
             {aus.length > 0 && (
               <div className="border-t border-line px-4 py-3">
                 <p className="mb-1.5 text-[11.5px] font-semibold tracking-wide text-muted uppercase">Nicht abgedeckt</p>
