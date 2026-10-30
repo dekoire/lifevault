@@ -124,6 +124,15 @@ function originRows(doc: Doc, mail: MailSeen | null, fullText?: string | null) {
   return rows;
 }
 
+/** Info-Kacheln oben: Farbverläufe wie in Finastry (lila, türkis, blau, orange) */
+const TILE_GRADS = [
+  "linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%)",
+  "linear-gradient(120deg,#177d71 0%,#1f9688 55%,#36b3a2 100%)",
+  "linear-gradient(120deg,#1d4ed8 0%,#2563eb 55%,#3f74f0 100%)",
+  "linear-gradient(120deg,#c2410c 0%,#ea580c 55%,#f97316 100%)",
+];
+const TILE_URGENT = "linear-gradient(120deg,#9f1239 0%,#b42318 55%,#d92d20 100%)";
+
 export default function DocPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -317,13 +326,14 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
         <div className="space-y-3">
           {/* 1. drei Kacheln je nach Art (Rechnung: Datum · Betrag · zahlen bis; Versicherung: Art · gilt ab · Laufzeit …) */}
           {tiles.length > 0 && (
-            <div className={`grid gap-2 ${tiles.length >= 3 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2"}`}>
+            <div className={`grid gap-3 ${tiles.length >= 3 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2"}`}>
+              {/* farbig mit Verlauf wie die Kacheln in Finastry – jede Kachel eine eigene Farbe, dringend immer rot */}
               {tiles.map((g, i) => (
-                <div key={i} className={`group relative min-w-0 rounded-2xl border px-3.5 py-3 ${g.urgent ? "border-urgent bg-urgent text-white" : "border-card-line bg-surface"} ${tiles.length === 3 && i === 2 ? "col-span-2 sm:col-span-1" : ""}`}>
-                  <span className={`block truncate text-[12px] ${g.urgent ? "text-white/80" : "text-muted"}`}>{g.label}</span>
-                  <span className="tnum mt-0.5 block truncate text-[18px] leading-6 font-[650]" title={g.value}>{g.value}</span>
-                  {g.sub && <span className={`block truncate text-[12px] ${g.urgent ? "text-white/80" : "text-muted"}`} title={g.sub}>{g.sub}</span>}
-                  {g.copy && <CopyBtn value={g.copy} className="absolute top-2.5 right-2.5" />}
+                <div key={i} className={`group relative min-w-0 rounded-2xl px-4 py-4 text-white shadow-card ${tiles.length === 3 && i === 2 ? "col-span-2 sm:col-span-1" : ""}`} style={{ background: g.urgent ? TILE_URGENT : TILE_GRADS[i % TILE_GRADS.length] }}>
+                  <span className="block truncate text-[12px] font-medium text-white/80">{g.label}</span>
+                  <span className="tnum mt-1 block truncate text-[19px] leading-7 font-semibold" title={g.value}>{g.value}</span>
+                  {g.sub && <span className="block truncate text-[12px] text-white/75" title={g.sub}>{g.sub}</span>}
+                  {g.copy && <CopyBtn value={g.copy} className="absolute top-2.5 right-2.5 !text-white hover:!bg-white/20" />}
                 </div>
               ))}
             </div>

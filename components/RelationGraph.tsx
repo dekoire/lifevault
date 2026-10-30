@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useMemo } from "react";
-import { AlertCircle, Archive, Check, BookOpen, FileQuestion, FileSignature, Info, PenLine, Crown, Receipt, Scale, Wallet } from "lucide-react";
+import { AlertCircle, Check, BookOpen, FileQuestion, FileSignature, Info, PenLine, Crown, Receipt, Scale, Wallet } from "lucide-react";
 import { KindTag } from "@/components/KindTag";
 import { SenderLogo } from "@/components/SenderLogo";
 import { ImportanceDots } from "@/components/Importance";
@@ -130,8 +130,8 @@ export function RelationGraph({ doc }: { doc: Doc }) {
 
   const [current, ...older] = data.versions;
   return (
-    <section className={`${CARD} mt-4 p-4`}>
-      <h2 className="text-[15px] font-semibold">{data.health ? `Verlauf bei ${data.name}` : "So hängt alles zusammen"}</h2>
+    <section className={`${CARD} mt-4 p-5 md:p-6`}>
+      <h2 className="text-[18px] leading-[26px] font-semibold">{data.health ? `Verlauf bei ${data.name}` : "So hängt alles zusammen"}</h2>
       <p className="mt-0.5 text-[13px] text-muted">{data.health ? "Alles in zeitlicher Reihenfolge, das Neueste oben. Krone = wichtig, rot = da musst du etwas tun." : "Oben der Vertrag, darunter alles, was dazugehört – nach Bedeutung sortiert. Krone = wichtig, rot = da musst du etwas tun."}</p>
 
       {/* Vertrag: aktuelle Fassung oben, frühere darunter (beim Arzt meist keiner – dann nur der Verlauf) */}
@@ -143,8 +143,8 @@ export function RelationGraph({ doc }: { doc: Doc }) {
             <span className="block text-[12px] text-white/80">{data.name} · {current.doc_type ?? "Vertrag"} vom {fmtDate(dateOf(current))}</span>
           </Link>
         ) : (
-          <div className="w-full max-w-sm rounded-2xl border border-dashed border-line-strong px-4 py-3 text-center">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-muted uppercase"><FileQuestion size={12} /> Kein Vertrag hinterlegt</span>
+          <div className="w-full max-w-sm rounded-2xl border border-card-line bg-surface-2 px-5 py-4 text-center">
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-muted"><FileQuestion size={13} /> Kein Vertrag hinterlegt</span>
             <b className="block text-[15px] leading-6">{data.name}</b>
             <span className="block text-[12px] text-muted">Lade den Vertrag hoch – dann siehst du hier, was gilt und was dazugehört.</span>
           </div>
@@ -210,9 +210,6 @@ export function RelationGraph({ doc }: { doc: Doc }) {
             })}
           </div>
         </div>
-      )}
-      {data.archived > 0 && (
-        <Link href={`/partner/${data.partner}`} className="mt-3 inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg"><Archive size={13} /> {data.archived} erledigt oder veraltet – im Archiv</Link>
       )}
     </section>
   );
