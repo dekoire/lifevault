@@ -9,6 +9,7 @@ import { VaultUnlock } from "@/components/VaultUnlock";
 import { useDocs } from "@/lib/docs";
 import { supabase, useSession } from "@/lib/supabase";
 import { AvatarMenu } from "@/components/AvatarMenu";
+import { VScrollFade } from "@/components/VScrollFade";
 
 type Thread = { id: string; title: string; updated_at: string; pinned?: boolean; starred?: boolean };
 const SUGGESTIONS = [
@@ -78,14 +79,15 @@ function Chat() {
         <button type="button" onClick={() => (drawer ? setDrawer(false) : toggleSide())} aria-label="Gespräche einklappen" title="Einklappen" className="grid h-9 w-9 place-items-center rounded-full text-soft hover:bg-black/[0.04] hover:text-fg"><PanelLeftClose size={18} /></button>
       </div>
       <button type="button" onClick={() => open(undefined)} className="mx-2 flex h-10 items-center gap-2.5 rounded-[6px] px-3.5 text-[15px] hover:bg-black/[0.04]"><SquarePen size={16} className="text-soft" /> Neuer Chat</button>
-      <div className="no-scrollbar mt-3 flex-1 space-y-4 overflow-y-auto px-2 pb-6">
+      {/* mehr Gespräche als Platz: Verlauf am Rand zeigt, dass es weitergeht */}
+      <VScrollFade outer="mt-3" className="no-scrollbar px-2 pb-6"><div className="space-y-4">
         {pinned.length > 0 && <div><p className="px-3.5 pb-1.5 text-[13px] text-muted">Angepinnt</p>{pinned.map((t) => <ThreadItem key={t.id} t={t} active={t.id === current} onOpen={() => open(t.id)} onPatch={(p) => void patch(t, p)} onRemove={() => void remove(t)} />)}</div>}
         <div>
           <p className="px-3.5 pb-1.5 text-[13px] text-muted">Letzte</p>
           {threads.length === 0 && <p className="px-3.5 py-2 text-[13px] text-muted">Noch keine Gespräche.</p>}
           {rest.map((t) => <ThreadItem key={t.id} t={t} active={t.id === current} onOpen={() => open(t.id)} onPatch={(p) => void patch(t, p)} onRemove={() => void remove(t)} />)}
         </div>
-      </div>
+      </div></VScrollFade>
     </div>
   );
 
@@ -113,7 +115,7 @@ function Chat() {
         <div className="mx-auto w-full max-w-3xl flex-1 px-4 pb-[calc(16rem+env(safe-area-inset-bottom))] lg:pb-48">
           {empty ? (
             <div className="flex flex-col items-center pt-[10vh] text-center">
-              {/* beim Tippen schwebt er nach oben weg – dann sitzt er links am Eingabefeld */}
+              {/* beim Tippen schwebt er nach oben weg – beim Warten auf die Antwort denkt er neben dem Status */}
               <AiAvatar size={128} state="think" label="Dein Assistent" className={`-my-6 transition-all duration-500 ease-out motion-reduce:transition-none ${typing ? "-translate-y-10 scale-50 opacity-0" : ""}`} />
               <h1 className="mt-4 text-[24px] leading-8 font-[650] tracking-tight">Was möchtest du wissen?</h1>
               <p className="mt-1.5 text-[14px] text-muted">{ready ? `Ich kenne ${ready} ${ready === 1 ? "Dokument" : "Dokumente"} von dir und nenne dir immer die Quelle.` : "Lade zuerst ein paar Dokumente hoch – dann frag mich alles dazu."}</p>
@@ -137,7 +139,7 @@ function Chat() {
                 footer={<button type="button" onClick={chat.skipGate} className="rounded-full border border-card-line bg-surface px-4 text-[14px] font-semibold text-fg hover:bg-surface-2">Ohne Tresor fragen</button>} />
             </div>
           )}
-          <div className={`mx-auto max-w-3xl ${chat.gate ? "hidden" : ""}`}><Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} onTextChange={setTyping} aiState={chat.busy ? (chat.msgs.at(-1)?.role === "assistant" && chat.msgs.at(-1)?.content ? "speak" : "think") : undefined} onFiles={(f) => void chat.attach(f)} attachments={chat.attachments} onRemoveAttachment={chat.removeAttachment} depth={chat.depth} onDepth={chat.setDepth} /></div>
+          <div className={`mx-auto max-w-3xl ${chat.gate ? "hidden" : ""}`}><Composer busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} onTextChange={setTyping} onFiles={(f) => void chat.attach(f)} attachments={chat.attachments} onRemoveAttachment={chat.removeAttachment} depth={chat.depth} onDepth={chat.setDepth} /></div>
         </div>
       </div>
 

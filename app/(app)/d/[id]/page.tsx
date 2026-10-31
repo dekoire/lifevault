@@ -1,5 +1,4 @@
 "use client";
-import { AiAvatar } from "@/components/AiAvatar";
 import { NotFound } from "@/components/NotFound";
 import { isCardDoc, PdfPages } from "@/components/PdfPages";
 import Link from "next/link";
@@ -457,10 +456,7 @@ export default function DocPage({ params }: { params: Promise<{ id: string }> })
                 </div>
               )}
               {chat.msgs.length > 0 && <div className="max-h-[50vh] overflow-y-auto px-5 pt-4"><MessageList msgs={chat.msgs} compact busy={chat.busy} onAsk={(q) => void chat.send(q)} onResearch={(i, y) => void chat.research(i, y)} onSave={(i, y) => void chat.saveFound(i, y)} /></div>}
-              <div className="flex items-end gap-3 px-5 py-4">
-                <AiAvatar size={36} state={chat.busy ? "think" : "idle"} className="mb-1 shrink-0" />
-                <div className="min-w-0 flex-1"><Composer plain busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} placeholder="Frag etwas zu diesem Dokument …" depth={chat.depth} onDepth={chat.setDepth} /></div>
-              </div>
+              <div className="px-5 py-4"><Composer plain busy={chat.busy} onSend={(q) => void chat.send(q)} onStop={chat.stop} placeholder="Frag etwas zu diesem Dokument …" depth={chat.depth} onDepth={chat.setDepth} /></div>
             </Panel>
           )}
         </div>

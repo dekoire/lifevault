@@ -2,7 +2,7 @@
 import { IconTile } from "@/components/ClusterIcon";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { AiAvatar, type AiAvatarState } from "@/components/AiAvatar";
+import { AiAvatar } from "@/components/AiAvatar";
 import { ArrowUp, Brain, Camera, Check, ChevronDown, CornerDownRight, ExternalLink, FileDown, Globe, Loader2, Mic, Paperclip, Plus, Square, Telescope, X, Zap } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { Markdown } from "@/components/Markdown";
@@ -112,10 +112,11 @@ export function Sources({ text }: { text: string }) {
   );
 }
 
+/** Warten auf die Antwort: links der Avatar, der nachdenkt, daneben schimmernd, was gerade passiert (wie bei Finastry) */
 export function Typing({ label = "Durchsuche deine Unterlagen" }: { label?: string }) {
   return (
     <div className="flex min-h-8 items-center gap-2.5" role="status" aria-live="polite">
-      <span className="flex h-3 items-center gap-1" aria-hidden>{[0, 1, 2].map((k) => <span key={k} className="typing-dot h-1.5 w-1.5 rounded-full bg-fg" style={{ animationDelay: `${k * 0.15}s` }} />)}</span>
+      <AiAvatar size={36} state="think" className="-my-1 shrink-0" />
       <span className="text-shimmer text-[14px] font-medium">{label}</span>
     </div>
   );
@@ -195,6 +196,8 @@ export function MessageList({ msgs, compact, onResearch, onSave, onAsk, busy }: 
             <div className="max-w-[85%] rounded-[20px] rounded-br-md bg-surface px-4 py-2.5 shadow-card text-[15px] leading-6 whitespace-pre-wrap">{m.content}</div>
           </div>
         ) : (
+          // noch keine Antwort: der denkende Avatar steht statt des Logos vorne
+          !m.content && !m.research && !m.save ? <Typing key={i} /> : (
           <div key={i} className="flex gap-3">
             <span className="mt-0.5 shrink-0"><LogoMark size={26} /></span>
             <div className="min-w-0 flex-1">
@@ -206,6 +209,7 @@ export function MessageList({ msgs, compact, onResearch, onSave, onAsk, busy }: 
               {m.save && <SaveCard o={m.save} onAnswer={(yes) => onSave?.(i, yes)} />}
             </div>
           </div>
+          )
         ),
       )}
     </div>
@@ -385,8 +389,8 @@ function VoiceWave({ level }: { level: React.RefObject<number> }) {
 }
 
 /** Eingabe wie bei Finastry: Feld oben, darunter Plus (Foto/Datei), Antworttiefe, Mikrofon und Senden */
-export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu deinen Unterlagen …", onFiles, attachments = [], onRemoveAttachment, depth, onDepth, plain = false, aiState, onTextChange }: {
-  /** was die KI gerade tut – der Avatar links zeigt es */ aiState?: AiAvatarState; /** Text vorhanden ja/nein (der große Avatar weicht beim Tippen) */ onTextChange?: (has: boolean) => void;
+export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu deinen Unterlagen …", onFiles, attachments = [], onRemoveAttachment, depth, onDepth, plain = false, onTextChange }: {
+  /** Text vorhanden ja/nein (der große Avatar weicht beim Tippen) */ onTextChange?: (has: boolean) => void;
   busy: boolean; onSend: (q: string) => void; onStop: () => void; placeholder?: string; plain?: boolean;
   onFiles?: (files: File[]) => void; attachments?: Attachment[]; onRemoveAttachment?: (key: string) => void; depth?: Depth; onDepth?: (d: Depth) => void;
 }) {
@@ -424,9 +428,7 @@ export function Composer({ busy, onSend, onStop, placeholder = "Frag etwas zu de
           })}
         </div>
       )}
-      {/* links der Avatar: schaut beim Tippen auf deinen Text, hört beim Diktieren zu, denkt und spricht bei der Antwort */}
       <div className="flex items-start gap-1">
-        <AiAvatar size={50} className="-my-1.5 -ml-1 shrink-0" state={dict.listening ? "listen" : aiState ?? (busy ? "think" : text.trim() ? "listen" : "idle")} gaze={!aiState && !busy && text.trim() ? [0.9, 0.2] : undefined} />
         <textarea
           ref={area}
           value={text}
