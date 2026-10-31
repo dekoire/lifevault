@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { IconTile } from "@/components/ClusterIcon";
 import { useEffect, useState } from "react";
 import { Ban, Check, Copy, History, KeyRound, Loader2, Plus, RotateCw, ShieldAlert, Trash2 } from "lucide-react";
@@ -327,7 +328,7 @@ function OwnApps() {
   return (
     <section className={`${CARD} space-y-4 p-5`}>
       <div>
-        <h2 className="text-[16px] font-semibold">Eigene App anbinden</h2>
+        <h2 className="flex flex-wrap items-center justify-between gap-2 text-[16px] font-semibold">Eigene App anbinden<Link href="/entwickler" className="text-[13px] font-semibold text-brand-500">Anleitung für Entwickler →</Link></h2>
         <p className="mt-1 text-[13px] leading-5 text-muted">Für Entwickler: Registriere deine App einmal. Danach erscheint bei Nutzern „Mit Lifevault verbinden“ – sie melden sich bei Lifevault an und geben selbst frei, was deine App sehen darf.</p>
       </div>
       {shown && (
