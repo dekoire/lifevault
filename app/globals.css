@@ -206,3 +206,26 @@ html { overscroll-behavior-y: contain; }
 /* Bildschirmtastatur offen (KeyboardWatch): Menüleiste weg, Chat-Eingabe dockt an die Tastatur an */
 html[data-kb] .hide-on-kb { display: none !important; }
 html[data-kb] .kb-dock { bottom: 0 !important; padding-bottom: 0.5rem !important; }
+
+/* Startseite (wie Finastry): sanftes Auftauchen (Hero beim Laden, Abschnitte beim Scrollen), schwebende Karten.
+   Ohne Unterstützung oder mit „Bewegung reduzieren“ ist alles sofort sichtbar und ruhig. */
+:root { --gradient-brand: linear-gradient(120deg, #8b6cff 0%, #6d4aff 55%, #4a2fc4 100%); }
+@keyframes lp-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes lp-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lp-rise { animation: lp-rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .lp-float { animation: lp-float 7s ease-in-out infinite; }
+  @supports (animation-timeline: view()) {
+    .lp-reveal {
+      animation: lp-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 30%;
+    }
+  }
+}
