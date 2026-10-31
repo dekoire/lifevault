@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, FileSearch, HeartPulse, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Pencil, Pin, PinOff, Receipt, SquarePen, Star, StarOff, Trash2 } from "lucide-react";
+import { CalendarClock, ChevronLeft, FileSearch, HeartPulse, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Pencil, Pin, PinOff, Receipt, SquarePen, Star, StarOff, Trash2 } from "lucide-react";
 import { Composer, MessageList, useChat } from "@/components/ChatPanel";
 import { AiAvatar } from "@/components/AiAvatar";
 import { VaultUnlock } from "@/components/VaultUnlock";
@@ -13,10 +13,14 @@ import { VScrollFade } from "@/components/VScrollFade";
 
 type Thread = { id: string; title: string; updated_at: string; pinned?: boolean; starred?: boolean };
 const SUGGESTIONS = [
-  { icon: Receipt, q: "Welche Rechnungen und Mahnungen sind noch offen?" },
-  { icon: FileSearch, q: "Was steht in meinem Arbeitsvertrag zu Urlaub und Kündigung?" },
-  { icon: HeartPulse, q: "Fasse meine letzten Arztbefunde zusammen." },
+  { icon: Receipt, title: "Was ist noch offen?", sub: "Rechnungen und Mahnungen", q: "Welche Rechnungen und Mahnungen sind noch offen?" },
+  { icon: CalendarClock, title: "Welche Fristen laufen?", sub: "Kündigung, Zahlung, Widerspruch", q: "Welche Fristen laufen in den nächsten Wochen ab – Kündigungen, Zahlungen, Widersprüche?" },
+  { icon: FileSearch, title: "Mein Arbeitsvertrag", sub: "Urlaub und Kündigung", q: "Was steht in meinem Arbeitsvertrag zu Urlaub und Kündigung?" },
+  { icon: HeartPulse, title: "Meine Befunde", sub: "Kurz zusammengefasst", q: "Fasse meine letzten Arztbefunde zusammen." },
 ];
+/** Startkacheln wie bei Finastry, in Lila: zwei Lila-Töne im Wechsel, leichtes Leuchten, wenig Schatten */
+const TILE_BG = ["linear-gradient(135deg, #5a36e6 0%, #6d4aff 55%, #8466ff 100%)", "linear-gradient(135deg, #7b3fd6 0%, #9356ea 55%, #a874f5 100%)"];
+const TILE_GLOW = ["0 6px 16px -10px rgba(15,23,42,.35), 0 0 22px -6px rgba(109,74,255,.5), inset 0 1px 0 rgba(255,255,255,.18)", "0 6px 16px -10px rgba(15,23,42,.35), 0 0 22px -6px rgba(147,86,234,.5), inset 0 1px 0 rgba(255,255,255,.18)"];
 
 /** Chat wie bei Finastry: links die Gespräche (Symbol vor „Zurück“; am Handy im Vollbild), rechts das Gespräch */
 export default function ChatPage() {
@@ -119,9 +123,12 @@ function Chat() {
               <AiAvatar size={128} state="think" label="Dein Assistent" className={`-my-6 transition-all duration-500 ease-out motion-reduce:transition-none ${typing ? "-translate-y-10 scale-50 opacity-0" : ""}`} />
               <h1 className="mt-4 text-[24px] leading-8 font-[650] tracking-tight">Was möchtest du wissen?</h1>
               <p className="mt-1.5 text-[14px] text-muted">{ready ? `Ich kenne ${ready} ${ready === 1 ? "Dokument" : "Dokumente"} von dir und nenne dir immer die Quelle.` : "Lade zuerst ein paar Dokumente hoch – dann frag mich alles dazu."}</p>
-              <div className="mt-6 grid w-full gap-2">
-                {SUGGESTIONS.map(({ icon: Icon, q }) => (
-                  <button key={q} type="button" onClick={() => void chat.send(q)} className="flex items-center gap-3 rounded-xl border border-card-line bg-surface px-4 py-3 text-left text-[14px] font-medium shadow-card hover:bg-surface-2"><Icon size={17} className="shrink-0 text-brand-500" /> {q}</button>
+              <div className="mt-6 grid w-full grid-cols-2 gap-2.5 sm:grid-cols-4">
+                {SUGGESTIONS.map(({ icon: Icon, title, sub, q }, k) => (
+                  <button key={q} type="button" onClick={() => void chat.send(q)} className="flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl p-3.5 text-center text-white transition hover:brightness-105" style={{ background: TILE_BG[k % 2], boxShadow: TILE_GLOW[k % 2] }}>
+                    <Icon size={22} className="shrink-0" />
+                    <span><span className="block text-[13.5px] leading-[18px] font-semibold">{title}</span><span className="mt-0.5 block text-[11.5px] leading-4 text-white/80">{sub}</span></span>
+                  </button>
                 ))}
               </div>
               {!ready && <Link href="/" className="mt-4 text-[14px] font-semibold text-selected">Dokumente hochladen</Link>}
