@@ -2,16 +2,18 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Animierter KI-Avatar „Nova“ (Entwurf aus Claude Design, wie in Finastry; hier Lila vorne): weiche Farbblasen in Lila,
- * Blau, Grün und Pink, zwei Augen, die blinzeln und dem Zeiger folgen. Zustände: idle (ruhig, Blasen lebhaft), listen (Schallwellen
- * nach außen), think (Blick nach oben, leuchtende kreisende Punkte), speak (Mund bewegt sich).
+ * Animierter KI-Avatar „Nova“ (Entwurf aus Claude Design, Palette „Aurora“, Gesicht „Kapseln“): weiche Farbblasen mit
+ * Verläufen in Lila, Blau, Grün und Pink, vorne eine Blase von Dunkelblau über Pink zu Mint; zwei Augen, die blinzeln und
+ * dem Zeiger folgen. Zustände: idle (ruhig, Blasen lebhaft), listen (Schallwellen nach außen), think (Blick nach oben,
+ * kreisende bunte Leuchtpunkte), speak (Mund bewegt sich).
  * Gleiche Zeichnung auf hellem und dunklem Grund. Auf Canvas; läuft nur, solange er sichtbar ist, und steht still bei
  * „Bewegung reduzieren“. Maße, die im Entwurf in Pixeln stehen (Punkte, Mund, Schatten), wachsen hier mit der Größe.
  */
 export type AiAvatarState = "idle" | "listen" | "think" | "speak";
 
-// wie in Finastry, aber Lila (Lifevault-Farbe) vorne und für Punkte und Wellen, Blau dahinter
-const PAL = ["#2E8BFF", "#6D4AFF", "#1FD9A0", "#FF5FC8"];
+const PAL = ["#7C4DFF", "#2E8BFF", "#1FD9A0", "#FF5FC8"];
+// Nachdenken: jeder Punkt aus vier weichen Farbflecken
+const THINK = ["#0B1F8A", "#E0337A", "#1FD9A0", "#7C4DFF"];
 const rgba = (h: string, a: number) => `rgba(${parseInt(h.slice(1, 3), 16)},${parseInt(h.slice(3, 5), 16)},${parseInt(h.slice(5, 7), 16)},${a})`;
 
 export function AiAvatar({ size = 36, state = "idle", gaze, className = "", label }: { size?: number; state?: AiAvatarState; /** Blickrichtung (-1..1) statt Zeiger, z. B. auf den Text, den man gerade tippt */ gaze?: [number, number]; className?: string; label?: string }) {
@@ -27,7 +29,7 @@ export function AiAvatar({ size = 36, state = "idle", gaze, className = "", labe
     if (!c || !ctx) return;
     const still = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
     const s = { amp: 0.035, speed: 0.6, gx: 0, gy: 0, tx: 0, ty: 0, blink: 1, nextBlink: 2, blinkT: undefined as number | undefined, mouth: 0, ring: 0, think: 0, bs: 0, ph: 0, bph: 0 };
-    let off: HTMLCanvasElement | undefined;
+    let off: HTMLCanvasElement | undefined, lay: HTMLCanvasElement | undefined;
 
     const draw = (t: number, dt: number) => {
       const dpr = Math.min(3, window.devicePixelRatio || 1), W = size, H = size;
@@ -105,48 +107,80 @@ export function AiAvatar({ size = 36, state = "idle", gaze, className = "", labe
         }
       }
 
-      const blob = (rad: number, amp: number, offset: number, fill: CanvasGradient, P = ph) => {
-        ctx.beginPath();
+      const blob = (g: CanvasRenderingContext2D, rad: number, amp: number, offset: number, fill: CanvasGradient, P = ph) => {
+        g.beginPath();
         for (let i = 0; i <= 140; i++) {
           const a = (i / 140) * Math.PI * 2;
           const n = Math.sin(a * 3 + P + offset) * 0.5 + Math.sin(a * 5 - P * 1.3 + offset * 2) * 0.3 + Math.sin(a * 2 + P * 0.7 - offset) * 0.4;
           const r = rad * (1 + n * amp);
           const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
-          if (i) ctx.lineTo(x, y);
-          else ctx.moveTo(x, y);
+          if (i) g.lineTo(x, y);
+          else g.moveTo(x, y);
         }
-        ctx.closePath();
-        ctx.fillStyle = fill;
-        ctx.fill();
+        g.closePath();
+        g.fillStyle = fill;
+        g.fill();
       };
-      ctx.globalCompositeOperation = "source-over";
-      // Pink hinten und zart, Blau, Grün, Lila vorne; im Ruhezustand bewegen sich die hinteren Blasen schneller
-      [3, 0, 2, 1].forEach((i) => {
-        const lp = i === 1 ? ph : s.bph, la = i === 1 ? s.amp : s.amp + s.bs * (0.06 - s.amp);
-        const ox = Math.cos(lp * 0.5 + i * 2.1) * R * 0.18, oy = Math.sin(lp * 0.6 + i * 2.1) * R * 0.18;
-        const gg = ctx.createRadialGradient(cx + ox, cy + oy, 0, cx + ox, cy + oy, R * 1.15);
-        const al = i === 0 ? 0.85 : i === 3 ? 0.22 : i === 2 ? 1 : 0.85;
-        gg.addColorStop(0, rgba(PAL[i], 0.95 * al));
-        gg.addColorStop(0.7, rgba(PAL[i], 0.75 * al));
-        gg.addColorStop(1, rgba(PAL[i], 0));
-        blob(R * (i === 0 ? 1.06 : i === 3 ? 1.03 : i === 2 ? 1.02 : 0.9), la * (1 + i * 0.4), i * 1.7, gg, lp);
-      });
+      // Pink hinten und zart, Lila, Grün, vorne die dreifarbige Blase; jede mit Verlauf, der sich dreht, und zum Rand
+      // weich ausgeblendet (eigene Ebene). Im Ruhezustand bewegen sich die hinteren Blasen schneller.
+      lay ??= document.createElement("canvas");
+      if (lay.width !== c.width) { lay.width = c.width; lay.height = c.height; }
+      const lx = lay.getContext("2d");
+      if (lx)
+        [3, 0, 2, 1].forEach((i) => {
+          const lp = i === 1 ? ph : s.bph, la = i === 1 ? s.amp : s.amp + s.bs * (0.06 - s.amp);
+          const ox = Math.cos(lp * 0.5 + i * 2.1) * R * 0.18, oy = Math.sin(lp * 0.6 + i * 2.1) * R * 0.18;
+          const al = i === 0 ? 0.85 : i === 3 ? 0.22 : i === 2 ? 1 : 0.85;
+          const next = ({ 0: 1, 1: 2, 2: 0, 3: 0 } as Record<number, number>)[i];
+          const ang = lp * 0.4 + i * 1.6, gx0 = Math.cos(ang) * R, gy0 = Math.sin(ang) * R;
+          const lg = lx.createLinearGradient(cx + ox - gx0, cy + oy - gy0, cx + ox + gx0, cy + oy + gy0);
+          if (i === 1) {
+            lg.addColorStop(0, rgba("#0B1F8A", 0.65 * al));
+            lg.addColorStop(0.5, rgba("#E0337A", 0.62 * al));
+            lg.addColorStop(1, rgba("#8FF5C4", 0.6 * al));
+          } else {
+            lg.addColorStop(0, rgba(PAL[i], 0.95 * al));
+            lg.addColorStop(1, rgba(PAL[next], 0.95 * al));
+          }
+          lx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          lx.globalCompositeOperation = "source-over";
+          lx.clearRect(0, 0, W, H);
+          blob(lx, R * (i === 0 ? 1.06 : i === 3 ? 1.03 : i === 2 ? 1.02 : 0.9), la * (1 + i * 0.4), i * 1.7, lg, lp);
+          const mk = lx.createRadialGradient(cx + ox, cy + oy, 0, cx + ox, cy + oy, R * 1.15);
+          mk.addColorStop(0, "rgba(0,0,0,1)");
+          mk.addColorStop(0.7, "rgba(0,0,0,0.8)");
+          mk.addColorStop(1, "rgba(0,0,0,0)");
+          lx.globalCompositeOperation = "destination-in";
+          lx.fillStyle = mk;
+          lx.fillRect(0, 0, W, H);
+          ctx.save();
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.drawImage(lay!, 0, 0);
+          ctx.restore();
+        });
       const sh = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.45, 0, cx - R * 0.35, cy - R * 0.45, R * 0.7);
       sh.addColorStop(0, "rgba(255,255,255,0.14)");
       sh.addColorStop(1, "rgba(255,255,255,0)");
-      blob(R * 0.98, s.amp, 0, sh);
+      ctx.globalCompositeOperation = "source-over";
+      blob(ctx, R * 0.98, s.amp, 0, sh);
 
-      // Nachdenken: drei leuchtende lila Punkte kreisen
+      // Nachdenken: drei leuchtende, bunt schimmernde Punkte kreisen
       if (s.think > 0.01)
         for (let i = 0; i < 3; i++) {
           const a = t * 2.4 + i * ((Math.PI * 2) / 3);
-          ctx.beginPath();
-          ctx.arc(cx + Math.cos(a) * R * 1.65, cy + Math.sin(a) * R * 1.65, Math.max(W * 0.013, R * 0.065), 0, Math.PI * 2);
-          ctx.fillStyle = rgba(PAL[1], s.think);
-          ctx.shadowColor = rgba(PAL[1], 0.9 * s.think);
-          ctx.shadowBlur = R * 0.12;
-          ctx.fill();
-          ctx.shadowBlur = 0;
+          const dx = cx + Math.cos(a) * R * 1.65, dy = cy + Math.sin(a) * R * 1.65, dr = R * 0.1;
+          THINK.forEach((col, j) => {
+            const o = t * 1.8 + j * 1.57 + i;
+            const px = dx + Math.cos(o) * dr * 0.25, py = dy + Math.sin(o) * dr * 0.25;
+            const gd = ctx.createRadialGradient(px, py, 0, px, py, dr);
+            gd.addColorStop(0, rgba(col, 0.6 * s.think));
+            gd.addColorStop(0.8, rgba(col, 0.45 * s.think));
+            gd.addColorStop(1, rgba(col, 0));
+            ctx.fillStyle = gd;
+            ctx.beginPath();
+            ctx.arc(px, py, dr, 0, Math.PI * 2);
+            ctx.fill();
+          });
         }
 
       const ex = cx + s.gx * R * 0.22, ey = cy - R * 0.08 + s.gy * R * 0.18;
