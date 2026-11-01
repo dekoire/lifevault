@@ -10,3 +10,4 @@
 - Vor jedem Push: `npx tsc --noEmit` und `npm run build`.
 - Manuelle Schritte für den Nutzer immer fertig zum Kopieren mit Direktlinks.
 - Pull Requests nach bestandener Prüfung (`npx tsc --noEmit`, `npm run build`) direkt mergen – nicht nachfragen.
+- **Tresor entsperren** (`components/VaultUnlock.tsx`): die ganze Karte im Lila-Verlauf, weißes Passwortfeld, großer Kreis „15 Min. entsperrt lassen“, weiße Knöpfe (Entsperren gefüllt, Nebenknopf umrandet), animiertes Schloss (`AnimatedLock`, `.lock-anim` in `globals.css`) – nach richtigem Passwort springt es sichtbar auf (`beforeOpen` an `unlockVault`), dann geht der Tresor auf. Safaris Feststelltasten-Anzeige aus, eigener Hinweis. Gleiches Bild wie in Notara (dort blau).

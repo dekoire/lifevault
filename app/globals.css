@@ -229,3 +229,16 @@ html[data-kb] .kb-dock { bottom: 0 !important; padding-bottom: 0.5rem !important
     }
   }
 }
+
+/* Tresor-Schloss: Bügel springt beim Öffnen hoch und klappt zur Seite, beim Schließen rastet er federnd ein */
+.lock-anim .lock-shackle { transform-box: view-box; transform-origin: 17px 11px; transition: transform .55s cubic-bezier(.34, 1.56, .64, 1); }
+.lock-anim.is-open .lock-shackle { transform: translateY(-2.5px) rotate(28deg); }
+.lock-anim .lock-body { transform-box: view-box; transform-origin: 12px 16px; }
+.lock-anim:not(.is-open) .lock-body { animation: lock-click .35s .2s ease-out; }
+.lock-anim.is-open .lock-body { animation: lock-pop .4s ease-out; }
+@keyframes lock-click { 0%, 100% { transform: none; } 40% { transform: translateY(1px) scale(1.04, .96); } }
+@keyframes lock-pop { 0%, 100% { transform: none; } 45% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .lock-anim .lock-shackle { transition: none; } .lock-anim .lock-body { animation: none !important; } }
+/* Tresor-Passwortfeld: Safaris schwebende Feststelltasten-Anzeige aus (eigener Hinweis), Schlüssel des Passwort-Managers mit Abstand zum Auge */
+.vault-input::-webkit-caps-lock-indicator { display: none; content: none; }
+.vault-input::-webkit-credentials-auto-fill-button { margin-right: 2.4rem; }

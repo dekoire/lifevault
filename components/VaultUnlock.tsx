@@ -1,85 +1,94 @@
 "use client";
-import { IconTile } from "@/components/ClusterIcon";
 import Link from "next/link";
-import { useState } from "react";
-import { Check, Eye, EyeOff, Loader2, LockKeyhole, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, Eye, EyeOff, Loader2, ShieldCheck, X } from "lucide-react";
 import { useMe } from "@/lib/me";
 import { REMEMBER_MIN, unlockVault } from "@/lib/vault";
 
-/** Tresor entsperren – Box wie die PIN-Abfrage (Passwort bleibt im Gerät) */
+/** Ganze Karte im Lila-Verlauf (wie der Tresor in Notara, dort blau) */
+const VAULT_BG = "linear-gradient(135deg, #0e0920 0%, #23125c 42%, #4a28b8 78%, #6d4aff 100%)";
+const VAULT_EDGE = "inset 0 0 0 1px rgba(255,255,255,.12)";
+
+/**
+ * Schloss mit beweglichem Bügel: `open` → der Bügel springt hoch und klappt zur Seite, sonst rastet er federnd ein.
+ * Jeder Wechsel spielt die Bewegung (auch beim ersten Erscheinen: es schließt sich). CSS: `.lock-anim` in globals.css.
+ */
+export function AnimatedLock({ open, size = 20, className = "" }: { open: boolean; size?: number; className?: string }) {
+  const [shown, setShown] = useState(!open);
+  useEffect(() => { const id = requestAnimationFrame(() => setShown(open)); return () => cancelAnimationFrame(id); }, [open]);
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={`lock-anim ${shown ? "is-open" : ""} ${className}`} aria-hidden>
+      <path className="lock-shackle" d="M7 11V7.5a5 5 0 0 1 10 0V11" />
+      <rect className="lock-body" x="4" y="11" width="16" height="10" rx="2.5" />
+      <circle cx="12" cy="16" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+/**
+ * Tresor entsperren – die ganze Karte im Lila-Verlauf: animiertes Schloss, Frage, weißes Passwortfeld, großer Kreis
+ * „15 Min. entsperrt lassen“, weiße Knöpfe. Nach dem richtigen Passwort springt das Schloss sichtbar auf, dann geht der
+ * Tresor auf (`beforeOpen` an `unlockVault`). Das Passwort bleibt im Gerät. `compact`: für Chat, Export, Einstellungen.
+ */
 export function VaultUnlock({ text = "Dieses Dokument ist verschlüsselt. Gib dein Tresor-Passwort ein, um Inhalt und Original zu sehen.", title = "Verschlüsselt", compact = false, footer, onClose }: { text?: React.ReactNode; title?: string; compact?: boolean; footer?: React.ReactNode; onClose?: () => void }) {
   const { vault } = useMe();
   const [pw, setPw] = useState("");
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [opening, setOpening] = useState(false);
+  const [caps, setCaps] = useState(false);
   const [error, setError] = useState<string>();
   const [keep, setKeep] = useState(() => { try { return localStorage.getItem("lifevault:vault-keep") !== "0"; } catch { return true; } });
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!vault) return;
+    if (!vault || opening) return;
     setBusy(true);
     setError(undefined);
-    try { try { localStorage.setItem("lifevault:vault-keep", keep ? "1" : "0"); } catch { /* egal */ } await unlockVault(pw, vault.salt, vault.verifier, keep ? REMEMBER_MIN : 0); } catch (err) { setError((err as Error).message); } finally { setBusy(false); }
+    try {
+      try { localStorage.setItem("lifevault:vault-keep", keep ? "1" : "0"); } catch { /* egal */ }
+      await unlockVault(pw, vault.salt, vault.verifier, keep ? REMEMBER_MIN : 0, async () => {
+        setBusy(false);
+        setOpening(true);
+        await new Promise((r) => setTimeout(r, 650));
+      });
+    } catch (err) { setError((err as Error).message); setOpening(false); } finally { setBusy(false); }
   };
-  const field = (cls: string) => (
-    <label className={`relative block min-w-0 ${cls}`}>
-      <input type={show ? "text" : "password"} autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Tresor-Passwort" aria-label="Tresor-Passwort" autoFocus={!compact} data-own-focus
-        className={`h-10 w-full rounded-full border bg-surface pr-10 pl-4 text-[14px] outline-none focus:border-brand-500 ${error ? "border-negative" : "border-card-line"}`} />
-      <button type="button" onClick={() => setShow(!show)} aria-label={show ? "Passwort verbergen" : "Passwort zeigen"} className="absolute top-1/2 right-2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-muted hover:text-fg">{show ? <EyeOff size={15} /> : <Eye size={15} />}</button>
-    </label>
-  );
-  // rundes Häkchen: weißer Kreis, lila Haken
-  const keepBox = (
-    <label className="inline-flex cursor-pointer items-center gap-2 text-[13px] text-muted">
-      <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} className="peer sr-only" />
-      <span className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border border-card-line bg-white peer-focus-visible:ring-2 peer-focus-visible:ring-white/60">{keep && <Check size={12} strokeWidth={3.2} className="text-brand-600" />}</span>
-      {REMEMBER_MIN} Min. entsperrt lassen
-    </label>
-  );
-  const button = <button type="submit" disabled={busy || !pw} className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-brand-500 px-4 text-[14px] font-semibold text-white disabled:opacity-50">{busy && <Loader2 size={14} className="animate-spin" />} Entsperren</button>;
-
-  // kompakt: lila Karte mit Frage, Feld und Häkchen – die Knöpfe stehen darunter, außerhalb der Karte
-  const card = (inner?: React.ReactNode) => (
-    <div className="w-full rounded-2xl px-3.5 py-3 text-white shadow-card" style={{ background: "var(--accent-grad, linear-gradient(120deg,#5530c9 0%,#6438da 55%,#7650e6 100%))" }}>
-      <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-white/15 text-white"><LockKeyhole size={16} /></span>
-        <span className="min-w-0 flex-1 pt-0.5">
-          <b className="block text-[14px] leading-5">{vault ? title : "Noch kein Tresor"}</b>
-          <span className="block text-[12px] leading-4 text-white/75">{vault ? text : "Lege einen Tresor an, um Dokumente zu verschlüsseln."}</span>
-        </span>
-        {onClose && <button type="button" onClick={onClose} aria-label="Schließen" className="-mt-1 -mr-1.5 grid h-8 w-8 shrink-0 place-items-center rounded-full text-white/75 hover:bg-white/10 hover:text-white"><X size={16} /></button>}
-      </div>
-      {inner}
-    </div>
-  );
-  if (compact) return vault ? (
-    <form onSubmit={submit} className="w-full">
-      {card(<>
-        <div className="mt-2.5 [&_input]:border-transparent [&_input]:text-fg">{field("")}</div>
-        <div className="mt-2 flex items-center justify-between gap-2 pl-0.5 [&_label]:text-white/85 [&_label>span]:border-transparent">{keepBox}{error && <span className="rounded-full bg-white px-3 py-2 text-[12px] leading-4 text-negative-text" role="alert">{error}</span>}</div>
-      </>)}
-      <div className="mt-2.5 flex gap-2 [&>*]:h-10 [&>*]:flex-1">
-        {footer}
-        <button type="submit" disabled={busy || !pw} className="inline-flex items-center justify-center gap-1.5 rounded-full bg-fg px-4 text-[14px] font-semibold text-canvas disabled:opacity-40">{busy && <Loader2 size={14} className="animate-spin" />} Entsperren</button>
-      </div>
-    </form>
-  ) : card(<Link href="/einstellungen/tresor" className="mt-2.5 inline-flex h-9 items-center rounded-full bg-white px-4 text-[13px] font-semibold text-brand-600">Tresor einrichten</Link>);
 
   return (
-    <div className="mx-auto w-full max-w-sm rounded-3xl border border-card-line bg-surface px-6 py-6 text-center shadow-card">
-      <IconTile icon={LockKeyhole} size={40} className="mx-auto" />
-      <h2 className="mt-3 text-[16px] leading-6 font-semibold">{vault ? title : "Noch kein Tresor"}</h2>
-      <p className="mt-0.5 text-[13px] text-soft">{vault ? text : "Lege einen Tresor an, um Dokumente Ende-zu-Ende zu verschlüsseln."}</p>
+    <div className={`w-full rounded-3xl p-4 text-left text-white sm:p-5 ${compact ? "" : "mx-auto max-w-md"}`} style={{ backgroundImage: VAULT_BG, boxShadow: `${VAULT_EDGE}, 0 20px 50px -20px rgba(109,74,255,.55)` }}>
+      <div className="flex items-start gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/12"><AnimatedLock open={opening} size={24} /></span>
+        <span className="min-w-0 flex-1 pt-0.5">
+          <b className="block text-[16px] leading-6">{vault ? title : "Noch kein Tresor"}</b>
+          <span className="block text-[13px] leading-5 text-white/80">{vault ? text : "Lege einen Tresor an, um Dokumente Ende-zu-Ende zu verschlüsseln."}</span>
+        </span>
+        {onClose && <button type="button" onClick={onClose} aria-label="Schließen" className="-mt-1 -mr-1.5 grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/80 hover:bg-white/10 hover:text-white"><X size={17} /></button>}
+      </div>
       {vault ? (
-        <form onSubmit={submit} className="mt-4 space-y-2.5">
-          {field("")}
-          <button type="submit" disabled={busy || !pw} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-brand-500 text-[14px] font-semibold text-white disabled:opacity-50">{busy && <Loader2 size={15} className="animate-spin" />} Entsperren</button>
-          <div>{keepBox}</div>
-          {error && <p className="text-[13px] text-negative-text" role="alert">{error}</p>}
-          <p className="text-[12px] text-muted">Das Passwort verlässt dein Gerät nicht.</p>
+        <form onSubmit={submit}>
+          <label className="relative mt-3 block">
+            <input type={show ? "text" : "password"} autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyUp={(e) => setCaps(e.getModifierState?.("CapsLock") ?? false)} placeholder="Tresor-Passwort" aria-label="Tresor-Passwort" autoFocus={!compact} data-own-focus
+              className={`vault-input h-12 w-full rounded-full border bg-white pr-20 pl-5 text-[15px] text-[#111] outline-none placeholder:text-[#888] ${error ? "border-negative" : "border-transparent"}`} />
+            <button type="button" onClick={() => setShow(!show)} aria-label={show ? "Passwort verbergen" : "Passwort zeigen"} className="absolute top-1/2 right-2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-[#777] hover:bg-black/5 hover:text-[#111]">{show ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+          </label>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <label className="-my-1 inline-flex min-h-11 cursor-pointer items-center gap-2.5 py-1 pr-2 text-[14px] text-white/90">
+              <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} className="peer sr-only" />
+              <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full transition peer-focus-visible:ring-2 peer-focus-visible:ring-white/60 ${keep ? "bg-white" : "border-2 border-white/60"}`}>{keep && <Check size={16} strokeWidth={3.2} className="text-brand-600" />}</span>
+              {REMEMBER_MIN} Min. entsperrt lassen
+            </label>
+            {error ? <span role="alert" className="rounded-full bg-white px-3 py-1.5 text-[12px] font-semibold text-negative-text">{error}</span> : caps && <span className="rounded-full bg-white/15 px-3 py-1.5 text-[12px] font-semibold">Feststelltaste an</span>}
+          </div>
+          <div className="mt-3 flex gap-2 [&>*]:h-11 [&>*]:flex-1 [&>*:not([type=submit])]:rounded-full [&>*:not([type=submit])]:border [&>*:not([type=submit])]:border-white/35 [&>*:not([type=submit])]:bg-transparent [&>*:not([type=submit])]:text-white [&>*:not([type=submit])]:hover:bg-white/10">
+            {footer}
+            <button type="submit" disabled={!opening && (busy || !pw)} className="inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-4 text-[14px] font-semibold text-brand-700 transition hover:bg-white/90 disabled:opacity-50">
+              {busy && <Loader2 size={15} className="animate-spin" />} {opening ? <><AnimatedLock open size={16} /> Offen</> : "Entsperren"}
+            </button>
+          </div>
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[12px] text-white/70"><ShieldCheck size={14} /> Das Passwort verlässt dein Gerät nicht</p>
         </form>
       ) : (
-        <Link href="/einstellungen/tresor" className="mt-4 inline-flex h-10 items-center rounded-full bg-brand-500 px-5 text-[14px] font-semibold text-white">Tresor einrichten</Link>
+        <Link href="/einstellungen/tresor" className="mt-3 inline-flex h-11 items-center rounded-full bg-white px-5 text-[14px] font-semibold text-brand-700">Tresor einrichten</Link>
       )}
     </div>
   );

@@ -100,10 +100,11 @@ export async function createVault(password: string) {
 }
 
 /** Entsperren: Passwort prüfen (Prüfwert muss sich öffnen lassen) */
-export async function unlockVault(password: string, salt: string, verifier: Sealed, rememberMinutes = 0) {
+export async function unlockVault(password: string, salt: string, verifier: Sealed, rememberMinutes = 0, /** nach richtigem Passwort, bevor der Tresor aufgeht (z. B. Schloss-Animation zeigen) */ beforeOpen?: () => Promise<void>) {
   const k = await derive(password, unb64(salt));
   const v = await openJson<{ ok: string }>(verifier, k).catch(() => null);
   if (v?.ok !== "lifevault") throw new Error("Das Tresor-Passwort stimmt nicht.");
+  if (beforeOpen) await beforeOpen();
   key = k;
   if (rememberMinutes > 0) await remember(k, rememberMinutes);
   else { void forget(); if (timer) clearTimeout(timer); }
